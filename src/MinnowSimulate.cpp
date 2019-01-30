@@ -506,10 +506,7 @@ void doPCRBulkDBG(
     bool rspdMode{false} ;
 
     if(rspdVec.size() > 0){
-        
-        //std::cerr << "should it be true ? size  " << rspdVec.size() <<  "\n" ;
         rspdMode = true ;
-
     }
 
     //fragmentLength
@@ -552,10 +549,6 @@ void doPCRBulkDBG(
         // mu = segStartPos + segmentLength - 1
         // sigma = 10 (take as input) 
 
-        // sanity check
-        //std::cerr << segStartPos << "\t" << segEndPos << "\t" << tr.RefLength  << "\n"  ; 
-
-        //std::cerr << segStartPos << "\t" << segEndPos << "\t" << tr.RefLength << "\n" ;
 
         std::string readSeq ;
         uint32_t startPos{0} ;
@@ -961,33 +954,7 @@ void doPCRBulk(
 
         startPositionMap[i] = { fragmentStartPos, fragmentEnd };
         readSeqMap[i] = readSeq ;
-        
-        //sstream_left << "@" << cellName
-        //             << ":" << transcripts[uniqueMolecules[i].transcriptId].RefName + (polyASample ? "_polyA" : "") + addedString 
-        //             << ":" << startPos
-        //             << ":" << i 
-        //             << ":" << uniqReadId 
-        //             << "\n" ;
-        //sstream_right << "@" << cellName 
-        //              << ":" << transcripts[uniqueMolecules[i].transcriptId].RefName + (polyASample ? "_polyA" : "") + addedString
-        //              << ":" << startPos 
-        //              << ":" << i 
-        //              << ":" << uniqReadId 
-        //              << "\n" ;
-
-        //uniqReadId++ ;              
-
         std::string tagSeq{sequenceMap[i].substr(0, CB_LENGTH + UMI_LENGTH)} ;
-        //sstream_left <<  tagSeq << "\n" ;
-        //sstream_left << imputeErrorInStringUMI(seqeneceErrorProb, tagSeq) << "\n" ;
-        // wrtie + and quality
-        //sstream_left << "+\n" ;
-        //sstream_left << std::string(CB_LENGTH + UMI_LENGTH, 'N') << "\n" ; 
-
-        //sstream_right << imputeErrorInString(seqeneceErrorProb, readSeq) << "\n" ;
-        // wrtie + and quality
-        //sstream_right << "+\n" ;
-        //sstream_right << std::string(READ_LEN, 'N') << "\n" ; 
     }
 
     std::vector<util::EditBlock> editVector;
@@ -1025,18 +992,6 @@ void doPCRBulk(
         );
     }
 
-    //std::cerr << "=========================================\n" ;
-    //std::cerr << "total mismatches: " << totalMismatches << "\n" ;
-    //std::cerr << "filled up the PCR tree\n" ;
-    //std::cerr << "UniqueMolecule size " << uniqueMolecules.size() << "\n" ;
-    // std::cerr << "Edit vector size " << editVector.size() << "\n"; 
-
-    // Create a list of numbers from 
-    //std::vector<uint32_t> indexArray ;
-    //indexArray.resize(totNum - uniqueMolecules.size()) ;
-    //for(uint32_t i = 0; i < indexArray.size() ; ++i){
-    //    indexArray[i] = i + uniqueMolecules.size() ;
-    //}
     
     std::vector<uint32_t> indexArray ;
     indexArray.resize(totNum) ;
@@ -1057,24 +1012,13 @@ void doPCRBulk(
     }
 
 
-    //std::cerr << "DEEBUG : ========= Going to generate " << dupCount << " Already generated " << uniqueMolecules.size() << " READS \n" ;
-    //dupCount = dupCount - uniqueMolecules.size() ; 
     auto numMol = std::min(indexArray.size(), static_cast<size_t>(dupCount)) ;
-    //std::cerr << "DEBUG:= = Expected number of molecules after sampling " << numMol << "\n" ;
-    //std::cerr << "DEBUG:= = Total number of edits  " << totalMismatches << "\n" ;
-    //uint32_t numMol = 100 ;
-    //std::sort(indexArray.begin(), indexArray.begin() + numMol) ;
 
     size_t numOfWritten{0} ;
     size_t blockSize = uniqueMolecules.size() ;
-    //std::cerr << "SequenceMap.size() " << sequenceMap.size() << "\n" 
-    //          << "blockSize " << blockSize << "\n" 
-    //          << "numMol " << numMol << "\n" 
-    //          << "indexArray.size() " << indexArray.size() << "\n" ;
     
     if(doPCR){
         for(uint32_t i = 0 ; i < indexArray.size() ; ++i){
-            //std::cerr << "iteration " << i << "\n" ;
             auto ind = indexArray[i] ;
             if(ind < blockSize){
                 numOfWritten++ ;
@@ -1163,8 +1107,6 @@ void doPCRBulk(
                 numOfWritten++ ;
             }
             if(numOfWritten >= numMol){
-                //std::cerr << "generated " << numOfWritten << "\t" 
-                //        << "of " << numMol << "\n" ;
                 break ;
             }
        
