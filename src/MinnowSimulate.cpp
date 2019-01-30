@@ -461,68 +461,6 @@ uint32_t generateFragmentSeq(
 
 }
 
-/*
-NOTE: not used now
-uint32_t generateFragmentSeq(
-    std::string& polyASeq,
-    std::string& fragSeq 
-){
-    
-    int numPads{0} ;
-
-    uint32_t startPos{0} ;
-    uint32_t toSample{READ_LEN} ;
-    auto refLen = polyASeq.size() ;
-
-    if (refLen < READ_LEN){
-        std::cerr << "polyA/transcript sequence is too short " <<  refLen<<"\n" ;
-        if (refLen == 0){
-            fragSeq = std::string(READ_LEN, 'N') ;
-            return startPos ;
-        }else{
-            numPads = READ_LEN - refLen ;
-        }
-        fragSeq = std::string(numPads, 'N') + polyASeq;
-        std::cerr << fragSeq << "\n" ;
-        return startPos ;
-    }
-
-    uint32_t fragmentLength = MAX_FRAGLENGTH ;
-    if (refLen < fragmentLength){
-        fragmentLength = refLen ;
-    }
-    uint32_t fragmentStartPos = refLen - fragmentLength ;
-    uint32_t fragmentEndPos = refLen - READ_LEN ;
-    // Generate a random number from 4 - 6
-    auto distanceFromEnd = util::generateStartPosition() + READ_LEN;
-
-    auto fragmentRange = fragmentEndPos - fragmentStartPos ;
-
-    if(distanceFromEnd > refLen){
-        // Scale the distance to be in the range of fragment
-        // Length no need for padding here
-        startPos = normalizedStartPos(fragmentStartPos, fragmentEndPos, distanceFromEnd) ;
-                  
-    }else{
-        startPos = refLen - distanceFromEnd ;
-        if(distanceFromEnd < READ_LEN){
-            // We need to pad Ns
-            numPads = READ_LEN - distanceFromEnd ;
-            toSample = distanceFromEnd ;
-        }
-    }
-    //Old logic to generate the start position from uniform samples 
-    //auto startPos = util::generateRandomNumber<uint32_t>(fragmentStartPos, fragmentEndPos) ;
-    fragSeq = std::string(
-            polyASeq.c_str() + startPos,
-            toSample
-    );
-    
-    fragSeq = fragSeq +  std::string( numPads, 'N') ; 
-    return startPos ;
-}
-*/
-
 void clipSequence(std::string& parentSeq, uint32_t fStart, uint32_t fEnd, std::string& readSeq, uint32_t& startPos){
     std::string fragSeqPart = parentSeq.substr(CB_LENGTH + UMI_LENGTH) ;
     size_t absReadStartPos{0} ;
@@ -856,7 +794,6 @@ void doPCRBulk(
     uint32_t& numOfPCRCycles ,
     double& errorRate ,
     bool& simulateFromIntrons,
-    bool& useEqClass,
     bool& switchOnEffModel,
     bool& isNoisyCell,
     bool& isDoublet,
@@ -1014,21 +951,7 @@ void doPCRBulk(
                     std::cerr << "startPos " << startPos << "\n" ;
                 }
             } else {
-                // EqClass 
-                if(useEqClass) {
-                    startPos = generateFragmentSeq(tr, readSeq, uniqueMolecules[i].fragmentStart, uniqueMolecules[i].fragmentEnd) ;
-                    fragmentSeq = std::string{tr.Sequence() + uniqueMolecules[i].fragmentStart} ;
-                    fragmentStartPos = uniqueMolecules[i].fragmentStart ; 
-                    fragmentEnd = uniqueMolecules[i].fragmentEnd ;
-                    fragmentLength = fragmentEnd - fragmentStartPos + 1 ;
-                    if(fragmentSeq.size() < READ_LEN) {
-                        std::cerr << " fragmentStart: " << uniqueMolecules[i].fragmentStart << " reference length "<< tr.RefLength << "\n" ; 
-                        std::cerr << " ERROR: ==== This should not happen EXITING \n" ;
-                        std::exit(1) ;
-                    }
-                } else {
                     startPos = generateFragmentSeq(tr, readSeq) ;
-                }
             }
         }
 
@@ -1408,7 +1331,6 @@ void generateSequencesForCell(
     uint32_t& numOfPCRCycles,
     double& errorRate,
     bool& simulateFromIntrons,
-    bool& useEqClass,
     bool& switchOnEffModel,
     std::vector<std::string>& CBList,
     std::vector<std::string>& UMIList,
@@ -1490,89 +1412,36 @@ void generateSequencesForCell(
         int cumExpressionCount{0} ;
         uint32_t skippedExpCounts{0} ;
 
-        if(!useEqClass){
-            for(size_t transcriptId = 0; transcriptId < cellExpressionVector.size(); ++transcriptId){
-                const auto refTid = dataMatrixObj.getrefId(transcriptId) ;
-                //std::cerr << "remapped transcript id: " << refTid << "\t" << transcripts[refTid].RefLength << "\n" ;
-                if((cellExpressionVector[transcriptId] == 0) || (transcripts[refTid].RefLength < READ_LEN)){
-                    //if  (transcripts[refTid].RefLength < 50){
-                    //    if(cellExpressionVector[transcriptId] != 0){
-                    //        std::cerr << "Short transcript has non zero value \n" ;
-                    //    }
-                    //}
-                    skippedExpCounts += cellExpressionVector[transcriptId] ;
-                    continue ;
-                }
-                auto expressionCount = cellExpressionVector[transcriptId] ;
-                for(int moleculeId = 0; moleculeId < expressionCount; ++moleculeId){
-                    
-                    uniqueMolecules.emplace_back(
-                        refTid, 
-                        cellBarCode, 
-                        UMIList[sampledList[cumId]],
-                        true,
-                        0,
-                        0,
-                        false 
-                    ) ;
-                    cumId++ ;
-                }
-                cumExpressionCount += expressionCount ; 
+        for(size_t transcriptId = 0; transcriptId < cellExpressionVector.size(); ++transcriptId){
+            const auto refTid = dataMatrixObj.getrefId(transcriptId) ;
+            //std::cerr << "remapped transcript id: " << refTid << "\t" << transcripts[refTid].RefLength << "\n" ;
+            if((cellExpressionVector[transcriptId] == 0) || (transcripts[refTid].RefLength < READ_LEN)){
+                //if  (transcripts[refTid].RefLength < 50){
+                //    if(cellExpressionVector[transcriptId] != 0){
+                //        std::cerr << "Short transcript has non zero value \n" ;
+                //    }
+                //}
+                skippedExpCounts += cellExpressionVector[transcriptId] ;
+                continue ;
             }
-        }else{
-            auto eqClassPtr = dataMatrixObj.eqClassPtr ;
-            auto thisCellExonCounts = dataMatrixObj.cellExCount[cellId] ;
-            // this should be a map of <genecount <ex,count>>
-            // we also should have a map of <ex,txp>
-            // and givem <txp, exp> we can get a start,stop pair 
-            // and update the uniqueMolecules
-            for(auto git : thisCellExonCounts){
-                auto& geneId = git.first ;
-                auto& expTxpMap = dataMatrixObj.preExpTxpMapVector[geneId] ;
-                auto exonLevelCount = git.second; 
-                for(auto eit : exonLevelCount){
-                    auto exonId = eit.first ;
-                    auto ecount = eit.second ;
-                    auto tFoundIt = expTxpMap.find(exonId) ;
-                    if(tFoundIt != expTxpMap.end()){
-                        auto tid = tFoundIt->second ;
-                        //const auto refTid = dataMatrixObj.getrefId(tid) ;
-                        if(transcripts[tid].RefLength < READ_LEN)
-                            continue ;
-                        util::TrRelPos relPos ; 
-                        auto foundRelPos = eqClassPtr->getTrEqExon(tid,exonId, relPos) ;
-                        if(foundRelPos){
-                            auto eStart = relPos.start ;
-                            auto eEnd = relPos.end ;
-                            bool junction{false} ;
-                            if(relPos.end2 != 0){
-                                eEnd = relPos.end2 ;
-                                junction = true ;
-                            }
-                            //std::cerr << "cum id " << cumId << "\t"
-                            //          << "sampledList.size() " << sampledList.size() << "\t"
-                            //          << "ecount "  << ecount << "\n" ;
-                            for(int j = 0 ; j < ecount ; ++j){
-                                uniqueMolecules.emplace_back(
-                                    tid,
-                                    cellBarCode,
-                                    UMIList[sampledList[cumId]] ,
-                                    true,
-                                    eStart,
-                                    eEnd,
-                                    junction
-                                );
-                                cumId++ ;
-                            }
-                        }
-                    }
-
-                }
+            auto expressionCount = cellExpressionVector[transcriptId] ;
+            for(int moleculeId = 0; moleculeId < expressionCount; ++moleculeId){
+                
+                uniqueMolecules.emplace_back(
+                    refTid, 
+                    cellBarCode, 
+                    UMIList[sampledList[cumId]],
+                    true,
+                    0,
+                    0,
+                    false 
+                ) ;
+                cumId++ ;
             }
-            
+            cumExpressionCount += expressionCount ; 
         }
 
-        
+
         // If this cell is marked for polyA clipping then we need to take that sequence too 
         int droppedIntronCount{0} ;
         if (totalIntronCount > 0){
@@ -1627,7 +1496,6 @@ void generateSequencesForCell(
             numOfPCRCycles, 
             errorRate, 
             simulateFromIntrons,
-            useEqClass,
             switchOnEffModel,
             isNoisyCell,
             isDoublet,
@@ -1736,7 +1604,6 @@ bool spawnCellThreads(
     
     uint32_t numOfCells{dataMatrixObj.numCells} ;
     bool simulateFromIntrons = simOpts.velocityMode ;
-    bool useEqClass = simOpts.useEqClass ;
     bool switchOnEffModel = simOpts.switchOnEffModel ;
 
     bool useDBG = simOpts.useDBG ;
@@ -1780,7 +1647,6 @@ bool spawnCellThreads(
                 std::ref(numOfPCRCycles),
                 std::ref(errorRate),
                 std::ref(simulateFromIntrons),
-                std::ref(useEqClass),
                 std::ref(switchOnEffModel),
                 std::ref(CBList),
                 std::ref(UMIList),
@@ -2087,16 +1953,7 @@ void minnowSimulate(SimulateOptions& simOpts){
     //
     if(!noDump){
         dataMatrixObj.dumpGeneCountMatrix(geneCountFileName, emptyCellVector) ;
-        //dataMatrixObj.dumpGeneCountMatrixUnmolested(geneCountFileNameOriginal) ;
         dataMatrixObj.dumpTrueCellNames(cellNamesFile) ;
-        // copy the gene list from alevin directory to minnow 
-        // to make it complete
-        //if(alevinMode){
-        //    std::ifstream src(matrixFileName + "/quants_mat_cols.txt", std::ios::binary);
-        //    std::ofstream dst(alevinLikeDir + "/quants_mat_cols.txt", std::ios::binary) ;
-
-        //    dst << src.rdbuf() ;
-        //}
 
         // DEBUG dump intron counts 
         dataMatrixObj.dumpIntronCount() ;
