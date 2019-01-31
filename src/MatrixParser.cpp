@@ -1490,37 +1490,6 @@ void DataMatrix<T>::loadSplatterData(
 				_verbose("\rIn Splatter: Number of genes processed : %lu", splatterGeneId);
 			}
 
-
-			//for(auto it : geneMap){
-			//	auto trVec = refInfo.gene2transcriptMap[it.second] ;
-			//	bool addThisGene{true} ;
-			//	//for(auto tr: trVec){
-			//	//	//Check if this transcript has more length 
-			//	//	//than READ_LEN
-			//	//	if(refInfo.transcripts[tr].RefLength >= READ_LEN){
-			//	//		addThisGene = true ;
-			//	//		break ;
-			//	//	}
-			//	//}
-			//	if(addThisGene){	
-			//		auto spgName = splatterGeneNames[splatterGeneId] ;
-			//		
-			//		auto realGeneName = it.first ;
-			//		auto refGeneId = it.second ;
-
-			//		splatterGeneMap[realGeneName] = spgName ; // keep the real name
-
-			//		alevin2refMap[splatterGeneId] = refGeneId ; // gene id to real gene id 
-			//		// this one is extra
-			//		alevinGeneIndex2NameMap[splatterGeneId] = realGeneName ; // keep mapping from real gene name 
-			//		splatterGeneId++ ; 	
-			//		if(splatterGeneId == splatterGeneNames.size()){
-			//			break ;
-			//		}
-
-			//	}
-			//} 
-
 		}
 		if(splatterGeneMap.size() != splatterGeneNames.size()){
 			consoleLog->error("The splatter matrix contains more genes than provided in reference, truncating") ;
@@ -1699,71 +1668,6 @@ void DataMatrix<T>::loadSplatterData(
 	}	
 
 
-	// Genes and transcripts are assigned to the matrix 
-	// next we want to load/build equivalence classes if not already given 
-
-	if(useEqClass){
-		std::string eqFileDir = "/mnt/scratch1/hirak/minnow/metadata/hg/" ;
-		eqClassPtr = new ExonEqClass(eqFileDir) ;
-		eqClassPtr->loadEqClassInfo(refInfo) ;
-
-		consoleLog->info("Size of transcript2EqMap {}",eqClassPtr->transcript2EqMap.size()) ;
-		consoleLog->info("Size of eqCountVec {}",eqClassPtr->eqCountVec.size()) ;
-
-		// load bfh  
-		// clusterFile, cellNoisyMap both will be 
-		// non functional here
-		eqClassPtr->loadBFH(
-			bfhFile, 
-			simOpts.clusterFile, 
-			refInfo, 
-			cellWhiteListMap, 
-			false, 
-			cellNoisyMap
-		) ;
-
-		consoleLog->info("Loaded the bfh.txt file") ;
-		consoleLog->info("The size of probability Vector {}",eqClassPtr->countProbability.size()) ;
-
-		preCalculatedExProb.resize(numOfGenes) ; 
-		preCalculatedTxpProb.resize(numOfGenes) ;
-
-		preExpTxpMapVector.resize(numOfGenes) ;
-		cellExCount.resize(numCells) ;
-
-		for(size_t i = 0; i < numOfGenes ; i++){
-			auto it = alevin2refMap.find(i) ;
-			if(it != alevin2refMap.end()){
-				auto originalGeneId = it->second ;
-				auto transcriptIds = refInfo.gene2transcriptMap[originalGeneId] ;
-
-				std::unordered_map<uint32_t, uint32_t> localExTxMap ;
-				std::unordered_map<uint32_t, double> localExonLevelProb ;
-				std::vector<double> localProbVec ;
-
-				eqClassPtr->getTrLevelDistribution(
-					originalGeneId,
-					transcriptIds,
-					localExTxMap,
-					localProbVec ,
-					localExonLevelProb,
-					numCells
-				) ;
-
-				// fill up the info
-				preCalculatedTxpProb[i] = localProbVec ;
-				preExpTxpMapVector[i] = localExTxMap ;
-				preCalculatedExProb[i] = localExonLevelProb ;
-
-			}else{
-				std::cerr << "ERROR::::: gene id not found \n" ; 
-			}
-			_verbose("\rNumber of processed genes : %lu", i);
-
-		}
-	}
-
-
 	size_t numOfDroppedGenes{0} ;
 	size_t numOfBadCells{0} ;
 	// create transcript level matrix 
@@ -1861,54 +1765,7 @@ void DataMatrix<T>::loadSplatterData(
 
 						}
 					}
-					else if(useEqClass){
-						std::unordered_map<uint32_t, double> exonLevelProb ;
-						probVec = preCalculatedTxpProb[i] ;
-						exonLevelProb = preCalculatedExProb[i] ;
-
-						std::vector<uint32_t> exonIndVec(exonLevelProb.size()) ;
-						std::vector<double> exonProbVec(exonLevelProb.size()) ;
-
-						size_t eid{0} ;
-						for(auto eit: exonLevelProb){
-							exonIndVec[eid] = eit.first ;
-							exonProbVec[eid] = eit.second ;
-							eid++ ;
-						}
-
-						std::random_device rdt4;
-						std::mt19937 gent4(rdt4());
-						
-						std::discrete_distribution<> dmt(exonProbVec.begin(), exonProbVec.end()) ;
-						std::vector<int> exonCounts(exonLevelProb.size()) ; 
-						
-						double probSum{0} ;
-						for(auto eeit : probVec){
-							probSum += eeit ;
-						}
-							
-						
-						if (exonLevelProb.size() == 0){									
-							geneCounts[cellId][i] = 0 ;
-							dropThisGene = true ;
-							geneCount = 0 ;
-						}
-
-						
-						for(int j = 0 ; j < geneCount; ++j){
-							++exonCounts[dmt(gent4)] ;
-						}
-
-						std::unordered_map<uint32_t, int> exonCountMap ;
-						for(size_t j = 0 ; j < exonCounts.size() ; ++j){
-							exonCountMap[exonIndVec[j]] = exonCounts[j] ;
-							geneLevelExCount += exonCounts[j] ;
-						}						
-
-						cellExCount[cellId][i] = exonCountMap ;
-
-
-					}else{
+					else{
 						consoleLog->error("This version takes either of --useEqClass/--weibull/--dbg") ;
 						std::exit(1) ;
 					}
@@ -1980,11 +1837,7 @@ void DataMatrix<T>::loadSplatterData(
 	for(size_t splatterGeneId = 0 ; splatterGeneId < alevinGeneIndex2NameMap.size() ; ++splatterGeneId){
 		cellColStream << alevinGeneIndex2NameMap[splatterGeneId] << "\n" ; 
 	}
-
-
-
 }
-
 
 
 template<typename T>

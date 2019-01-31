@@ -143,39 +143,6 @@ public :
 	}
 
 
-
-	void dumpClusterLevelProb(std::string& file_name){
-		std::ofstream exLevelProbStream(file_name.c_str()) ;
-		exLevelProbStream << preCalculatedExProbC.size() << "\n" ;
-		for(size_t i = 0 ; i < preCalculatedExProbC.size() ; ++i){
-			auto exLevelMap = preCalculatedExProbC[i] ;
-			exLevelProbStream << exLevelMap.size() << "\t" ;
-			for(auto it : exLevelMap){
-				exLevelProbStream << it.first << "\t" ;
-				exLevelProbStream << it.second.size() << "\t" ;
-				for(auto it2 : it.second){
-					exLevelProbStream << it2.first <<"\t" << it2.second << "\t" ;
-				}
-			}
-
-			exLevelProbStream << "\n" ;
-		}
-	}
-	
-	void dumpNoisyExonLevelProb(std::string& file_name){
-		std::ofstream exLevelProbStream(file_name.c_str()) ;
-		exLevelProbStream << preCalculatedExProbN.size() << "\n" ;
-		for(size_t i = 0 ; i < preCalculatedExProbN.size() ; ++i){
-			auto exonLevelMap = preCalculatedExProbN[i] ;
-			exLevelProbStream << exonLevelMap.size() << "\t" ;
-			for(auto it : exonLevelMap){
-				exLevelProbStream << it.first << "\t" << it.second << "\t" ;
-			}
-			exLevelProbStream << "\n" ;
-		}
-	}
-	
-
 	// data structure related to  
 	std::vector<std::vector<T>> data ; // Matrix containing the Cell x Transcriptome Matrix 
 	std::vector<std::vector<T>> geneCounts ; // Matrix containing the Cell x Gene Matrix 
@@ -213,19 +180,7 @@ public :
 	GFAReader* dbgPtr{nullptr} ;
 	// exon to transcript map
 	// same for all clusters
-	std::vector<std::unordered_map<uint32_t, uint32_t>> preExpTxpMapVector ;  
 	
-	std::vector<std::vector<double>> preCalculatedTxpProb ; // Cached Probabilities 
-	std::vector<std::unordered_map<uint32_t, double>> preCalculatedExProb ; // Cached
-	// Map related to noisy profile characterized by alevin 
-	std::vector<std::vector<double>> preCalculatedTxpProbN ; // Cached Probabilities 
-	std::vector<std::unordered_map<uint32_t, double>> preCalculatedExProbN ; // Cached
-	// Cluster specific maps 
-	std::vector<std::unordered_map<uint32_t, std::vector<double>>> preCalculatedTxpProbC ; // Each gene is a map 
-	std::vector<std::unordered_map<uint32_t, std::unordered_map<uint32_t, double>>> preCalculatedExProbC ; // Cached
-	// Cell level, each cell we have a map because the datastructure is sparse
-	// So not all genes would be present.  
-	std::vector<std::unordered_map<uint32_t, std::unordered_map<uint32_t, int>>> cellExCount ; // Cached
 	
 	std::vector<uint32_t> rspdVec ;
 	std::vector<std::unordered_map<size_t, uint32_t>> preCalculatedSegProb ;	
