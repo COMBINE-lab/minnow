@@ -1264,8 +1264,8 @@ void DataMatrix<T>::loadSplatterData(
 	bool useDBG = simOpts.useDBG ;
 
 
-	std::string geneListFile = splatterDir + "/quants_mat_cols.txt" ;
-	std::string cellListFile = splatterDir + "/quants_mat_rows.txt" ;
+	std::string geneListFile = splatterDir + "/quants_mat_rows.txt" ;
+	std::string cellListFile = splatterDir + "/quants_mat_cols.txt" ;
 
 	// this is gene to cell matrix 
 	std::string countFile = splatterDir + "/quants_mat.csv" ;
