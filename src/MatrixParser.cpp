@@ -384,6 +384,9 @@ void DataMatrix<T>::loadAlevinData(
 	// noisy cells. These two maps would keep track of those 
 	// two groups and map original id of the cell list to 
 	// the whitelist and noisylist.
+
+	// FIXME: The white-list might not be contiguous, in case 
+	// it is not contiguous create a second order mapping.  
 	 
 	std::unordered_map<uint32_t, uint32_t> original2whitelistMap ;  
 	std::unordered_map<uint32_t, uint32_t> original2NoisyMap ;
@@ -494,7 +497,7 @@ void DataMatrix<T>::loadAlevinData(
 	geneCounts.resize(sampleCells + numOfDoublets, std::vector<T>(numOfGenes)) ;
 	trueGeneCounts.resize(sampleCells + numOfDoublets, std::vector<int>(numOfGenes)) ;
 
-
+	// this matrix might have more genes 
 	for(auto& v : originalGeneCountMatrix)
     	std::memset(&v[0], 0, sizeof(v[0]) * v.size());
 	
@@ -666,12 +669,7 @@ void DataMatrix<T>::loadAlevinData(
 		} 
 
 		std::cerr << " After loading bfh prob size " << preCalculatedSegProb.size() << "\n" ;
-
-		//std::cerr << "Exiting for now" ;
-
 		cellSegCount.resize(numCells + numOfDoublets) ;
-
-		//std::exit(1) ;
 
 		std::ofstream probStream("/mnt/scratch1/hirak/minnow/geneLevelProb.txt") ;
 		probStream << eqClassPtr->geneCountHistogram.size() << "\n" ;
@@ -680,152 +678,6 @@ void DataMatrix<T>::loadAlevinData(
 			for(auto it2 : it.second){
 				probStream << it2.first << "\t" << it2.second << "\n" ;
 			}
-		}
-
-	}
-
-
-
-	if(useExEqClass){
-		std::string eqFileDir = "/mnt/scratch1/hirak/minnow/metadata/hg/" ;
-
-		eqClassPtr = new ExonEqClass(eqFileDir) ;
-		eqClassPtr->loadEqClassInfo(refInfo) ;
-
-		consoleLog->info("Size of transcript2EqMap {}",eqClassPtr->transcript2EqMap.size()) ;
-		consoleLog->info("Size of eqCountVec {}",eqClassPtr->eqCountVec.size()) ;
-		// calculate Expression based vector 
-		std::string bfhFile = alevinDir + "/bfh.txt" ;
-		eqClassPtr->loadBFH(bfhFile, cellClusterFile, refInfo, cellWhiteListMap, generateNoisyCells, cellNoisyMap) ;
-		std::string hist_file_name(outDir + "/test_hist_dump.txt") ;
-		eqClassPtr->dumpClusterHistoGram(hist_file_name) ;
-
-		uint32_t max_cluster_size{0} ;
-		if(eqClassPtr->cell2ClusterMap.size() != 0){
-			useClusters = true ;	
-			//Assume clusters start from 0 
-			using pair_type = std::pair<uint32_t, uint32_t> ;
-			auto pr = std::max_element(
-				std::begin(eqClassPtr->cell2ClusterMap), std::end(eqClassPtr->cell2ClusterMap),
-				[] (const pair_type& p1, const pair_type& p2){
-					return p1.second < p2.second ;
-				}
-			) ;
-			max_cluster_size = pr->second + 1 ;
-		}
-
-		consoleLog->info("Loaded the bfh.txt file") ;
-		consoleLog->info("The size of probability Vector {}",eqClassPtr->countProbability.size()) ;
-		consoleLog->info("Number of clusters {}",max_cluster_size) ;
-
-
-		// If this option is on we can precompute transcript level Expressions 
-		// for each gene, that is same for all the cells 
-		if(useClusters){
-			preCalculatedExProbC.resize(numOfGenes) ; 
-			preCalculatedTxpProbC.resize(numOfGenes) ;
-		}else{
-			preCalculatedExProb.resize(numOfGenes) ; 
-			preCalculatedTxpProb.resize(numOfGenes) ;
-		}
-
-		if(generateNoisyCells){
-			preCalculatedExProbN.resize(numOfGenes) ;
-			preCalculatedTxpProbN.resize(numOfGenes) ;
-		}
-		
-		preExpTxpMapVector.resize(numOfGenes) ;
-		// NOTE: Adding doublen
-		cellExCount.resize(numCells + numOfDoublets) ;
-
-		for(size_t i = 0; i < numOfGenes ; i++){
-			auto it = alevin2refMap.find(i) ;
-			if(it != alevin2refMap.end()){
-				auto originalGeneId = it->second ;
-				auto transcriptIds = refInfo.gene2transcriptMap[originalGeneId] ;
-
-				if(useClusters){
-
-					std::unordered_map<uint32_t, uint32_t> localExTxMap ;
-					std::unordered_map<uint32_t, std::unordered_map<uint32_t, double>> localExonLevelProb ;
-					std::unordered_map<uint32_t, std::vector<double>> localProbVec ;
-
-					for(uint32_t cluster_id = 0 ; cluster_id < max_cluster_size ; ++cluster_id){
-						
-						eqClassPtr->getTrLevelDistribution(
-							cluster_id,
-							originalGeneId,
-							transcriptIds,
-							localExTxMap,
-							localProbVec ,
-							localExonLevelProb
-						) ;
-
-						// fill up the info
-						preCalculatedTxpProbC[i] = localProbVec ;
-						preExpTxpMapVector[i] = localExTxMap ;
-						preCalculatedExProbC[i] = localExonLevelProb ;
-
-					}
-
-				}else{
-					std::unordered_map<uint32_t, uint32_t> localExTxMap ;
-					std::unordered_map<uint32_t, double> localExonLevelProb ;
-					std::vector<double> localProbVec ;
-
-					eqClassPtr->getTrLevelDistribution(
-						originalGeneId,
-						transcriptIds,
-						localExTxMap,
-						localProbVec ,
-						localExonLevelProb,
-						numCells
-					) ;
-
-					// fill up the info
-					preCalculatedTxpProb[i] = localProbVec ;
-					preExpTxpMapVector[i] = localExTxMap ;
-					preCalculatedExProb[i] = localExonLevelProb ;
-
-
-				}
-
-				if(generateNoisyCells){
-					std::unordered_map<uint32_t, uint32_t> localExTxMap ;
-					std::unordered_map<uint32_t, double> localExonLevelProb ;
-					std::vector<double> localProbVec ;
-
-					eqClassPtr->getNoisyTrLevelDistribution(
-						originalGeneId,
-						transcriptIds,
-						localExTxMap,
-						localProbVec ,
-						localExonLevelProb
-					) ;
-
-					// fill up the info
-					preCalculatedTxpProbN[i] = localProbVec ;
-					preExpTxpMapVector[i] = localExTxMap ;
-					preCalculatedExProbN[i] = localExonLevelProb ;
-
-				}
-
-
-			}else{
-				std::cerr << "ERROR::::: gene id not found \n" ; 
-			}
-			_verbose("\rNumber of processed genes : %lu", i);
-		}
-
-		if(useClusters){
-			std::string exon_level_prob_file(outDir + "/exon_level_prob.txt") ;
-			dumpClusterLevelProb(exon_level_prob_file) ;
-
-		}
-		if(generateNoisyCells){
-			std::string exon_level_prob_file(outDir + "/noisy_exon_level_prob.txt") ;
-			dumpNoisyExonLevelProb(exon_level_prob_file) ;
-
 		}
 
 	}
@@ -882,13 +734,6 @@ void DataMatrix<T>::loadAlevinData(
 						geneCountsGeneIdx++ ;
 					}
 				}
-				//// do a cell wide sum 
-				//auto cellSum = std::accumulate(
-				//	geneCounts[cell_id].begin(),
-				//	geneCounts[cell_id].end(),
-				//	0
-				//) ;
-				//std::cerr << "\nTotal expressesion of cell " << cellSum << "\n" ;
 			}	
 		}else{
 			geneCounts = originalGeneCountMatrix ;
@@ -1074,12 +919,8 @@ void DataMatrix<T>::loadAlevinData(
 								} 
 							}
 
-							//std::cerr << "\nDEBUG --> actual cell ID "<< actualCellId << " geneid " << i <<"\n" ;
-							
-							//geneCounts[actualCellId][i] = geneCount ;
-							
-							//std::cerr << "\nDEBUG --> Get transcript id\n" ;
 							auto transcriptIds = refInfo.gene2transcriptMap[originalGeneId] ;
+
 							// multinomial distribution with probabilities 
 							// from the weibull distribution above
 							std::vector<double> probVec(transcriptIds.size()) ;
@@ -1088,97 +929,13 @@ void DataMatrix<T>::loadAlevinData(
 							for(size_t ttid = 0 ; ttid < transcriptIds.size() ; ++ttid){
 								transcriptIdMap[transcriptIds[ttid]] = ttid ; 
 							}
-							uint32_t totExonCounts{0} ;
 
-							if(useExEqClass){
-								// Things should be cached here 
-								// eqClassPtr->loadDistributionVector(transcriptIdMap, probVec) ;
-								std::unordered_map<uint32_t, double> exonLevelProb ;
-
-								if(useClusters){
-									probVec = preCalculatedTxpProbC[i][cluster_id] ;
-									exonLevelProb = preCalculatedExProbC[i][cluster_id] ;
-								}else if(isNoisyCell){
-									probVec = preCalculatedTxpProbN[i] ;
-									exonLevelProb = preCalculatedExProbN[i] ;
-								}
-								else{
-									probVec = preCalculatedTxpProb[i] ;
-									exonLevelProb = preCalculatedExProb[i] ;
-								}
-
-								std::vector<uint32_t> exonIndVec(exonLevelProb.size()) ;
-								std::vector<double> exonProbVec(exonLevelProb.size()) ;
-
-								size_t eid{0} ;
-								for(auto eit: exonLevelProb){
-									exonIndVec[eid] = eit.first ;
-									exonProbVec[eid] = eit.second ;
-									eid++ ;
-								}
-
-								std::random_device rdt4;
-								std::mt19937 gent4(rdt4());
-								
-								std::discrete_distribution<> dmt(exonProbVec.begin(), exonProbVec.end()) ;
-								std::vector<int> exonCounts(exonProbVec.size()) ; 
-								
-								double probSum{0} ;
-								for(auto eeit : probVec){
-									probSum += eeit ;
-								}
-								auto exProbSum = std::accumulate(exonProbVec.begin(),
-																 exonProbVec.end(),
-																 0.0 
-																 ) ;
-								 
-								
-								if (probSum == 0 || exProbSum == 0){									
-									trueGeneCounts[cellId][i] = 0 ;
-									dropThisGene = true ;
-									geneCount = 0 ;
-								}
-
-
-								if(
-									(probSum == 0 && exProbSum != 0)
-								){
-									std::cerr << "exon level sum is not 0 txp level is\n" ;
-									std::cerr << "probSum " << probSum << " exProbSum " << exProbSum << "\n" ;
-									std::exit(1); 
-								}
-
-								if(!dropThisGene){
-									for(int j = 0 ; j < geneCount; ++j){
-										++exonCounts[dmt(gent4)] ;
-									}
-
-									std::unordered_map<uint32_t, int> exonCountMap ;
-									for(size_t j = 0 ; j < exonCounts.size() ; ++j){
-										exonCountMap[exonIndVec[j]] = exonCounts[j] ;
-										geneLevelExCount += exonCounts[j] ;
-										totExonCounts +=  exonCounts[j] ;
-										thisCellValidateExonCount +=  exonCounts[j] ;
-									}
-
-									cellExCount[actualCellId][i] = exonCountMap ;
-
-								}
-								
-
-							}else if(useDBG){
-								// FIXME: orientation 
-								//std::cerr << " In useDBG \n" ;
+							// DBG based allocation
+							if(useDBG){
 								dropThisGene = false ;
-
 								auto segCountHist = preCalculatedSegProb[i] ;
-
-								//if(i == 53593){
-								//	std::cerr << "segCountHist Size " << segCountHist.size() << "\n" ;
-								//}	
 								
 								if(segCountHist.size() == 0){
-									//std::cerr << "No seg hist for this gene " << i << "\n" ; 
 									droppedGeneExpression++ ;
 									dropThisGene = true ;
 									geneCount = 0 ;
@@ -1211,22 +968,19 @@ void DataMatrix<T>::loadAlevinData(
 									cellSegCount[actualCellId][i] = segCountMap ;
 
 								}
-
-								
 							}
 							else{
 
+								// These are the learned distribution weibull paeameters from the paper 
+								// https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005761
 								// Assign probability to individual transcripts
+								
 								// do it only if gene count is more than 0 		
-								//std::cerr << "\nDEBUG --> Number of transcripts "<< transcriptIds.size() << "\n" ;
 								if(trackTheCell) {std::cerr << "Number of transcripts " << transcriptIds.size() << "\n";}
-								//std::cerr << "Number of transcripts " << transcriptIds.size() << "\n";
-								//if (transcriptIds.size() != 1){ std::exit(1) ;}
+
 								std::random_device rdt;
 								std::mt19937 gent(rdt());
 
-								// this are the learned distribution paeameters in the paper 
-								// https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005761
 								std::weibull_distribution<> dwt(0.44,0.6);
 
 								std::random_device rd2;
@@ -1242,13 +996,6 @@ void DataMatrix<T>::loadAlevinData(
 
 							}
 
-
-							//if(exc != geneCount){
-							//	std::cout << "\tERROR "<< "\t"
-							//			<< cellExCount[actualCellId][i].size() << "\t"
-							//			<< preCalculatedExProb[i].size() << "\n" ;
-							//	std::exit(1) ;
-							//}
 
 							// If dbg is used we don't work with transcripts 
 							trueGeneCounts[cellId][i] = geneCount ;
@@ -1310,46 +1057,12 @@ void DataMatrix<T>::loadAlevinData(
 								}
 							}
 
-
-							//if (totCount < geneCount){
-							//	data[actualCellId][lastAlevinTid] += geneCount - totCount ;
-							//}
-
-							//validateTrCount +=data[actualCellId][lastAlevinTid] ; 
-							//int validateCount{0} ;
-							//for(auto& tid : transcriptIds){
-							//	auto alevinTid = alevinReverseMap[tid] ;
-							//	geneLevelTrCount += data[cellId][alevinTid] ; 
-							//	validateCount += data[cellId][alevinTid] ;
-							//}
-
-							//auto totTrCount = std::accumulate(data[actualCellId].begin(),
-							//	data[actualCellId].end(),
-							//	0 
-							//);
-							// if eqclass is used then total transcript count 
-							// should add up to total alloted transcript counts 
-							if(useExEqClass){
-								if(totCount != totExonCounts){
-									
-									std::cerr << "Total tx count before fuck up " << beforeFuckingUp << "\t"
-											  << "Total ex count " << totExonCounts << "\t" 
-											  << "geneCount " << geneCount << "\t" 
-											  << "totCount " << totCount << "\n" ;
-											  std::exit(1) ;
-								}
-							}
-
-
 						}else{
 							consoleLog->error("This gene id: {} not found\n", i) ;
 						}
 					}
 
 				}
-				//std::exit(1) ;
-				//std::cerr << "\n DEBUG == Gene count for this cell " << validateGeneCount << "\n" ;				
-				//std::cerr << "\n DEBUG ==== Number of droppped genes " << numOfDroppedGenes << "\n" ;				
 
 				auto iVec = intronCountMap[backupActualCellId] ;
 				int intronicSum = 0 ;
@@ -1363,14 +1076,6 @@ void DataMatrix<T>::loadAlevinData(
 				nonWhiteLisBarcodesSkipped++ ;
 			}
 
-			if(useExEqClass){
-				if(thisCellValidateExonCount != thisCellValidateTrCount){
-					std::cerr << "cell id " << cellId  << "\t" 
-							<< "tr count " << thisCellValidateTrCount << "\t" 
-							<< "gene count " << thisCellValidateGeneCount << "\t"
-							<< "exon count "  << thisCellValidateExonCount << "\n" ;
-				}
-			}
 			if(useDBG){
 				//consoleLog->info("DBG::: total Gene Expression skipped {}", droppedGeneExpression) ;
 			}
