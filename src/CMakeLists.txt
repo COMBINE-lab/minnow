@@ -24,7 +24,7 @@ set(minnow_lib_srcs
     FastxParser.cpp
     MinnowFS.cpp
     MinnowUtil.cpp
-    MetaExonParser.cpp
+    BFHClass.cpp
     PCR.cpp
 )
 

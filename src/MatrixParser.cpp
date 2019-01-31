@@ -8,7 +8,7 @@
 
 #include "MatrixParser.hpp"
 #include "MinnowFS.hpp"
-#include "MetaExonParser.hpp"
+#include "BFHClass.hpp"
 #include "GFAReader.hpp"
 
 #include <unordered_set>
@@ -593,7 +593,7 @@ void DataMatrix<T>::loadAlevinData(
 		// ignore other eqclass stuff 
 		std::string eqFileDir = "/mnt/scratch1/hirak/minnow/metadata/hg/" ;
 
-		eqClassPtr = new ExonEqClass(eqFileDir) ;
+		eqClassPtr = new BFHClass(eqFileDir) ;
 		eqClassPtr->loadBFH(
 			bfhFile, 
 			cellClusterFile, 
@@ -1573,7 +1573,7 @@ void DataMatrix<T>::loadSplatterData(
 		// ignore other eqclass stuff 
 		std::string eqFileDir = "/mnt/scratch1/hirak/minnow/metadata/hg/" ;
 
-		eqClassPtr = new ExonEqClass(eqFileDir) ;
+		eqClassPtr = new BFHClass(eqFileDir) ;
 		eqClassPtr->loadBFH(
 			bfhFile, 
 			simOpts.clusterFile, 

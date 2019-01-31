@@ -18,7 +18,7 @@
 #include "MinnowUtil.hpp"
 #include "ReferenceInfo.hpp"
 #include "ProgOpts.hpp"
-#include "MetaExonParser.hpp"
+#include "BFHClass.hpp"
 #include "GFAReader.hpp"
 #include "macros.hpp"
 
@@ -176,7 +176,7 @@ public :
 	// Cached stuff
 	// Vector of gene level probabiliies
 	
-	ExonEqClass* eqClassPtr{nullptr} ;
+	BFHClass* eqClassPtr{nullptr} ;
 	GFAReader* dbgPtr{nullptr} ;
 	// exon to transcript map
 	// same for all clusters

@@ -76,10 +76,9 @@ int main(int argc, char* argv[]) {
     value("number of Doublets", simulateOpt.numOfDoublets)) %
     "Number of doublets to be generated",
     
-    (required("-m", "--matfile") & 
+    (required("-m", "--matdir") & 
     value("mat_file", simulateOpt.matrixFile)) %
-    "matrix file is currently obtained from other program",
-    
+    "directory with matrix file/ if this is a file instead of a dir",
     
     (required("-o", "--outdir") & 
     value("mat_file", simulateOpt.outDir)) %
@@ -110,9 +109,6 @@ int main(int argc, char* argv[]) {
     (option("--binary").set(simulateOpt.binary, true)) %
     "If the matrix file is written in binary",
     
-    (option("--useEqClass").set(simulateOpt.useEqClass, true)) %
-    "will use the model file made",
-    
     (option("--dbg").set(simulateOpt.useDBG, true)) %
     "Use the provided GFA file and BFH",
     
@@ -123,10 +119,6 @@ int main(int argc, char* argv[]) {
     value("gfa_file", simulateOpt.gfaFile)) %
     "gfa file for contigs",
     
-    (option("--exonLengthFile") & 
-    value("exon_length", simulateOpt.exonLengthFile)) %
-    "TSV file for transcripts last exon length ",
-
     //read dedup counts 
     (option("--dupCounts").set(simulateOpt.dupCounts, true)) %
     "Flag for making minnow read the dup counts TSV filtered_cb_frequency.txt in the same folder",
@@ -175,7 +167,7 @@ int main(int argc, char* argv[]) {
     
     (option("--clusters") & 
     value("number of transcripts", simulateOpt.clusterFile))  % 
-    "Gene cluster file (should be ported with --useEqClass)",
+    "Gene cluster file (should be ported with --dbg)",
     
     (option("--PCR") & 
     value("number of PCR cycles", simulateOpt.numOfPCRCycles))  % 

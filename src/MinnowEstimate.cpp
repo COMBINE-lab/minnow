@@ -11,7 +11,7 @@
 #include <numeric>
 
 #include "MinnowUtil.hpp"
-#include "MetaExonParser.hpp"
+#include "BFHClass.hpp"
 #include "ProgOpts.hpp"
 
 int minnowEstimate(EstimateOptions& eopts){
