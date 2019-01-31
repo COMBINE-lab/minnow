@@ -1143,7 +1143,8 @@ void readUniqueness(
      bool useReverse
   
 ){
-	std::string uniquenessListFile{"/mnt/scratch6/avi/data/cgat/references/metadata/hg_stranded_gene_uniqueness.txt"} ;
+
+	std::string uniquenessListFile{"../data/hg_stranded_gene_uniqueness.txt"} ;
 	std::ifstream uniqueFileStream(uniquenessListFile) ;
 
 	std::string line ;
@@ -1186,7 +1187,7 @@ void makeUniquenessBins(
 ){
 
 
-	std::string uniquenessListFile{"/mnt/scratch6/avi/data/cgat/references/metadata/hg_stranded_gene_uniqueness.txt"} ;
+	std::string uniquenessListFile{"../data/hg_stranded_gene_uniqueness.txt"} ;
 	std::ifstream uniqueFileStream(uniquenessListFile) ;
 	std::vector<std::pair<std::string, double>> uniquenessInfo ;	
 	uniqBins.resize(10) ;

@@ -36,17 +36,6 @@ namespace util{
         uint32_t end ;
         uint32_t end2 ;
 
-        //TrRelPos(
-        //    uint32_t eqIdIn,
-        //    uint32_t startIn,
-        //    uint32_t endIn,
-        //    uint32_t end2In
-        //):
-        //    eqId(eqIdIn),
-        //    start(startIn),
-        //    end(endIn),
-        //    end2()
-        //{}
     };
 
   //Main structural blocks that
@@ -222,7 +211,7 @@ namespace util{
     std::vector<int> lines_to_select(indexArray.begin(), indexArray.begin() + numCells ) ;
     std::sort(lines_to_select.begin(), lines_to_select.end()) ;
 
-    std::string whitelist_filename("/mnt/scratch1/hirak/minnow_draft/cpp/data/737K-august-2016.txt") ;
+    std::string whitelist_filename("../data/737K-august-2016.txt") ;
 
     std::string line;
     if(! util::fs::FileExists(whitelist_filename.c_str())){
