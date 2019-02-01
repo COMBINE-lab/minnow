@@ -116,7 +116,9 @@ void populateGeneCountFromBinary(
 			in->read(reinterpret_cast<char*>(cell.data()), elSize * numOfGenes) ;
 			if (original2whitelistMap.find(cellId) != original2whitelistMap.end()){
 				uint32_t whitelistCellId = original2whitelistMap[cellId] ;
-				//std::cerr << "WhitelistCellId: " << whitelistCellId << std::endl ;
+				// std::cerr <<" cellid: " << cellId << "\tWhitelistCellId: " << whitelistCellId << std::endl ;
+				if(whitelistCellId >= numCells)
+					continue ;
 				geneCount[whitelistCellId] = cell ;
 				cellCount++ ;
 				_verbose("\rNumber of cells read  : %lu", cellCount);
@@ -385,8 +387,10 @@ void DataMatrix<T>::loadAlevinData(
 	// two groups and map original id of the cell list to 
 	// the whitelist and noisylist.
 
-	// FIXME: The white-list might not be contiguous, in case 
-	// it is not contiguous create a second order mapping.  
+	// FIXME: If we sample from white-list, it might not be contiguous, 
+	// it is not contiguous create a second order mapping. in that case
+	// we should first
+	  
 	 
 	std::unordered_map<uint32_t, uint32_t> original2whitelistMap ;  
 	std::unordered_map<uint32_t, uint32_t> original2NoisyMap ;
@@ -431,9 +435,15 @@ void DataMatrix<T>::loadAlevinData(
 				cellNames.push_back(line) ;
 				cellWhiteListMap[line] = cellNames.size() - 1 ;
 				// cellsToBeRead.insert(allCellListMap[line]) ;
-				original2whitelistMap[allCellListMap[line]] = cellWhiteListMap[line] ;
+				//original2whitelistMap[allCellListMap[line]] = cellWhiteListMap[line] ;
 			} 
 		}
+		// fill up the original2whitelistMap by going 
+		// over the cellWhiteListMap
+		for(size_t i = 0 ; i < cellNames.size(); ++i){
+			original2whitelistMap[allCellListMap[cellNames[i]]] = i ; 
+				
+		} 
 
 		
 
