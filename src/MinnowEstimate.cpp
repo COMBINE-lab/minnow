@@ -18,9 +18,11 @@ int minnowEstimate(EstimateOptions& eopts){
 
      // Set up the logger 
     auto consoleSink = std::make_shared<spdlog::sinks::ansicolor_stderr_sink_mt>() ;
-    auto consoleLog = spdlog::create("stderrLog", {consoleSink});
+    auto consoleLog = spdlog::create("minnow-Log", {consoleSink});
+
 
     consoleLog->info("Reading reference sequences ...") ;
+    consoleLog->info("Loaded estimated options with eq class folder: {}",eopts.eqClassFolder) ;
     
     consoleLog->info("Reference sequence is loaded ...") ;
 

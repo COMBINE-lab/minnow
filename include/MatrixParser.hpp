@@ -42,6 +42,9 @@ public :
 		uint32_t tid ;
 		uint32_t start ;
 		uint32_t end ; 
+
+		trInfo() {}
+
 		trInfo(
 			uint32_t tidIn,
 			uint32_t startIn,
@@ -103,11 +106,14 @@ public :
 		return trueGeneCounts[cellId] ;
 	}
 
-	inline bool getSegOreMapVectorInfo(const size_t gid, size_t sid) const{
+	inline bool getSegOreMapVectorInfo(const size_t gid, size_t sid, bool& ore) const{
 		auto it = preSegOreMapVector[gid].find(sid);
 		if(it != preSegOreMapVector[gid].end()){
-			return it->second ;
+			ore = it->second ;
+			return true ;
 		}
+		return false ; 
+
 	}
 
 	inline trInfo getRandomTrInfo(const size_t gid, size_t sid,  Reference& refInfo, bool& present) const{
@@ -132,6 +138,7 @@ public :
 		}else{
 			present = false ;
 			//std::cerr << "this pair does not exist in equivalence class !!!" ;
+			return trInfo() ;
 		}
 	}
 
@@ -140,6 +147,8 @@ public :
 		auto it = alevin2refTranscriptMap.find(tid) ;
 		if (it != alevin2refTranscriptMap.end())
 			return it->second ;
+		
+		return  std::numeric_limits<uint32_t>::max() ;
 	}
 
 

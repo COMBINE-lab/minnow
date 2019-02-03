@@ -229,7 +229,7 @@ bool PCRClass::constructOrCacheSequence(
     }
 
     size_t blockSize{numOfUniqueMolecules} ;
-    auto grandParentId = ind % blockSize ;
+    //auto grandParentId = ind % blockSize ;
 
     uint32_t immediateParentId = util::calculateParent(ind, blockSize) ;
     auto it = sequenceMap.find(immediateParentId) ;
@@ -250,7 +250,7 @@ bool PCRClass::constructOrCacheSequence(
         while(true){
             immediateParentId = util::calculateParent(immediateParentId, blockSize) ;
             if(immediateParentId > ind){
-                std::cerr  << "Should not happen !!!\n" ;
+                std::cerr  << "parent id should always be less than id line: 253 !!!\n" ;
                 std::exit(1) ;
             }
 

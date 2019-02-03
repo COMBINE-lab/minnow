@@ -44,14 +44,16 @@ class Transcript{
         }
 
         // load a random Intron sequence back 
-        std::string loadUnplicedIntronSeq(){
+        bool loadUnplicedIntronSeq(){
             if(lastExonLength > 404){
-                return "";
+                return false;
             }else{
                 if(intronSeq.size() > 0){
                     intronSeq.back().second ;
                 }
+                return true  ;
             }
+
         }
 
 

@@ -349,7 +349,7 @@ void DataMatrix<T>::loadAlevinData(
 	
 	// track a cell by barcode
 	std::string cellToTrack  = ""; //"GTATTCTGTAGTGAAT"; // "TGCGGGTCAGACGCAA" ;
-	uint32_t cellIdToTrack{0} ;
+	//uint32_t cellIdToTrack{0} ;
 
 
 	// read cell names/barcodes that alevin produce
@@ -463,7 +463,7 @@ void DataMatrix<T>::loadAlevinData(
 			if(numOfNoisyCells == 0){
 				numOfNoisyCells = allCellNames.size() - cellNames.size() ;
 			}
-			uint32_t noisyCellId{cellNames.size()} ;
+			uint32_t noisyCellId = cellNames.size() ;
 			for(auto it : allCellListMap){
 				if(cellWhiteListMap.find(it.first) == cellWhiteListMap.end()){
 					cellNames.push_back(it.first) ;
@@ -561,7 +561,6 @@ void DataMatrix<T>::loadAlevinData(
 		) ;
 	} 
 
-	bool useExEqClass = simOpts.useEqClass ; 
 	bool useClusters{false} ;
 
 
@@ -620,7 +619,7 @@ void DataMatrix<T>::loadAlevinData(
 		// fill segment based probability
 		// gene to tr to prob mapping 
 
-		uint32_t trackGid{53593} ;
+		//uint32_t trackGid{54819} ;
 		for(uint32_t i = 0; i < numOfGenes; ++i){
 			auto it = alevin2refMap.find(i) ;
 			if(it != alevin2refMap.end()){
@@ -734,7 +733,7 @@ void DataMatrix<T>::loadAlevinData(
 		consoleLog->info("Loaded the Matrix") ;
 
 		// Make a truncated geneCounts file
-		T skippedCount{0} ;
+		//T skippedCount{0} ;
 		if(numOfSkippedGenes > 0){
 			for(size_t cell_id = 0 ; cell_id < originalGeneCountMatrix.size(); ++cell_id){
 				size_t geneCountsGeneIdx{0} ;
@@ -788,7 +787,7 @@ void DataMatrix<T>::loadAlevinData(
 
 		size_t cellId{0} ;
 		size_t numOfExpressedGenesInput{0}; 
-		size_t numOfExpressedGenesOutput{0} ;
+		//size_t numOfExpressedGenesOutput{0} ;
 			
 
 		for(auto& cellGeneCounts : geneCounts){
@@ -796,7 +795,7 @@ void DataMatrix<T>::loadAlevinData(
 			// std::cerr << "\nreading cell line\n" ;
 			int droppedGeneExpression{0} ;
 			uint32_t thisCellValidateGeneCount{0} ;
-			uint32_t thisCellValidateExonCount{0} ;
+			//uint32_t thisCellValidateExonCount{0} ;
 			uint32_t thisCellValidateTrCount{0} ;
 
 			auto barcode = cellNames[cellId] ;
@@ -850,14 +849,14 @@ void DataMatrix<T>::loadAlevinData(
 				}
 				
 				int validateGeneCount{0} ;
-				int validateExonCount{0} ;
-				int validateTrCount{0} ;
+				//int validateExonCount{0} ;
+				//int validateTrCount{0} ;
 
 
 				// treat the vector as a distribution
 				std::vector<int> cellGeneCountSampled(numOfGenes,0) ;
 
-				double totGeneCountDouble = std::accumulate(cellGeneCounts.begin(), cellGeneCounts.end(), 0.0) ;
+				//double totGeneCountDouble = std::accumulate(cellGeneCounts.begin(), cellGeneCounts.end(), 0.0) ;
 
 				int totGeneCount = static_cast<int>(std::accumulate(cellGeneCounts.begin(), cellGeneCounts.end(), 0.0)) ;
 
@@ -892,7 +891,7 @@ void DataMatrix<T>::loadAlevinData(
 					}
 				}
 				int numOfDroppedGenes{0} ;
-				totGeneCountDouble = std::accumulate(cellGeneCounts.begin(), cellGeneCounts.end(), 0.0) ;
+				//totGeneCountDouble = std::accumulate(cellGeneCounts.begin(), cellGeneCounts.end(), 0.0) ;
 				//std::cerr << "DEBUG: After multinomial sampling number of expressed genes " << numOfExpressedGenes2 
 				//          << "  Before number of expressed genes " << toSubTract <<  "\n" ;
 				for(size_t i = 0 ; i < cellGeneCountSampled.size(); ++i){
@@ -900,8 +899,8 @@ void DataMatrix<T>::loadAlevinData(
 					std::string geneName = alevinGeneIndex2NameMap[i] ;	
 
 					int geneCount =  cellGeneCountSampled[i] ;
-					int geneLevelTrCount{0} ;
-					int geneLevelExCount{0} ;
+					//int geneLevelTrCount{0} ;
+					//int geneLevelExCount{0} ;
 
 					validateGeneCount += geneCount ;
 					if (geneCount > 0){
@@ -960,6 +959,7 @@ void DataMatrix<T>::loadAlevinData(
 									for(auto it : segCountHist){
 										segIndex[ind] = it.first ;
 										segProbVec[ind] = it.second ;
+										ind++ ;
 									}
 
 									std::random_device rdt4;
@@ -973,6 +973,7 @@ void DataMatrix<T>::loadAlevinData(
 									}
 									for(size_t j = 0 ; j < segCounts.size() ; ++j){
 										segCountMap[segIndex[j]] = segCounts[j] ;
+
 									}
 
 									cellSegCount[actualCellId][i] = segCountMap ;
@@ -1037,11 +1038,11 @@ void DataMatrix<T>::loadAlevinData(
 								++transcriptCounts[dmt(gent3)] ;
 							}
 
-							auto beforeFuckingUp = std::accumulate(
-								transcriptCounts.begin(),
-								transcriptCounts.end(),
-								0
-							);
+							//auto beforeFuckingUp = std::accumulate(
+							//	transcriptCounts.begin(),
+							//	transcriptCounts.end(),
+							//	0
+							//);
 							// total gene count 
 							T totCount{0} ;
 							uint32_t lastAlevinTid{0} ;
@@ -1269,7 +1270,7 @@ void DataMatrix<T>::loadSplatterData(
 	std::string outDir = simOpts.outDir ;
 	std::string bfhFile = simOpts.bfhFile ;
 	std::string gfaFile = simOpts.gfaFile ;
-	bool useEqClass = simOpts.useEqClass ;
+	//bool useEqClass = simOpts.useEqClass ;
 	bool useWeibull = simOpts.useWeibull ;
 	bool useDBG = simOpts.useDBG ;
 
@@ -1315,7 +1316,7 @@ void DataMatrix<T>::loadSplatterData(
 	std::map<std::string, uint32_t> allCellListMap ;
 	std::vector<std::string> allCellNames ;
 	std::string cellToTrack  = ""; 
-	uint32_t cellIdToTrack{0} ;
+	//uint32_t cellIdToTrack{0} ;
 	{
 		std::ifstream cellNameStream(cellListFile) ;
 		std::string line ;
@@ -1679,6 +1680,7 @@ void DataMatrix<T>::loadSplatterData(
 	}	
 
 
+
 	size_t numOfDroppedGenes{0} ;
 	size_t numOfBadCells{0} ;
 	// create transcript level matrix 
@@ -1693,8 +1695,8 @@ void DataMatrix<T>::loadSplatterData(
 				std::string geneName = aleviGeneIndex2NameMap[i] ;
 
 				int geneCount = cellGeneCounts[i] ;
-				int geneLevelTrCount{0} ;
-				int geneLevelExCount{0} ;
+				//int geneLevelTrCount{0} ;
+				//int geneLevelExCount{0} ;
 
 				if(geneCount > 0){
 
@@ -1757,6 +1759,7 @@ void DataMatrix<T>::loadSplatterData(
 							for(auto it : segCountHist){
 								segIndex[ind] = it.first ;
 								segProbVec[ind] = it.second ;
+								ind++ ;
 							}
 
 							std::random_device rdt4;
@@ -1809,14 +1812,15 @@ void DataMatrix<T>::loadSplatterData(
 						++transcriptCounts[dmt(gent3)] ;
 					}
 					// total gene count 
+					// This should not be needed
 					T totCount{0} ;
-					uint32_t lastAlevinTid{0} ;
+					//uint32_t lastAlevinTid{0} ;
 					for(size_t j = 0; j < transcriptIds.size(); ++j){
 						auto tid = transcriptIds[j] ;
 						auto alevinTid = alevinReverseMap[tid] ;
 						data[cellId][alevinTid] = transcriptCounts[j] ;
 						totCount += data[cellId][alevinTid] ;
-						lastAlevinTid = alevinTid ;
+						//lastAlevinTid = alevinTid ;
 					}
 				}
 			}

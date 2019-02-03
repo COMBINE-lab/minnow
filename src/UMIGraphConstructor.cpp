@@ -45,6 +45,7 @@ void parseBFH(
     std::string& t2g_file,
     BFSType& bfh 
 ){
+    std::cerr << "transcript to gene mapping can be found here " << t2g_file << "\n" ;
     std::cerr << "Start reading the BFH file\n" ; 
     // location to the bfh file
     if(! util::fs::DirExists(alevinDir.c_str())){

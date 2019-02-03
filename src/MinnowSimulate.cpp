@@ -141,7 +141,7 @@ std::string imputeErrorInString(
     //auto generator = std::bind(distribution, engine) ;
     //std::generate_n(prob.begin(), seq.size(), generator) ;
 
-    bool isChanged{false} ;
+    //bool isChanged{false} ;
 
     for(size_t i = 0; i < seq.size() ; ++i ){
         if(distribution(generator) < errorProbability){
@@ -163,7 +163,7 @@ std::string imputeErrorInStringUMI(
     //auto generator = std::bind(distribution, engine) ;
     //std::generate_n(prob.begin(), seq.size(), generator) ;
 
-    bool isChanged{false} ;
+    //bool isChanged{false} ;
 
     for(size_t i = 0; i < seq.size() ; ++i ){
         if(distribution(generator) < errorProbability){
@@ -181,17 +181,17 @@ uint32_t generateFragmentSegment(
 ){
     auto refLen = fragSeq.size() ;
     uint32_t startPos{0} ;
-    uint32_t endPos{0} ;
+    //uint32_t endPos{0} ;
     if(refLen >= FRAGMENT_END_DIST){
         auto distanceFromEnd = util::generateStartPosition() ;
         if(distanceFromEnd < READ_LEN){
             distanceFromEnd += READ_LEN ;
             startPos = refLen - distanceFromEnd ;
         }
-        endPos = startPos + READ_LEN ;        
+        //endPos = startPos + READ_LEN ;        
     }else{
         startPos = 0 ;
-        endPos = READ_LEN ;
+        //endPos = READ_LEN ;
     }
 
     if(startPos > refLen - READ_LEN){
@@ -237,7 +237,7 @@ uint32_t generateFragmentSeq(
     uint32_t fragmentEndPos = refLen - READ_LEN - 1 ;
     // Generate a random number from interval (4,6)
     auto distanceFromEnd = util::generateStartPosition() + READ_LEN;
-    auto fragmentRange = fragmentEndPos - fragmentStartPos ;
+    //auto fragmentRange = fragmentEndPos - fragmentStartPos ;
     int numPads{0} ;
     uint32_t startPos{0} ;
     uint32_t toSample{READ_LEN} ;
@@ -279,13 +279,20 @@ uint32_t truncatedNormalSampling(
 ){
     std::random_device rd{};
     std::mt19937 gen{rd()};
-    uint32_t fragLen{0} ;
+    //uint32_t fragLen{0} ;
 
+    size_t iterations{0} ;
     std::normal_distribution<> d{ static_cast<double>(mu), static_cast<double>(sigma)} ;
     while(true){
         auto fragLen = static_cast<uint32_t>(std::round(d(gen))); 
         if(fragLen >= READ_LEN && fragLen <= max_length){
             return fragLen ;
+        }
+        iterations++ ;
+        if(iterations > 10000){
+            std::cerr << "Try to set a smaller \\sigma, this random generation crosses "<< iterations 
+            << " returning READ_LEN  \n"  ;
+            return READ_LEN ;
         }
     }
 }
@@ -327,6 +334,7 @@ uint32_t generateSegmentRSPD(
     }
     readSeq = trSeq.substr(startPos, READ_LEN) ;
 
+    return startPos ;
 }
 
 uint32_t generateFragmentSeqFromSegment(
@@ -398,7 +406,7 @@ uint32_t generateFragmentSeq(
     uint32_t fragmentEndPos = refLen - READ_LEN - 1 ;
     // Generate a random number from interval (4,6)
     auto distanceFromEnd = util::generateStartPosition() + READ_LEN;
-    auto fragmentRange = fragmentEndPos - fragmentStartPos ;
+    //auto fragmentRange = fragmentEndPos - fragmentStartPos ;
     int numPads{0} ;
     uint32_t startPos{0} ;
     uint32_t toSample{READ_LEN} ;
@@ -436,8 +444,7 @@ uint32_t generateFragmentSeq(
     Transcript& tr,
     std::string& fragSeq,
     uint32_t& fragmentStart,
-    uint32_t& fragmentEnd,
-    bool junction = true
+    uint32_t& fragmentEnd
 ){
     uint32_t toSample{READ_LEN} ;
     auto& refLen = tr.RefLength ;
@@ -510,7 +517,7 @@ void doPCRBulkDBG(
     }
 
     //fragmentLength
-    size_t fragmentLength{MAX_FRAGLENGTH} ;
+    //size_t fragmentLength{MAX_FRAGLENGTH} ;
     double efficiencyProb{0.98} ;
     double mutationProb{0.001} ;
     double seqeneceErrorProb{0.005} ;
@@ -536,13 +543,14 @@ void doPCRBulkDBG(
     for(uint32_t i = 0 ; i < uniqueMolecules.size() ; ++i){
         
         auto& tid = uniqueMolecules[i].transcriptId ;
-        auto& sid = uniqueMolecules[i].segmentId ;
+        //auto& sid = uniqueMolecules[i].segmentId ;
 
         auto& tr = transcripts[tid] ;
 
         auto segStartPos = uniqueMolecules[i].segmentStart ;
         auto segEndPos = uniqueMolecules[i].segmentEnd ;
-        auto oldSeLen = segEndPos - segStartPos + 1 ;
+        
+        //auto oldSeLen = segEndPos - segStartPos + 1 ;
 
         // Sampling strategy 
         // Take a 0 truncated normal distribution where
@@ -554,7 +562,7 @@ void doPCRBulkDBG(
         uint32_t startPos{0} ;
         std::string fragmentSeq{""} ;
         uint32_t fragmentStartPos{0} ;
-        uint32_t fragmentEnd{0} ;
+        //uint32_t fragmentEnd{0} ;
         uint32_t fragLen = 0;
         
         if(tr.RefLength < MAX_FRAGLENGTH) {
@@ -574,7 +582,7 @@ void doPCRBulkDBG(
             //fragmentStartPos = std::min(segStartPos, static_cast<uint32_t>(MAX_FRAGLENGTH)) ;
             fragLen = tr.RefLength - segStartPos ;
 
-            fragmentEnd = segStartPos + fragLen - 1 ;
+            //fragmentEnd = segStartPos + fragLen - 1 ;
             fragmentSeq = std::string{tr.Sequence() + segStartPos, fragLen} ;
 
             startPos = generateSegmentRSPD(fragmentSeq, readSeq, rspdVec) ;
@@ -590,7 +598,7 @@ void doPCRBulkDBG(
             }else{
                 biggerMu++ ;
             }
-            fragmentEnd = fragmentStartPos + fragLen - 1 ;
+            //fragmentEnd = fragmentStartPos + fragLen - 1 ;
             // goes through PCR
             fragmentSeq = std::string{tr.Sequence() + fragmentStartPos, fragLen} ;
             startPos = generateFragmentSeqFromSegment(fragmentSeq, mu, readSeq) ;
@@ -618,8 +626,8 @@ void doPCRBulkDBG(
         pcrClassPtr = new PCRClass(
             uniqueMolecules.size(),
             numOfPCRCycles,
-            0.01,
-            0.99,
+            mutationProb,
+            efficiencyProb,
             errorRate,
             switchOnEffModel
         ) ;
@@ -795,7 +803,7 @@ void doPCRBulk(
     bool debug = false 
 ){
 
-    size_t totalMismatches{0} ;
+    //size_t totalMismatches{0} ;
     std::string addedString = isNoisyCell ? ":Noise" : "" ;
     addedString += (isDoublet) ? ":Doublet" : "" ;
 
@@ -804,7 +812,7 @@ void doPCRBulk(
 
     // NOTE add a global debug flag 
     bool debug2 = false ;// (cellName == "AGCGCCTTCCCCTGAT") ;
-    bool debug3 = (cellName == "GTATTCTGTAGTGAAT") ;
+    //bool debug3 = (cellName == "GTATTCTGTAGTGAAT") ;
 
     std::default_random_engine generator;
     std::uniform_real_distribution<double> distribution(0.0,1.0);
@@ -816,12 +824,12 @@ void doPCRBulk(
     size_t fragmentLength{MAX_FRAGLENGTH} ;
 
     //size_t MAXNUM = 100000 ;
-    double intronSimulationRate{0.02} ;
+    //double intronSimulationRate{0.02} ;
 
     auto totNum = std::pow(2, numOfPCRCycles) * uniqueMolecules.size() ;
 
 
-    if(debug2){
+    if(debug && debug2){
         std::cerr << cellName << "\n" ;
         std::cerr << "=======================================\n" ;
         std::cerr << "cell expression: " << uniqueMolecules.size() << "\n" ;
@@ -903,10 +911,7 @@ void doPCRBulk(
             toss = distribution(generator) ;
             std::string intronSeq{""} ;
             if (simulateFromIntrons and (toss < 0.02)){
-                auto intronSeq = tr.loadUnplicedIntronSeq() ;
-                if(intronSeq != ""){
-                    intronInclusion = true ;
-                }
+                intronInclusion = tr.loadUnplicedIntronSeq() ;
                     
             }
             if(tr.RefLength < MAX_FRAGLENGTH) {
@@ -918,7 +923,8 @@ void doPCRBulk(
             }
             fragmentEnd = fragmentStartPos + fragLen - 1 ;
             fragmentSeq = std::string{tr.Sequence() + fragmentStartPos, fragLen} ;
-            uint32_t intronFragmentLen = 0 ;
+            //uint32_t intronFragmentLen = 0 ;
+
             //Intron 
             if (intronInclusion) {
                 uint32_t lastExonLength{tr.getLastExonLength()} ;
@@ -971,8 +977,8 @@ void doPCRBulk(
             pcrClassPtr = new PCRClass(
                 uniqueMolecules.size(),
                 numOfPCRCycles,
-                0.01,
-                0.99,
+                mutationProb,
+                efficiencyProb,
                 errorRate,
                 switchOnEffModel
             ) ;
@@ -1121,7 +1127,6 @@ template <typename MutexT, typename T>
 void generateSequencesForCellDBG(
     std::atomic<uint32_t>& threadsDone,
     std::atomic<uint32_t>& ccount,
-    size_t token,
     uint32_t& numCells,
     const DataMatrix<T>& dataMatrixObj,
     uint32_t& numOfPCRCycles,
@@ -1131,7 +1136,6 @@ void generateSequencesForCellDBG(
     std::vector<std::string>& UMIList,
     Reference& refInfo,
     std::vector<Transcript>& transcripts,
-    std::vector<std::pair<std::stringstream*, std::stringstream*>>& streamVector,
     moodycamel::ConcurrentQueue<stream_pair_ptr, MyTraits>& conQueue,
     MutexT* iomutex
 ){
@@ -1162,20 +1166,26 @@ void generateSequencesForCellDBG(
         ) ;
 
         int cumId{0} ;
-        int cumExpressionCount{0} ;
-        uint32_t skippedExpCounts{0} ;
+        //int cumExpressionCount{0} ;
+        //uint32_t skippedExpCounts{0} ;
 
         auto dbgPtr = dataMatrixObj.dbgPtr ;
         auto& segMap = 
             dataMatrixObj.cellSegCount[cellId] ;
 
 
-        size_t missedSegments{0} ;
+        //size_t missedSegments{0} ;
         for(auto git : segMap){
             auto segIdMap = git.second ;
             for(auto sit: segIdMap){
-                auto oreIn = dataMatrixObj.getSegOreMapVectorInfo(git.first, sit.first) ;
-                bool ore = oreIn ;
+                bool ore{false} ;
+                auto success = dataMatrixObj.getSegOreMapVectorInfo(git.first, sit.first, ore) ;
+                if(!success){
+                    std::cerr << "The key for gene id and unitig id not found "
+                              << "gene id " << git.first << " unitig id " << sit.first << "\n"
+                              << " post an issue with the gfa file in https://github.com/COMBINE-lab/minnow/issues \n" ;
+                              std::exit(1) ; 
+                }
                 for(int j = 0 ; j < sit.second ; ++j){
                     // choose a random transcript 
                     // that contains this segment
@@ -1267,7 +1277,6 @@ template <typename MutexT, typename T>
 void generateSequencesForCell(
     std::atomic<uint32_t>& threadsDone,
     std::atomic<uint32_t>& ccount,
-    size_t token,
     uint32_t& numCells,
     const DataMatrix<T>& dataMatrixObj,
     uint32_t& numOfPCRCycles,
@@ -1278,7 +1287,6 @@ void generateSequencesForCell(
     std::vector<std::string>& UMIList,
     std::unordered_set<uint32_t>& emptyCellVector,
     std::vector<Transcript>& transcripts,
-    std::vector<std::pair<std::stringstream*, std::stringstream*>>& streamVector,
     moodycamel::ConcurrentQueue<stream_pair_ptr, MyTraits>& conQueue,
     MutexT* iomutex
 )
@@ -1315,7 +1323,7 @@ void generateSequencesForCell(
         }
     
 
-        bool debug ; // = (cellName == "GTATTCTGTAGTGAAT") ;
+        bool debug{false} ; // = (cellName == "GTATTCTGTAGTGAAT") ;
 
         //std::cerr << "Cell barcode for this cell " << cellBarCode << "\n" ;
 
@@ -1356,6 +1364,10 @@ void generateSequencesForCell(
 
         for(size_t transcriptId = 0; transcriptId < cellExpressionVector.size(); ++transcriptId){
             const auto refTid = dataMatrixObj.getrefId(transcriptId) ;
+            if(refTid ==  std::numeric_limits<double>::max()){
+                std::cerr<<"FATAL ERROR: transcript id "<< transcriptId <<" is not present in reference exiting !! "<<
+                                  "\nput an issue in https://github.com/COMBINE-lab/minnow/issues\n" ;
+            }
             //std::cerr << "remapped transcript id: " << refTid << "\t" << transcripts[refTid].RefLength << "\n" ;
             if((cellExpressionVector[transcriptId] == 0) || (transcripts[refTid].RefLength < READ_LEN)){
                 //if  (transcripts[refTid].RefLength < 50){
@@ -1509,7 +1521,6 @@ void writeSequences(
     std::ofstream& outLeft,
     std::ofstream& outRight,
     moodycamel::ConcurrentQueue<stream_pair_ptr, MyTraits>& conQueue,
-    std::vector<std::pair<std::stringstream*, std::stringstream*>>& streamVector,
     uint32_t& nthread 
 ){
         
@@ -1572,8 +1583,6 @@ bool spawnCellThreads(
 
     std::atomic<uint32_t> ccount{0} ;
     std::vector<std::thread> workerThreads ;
-    std::vector<std::pair<std::stringstream*,std::stringstream*>> streamVector ;
-    streamVector.resize(nthread-1, {new std::stringstream, new std::stringstream}) ;
 
     std::atomic<uint32_t> threadsDone{0};
     for(size_t tn = 0; tn < nthread -1 ; ++tn){
@@ -1583,7 +1592,6 @@ bool spawnCellThreads(
                 generateSequencesForCell<SpinLockT,T>,
                 std::ref(threadsDone),
                 std::ref(ccount),
-                tn,
                 std::ref(numOfCells),
                 std::ref(dataMatrixObj),
                 std::ref(numOfPCRCycles),
@@ -1594,7 +1602,6 @@ bool spawnCellThreads(
                 std::ref(UMIList),
                 std::ref(emptyCellVector),
                 std::ref(transcripts),
-                std::ref(streamVector),
                 std::ref(conQueue),
                 &iomutex
             );
@@ -1604,7 +1611,6 @@ bool spawnCellThreads(
                 generateSequencesForCellDBG<SpinLockT,T>,
                 std::ref(threadsDone),
                 std::ref(ccount),
-                tn,
                 std::ref(numOfCells),
                 std::ref(dataMatrixObj),
                 std::ref(numOfPCRCycles),
@@ -1614,7 +1620,6 @@ bool spawnCellThreads(
                 std::ref(UMIList),
                 std::ref(refInfo),
                 std::ref(transcripts),
-                std::ref(streamVector),
                 std::ref(conQueue),
                 &iomutex
             );
@@ -1628,7 +1633,6 @@ bool spawnCellThreads(
         std::ref(outLeft),
         std::ref(outRight),
         std::ref(conQueue),
-        std::ref(streamVector),
         std::ref(nthread)
     );
 
@@ -1677,14 +1681,14 @@ void minnowSimulate(SimulateOptions& simOpts){
 
     bool alevinMode = simOpts.alevinMode ;
     bool splatterMode = simOpts.splatterMode ;
-    auto& matrixFileName = simOpts.matrixFile ;
+    //auto& matrixFileName = simOpts.matrixFile ;
     auto& refFileName = simOpts.refFile ;
     auto& gene2txpFile = simOpts.gene2txpFile ; 
 
     auto& numOfCells = simOpts.numOfCells ;
     auto& numOfGenes = simOpts.numOfTranscripts ;
 
-    auto& numOfSampleCells = simOpts.sampleCells ;
+    //auto& numOfSampleCells = simOpts.sampleCells ;
     //auto& numOfPCRCycles = simOpts.numOfPCRCycles ;
     //auto& errorRate = simOpts.errorRate ;
     auto& numThreads = simOpts.numThreads ;
@@ -1701,7 +1705,7 @@ void minnowSimulate(SimulateOptions& simOpts){
 
     // Set up the logger 
     auto consoleSink = std::make_shared<spdlog::sinks::ansicolor_stderr_sink_mt>() ;
-    auto consoleLog = spdlog::create("stderrLog", {consoleSink});
+    auto consoleLog = spdlog::create("minnow-Log", {consoleSink});
 
 
     // Collect reference information
@@ -1924,6 +1928,6 @@ void minnowSimulate(SimulateOptions& simOpts){
     ) ;
 
     dataMatrixObj.stop() ;
-
+    if(success) {consoleLog->info("Successfully written simulated reads");} 
 
 } 

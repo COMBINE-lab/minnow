@@ -64,7 +64,6 @@ void refValidate(
 	std::string& fastqFile,
 	std::string& referenceFile,
   int& edit_max_lim,
-	int& numThreads,
 	std::string& outFile
 ){
 	std::vector<Transcript> transcripts; 
@@ -153,7 +152,6 @@ void gfaValidate(
   std::string& gfaFile, 
   std::string& fastqFile,
   int& edit_max_lim,
-	int& numThreads,
 	std::string& outFile
 
 ){
@@ -248,7 +246,6 @@ void validate(ValidateOpt& valOpts){
       valOpts.fastqFile,
       valOpts.referenceFile,
       valOpts.edit_max_lim,
-      valOpts.numThreads,
       valOpts.outFile
     ) ;
   }else{
@@ -256,7 +253,6 @@ void validate(ValidateOpt& valOpts){
       valOpts.gfaFile,
       valOpts.fastqFile,
       valOpts.edit_max_lim,
-      valOpts.numThreads,
       valOpts.outFile
     ) ;
   }

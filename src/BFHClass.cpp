@@ -84,6 +84,8 @@ void BFHClass::loadBFH(
     std::getline(dataStream, line) ;
     uint32_t numEqClasses = std::stoul(line) ;
 
+    std::cerr << "DEBUG: numEqClasses: " << numEqClasses << "\n" ;
+
     std::vector<std::string> trNames(numTranscripts) ;
     std::vector<std::string> CBNames(numCells) ;
     for(size_t i  = 0; i < numTranscripts; ++i){
@@ -153,7 +155,7 @@ void BFHClass::loadBFH(
                         clusterCountHistogram[cluster_id][gid][num_labels] += umiCountSum ;
                     }
 
-                }else{
+                }else if(generateNoiseProfile){
                     auto it2 = cellNoisyMap.find(cell_name) ;
                     if(it2 != cellNoisyMap.end()){
                         for(auto gid : geneIds){

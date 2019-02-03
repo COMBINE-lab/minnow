@@ -147,9 +147,9 @@ public:
     double mutationProbability ;
     double captureProbability ;
     double errorProbability ;
+    bool switchOnEffModel ;
     double mu;
     double sigma ;
-    bool switchOnEffModel ;
     std::vector<changeBlock> changeBlockVector ;
 
 };

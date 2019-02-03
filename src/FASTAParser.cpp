@@ -32,7 +32,7 @@ void FASTAParser::updateGeneLevelIntron(
 
   std::vector<std::string> readFiles{fname_};
   size_t maxReadGroup{1000}; // Number of files to read simultaneously
-  size_t concurrentFile{1};  // Number of reads in each "job"
+  // size_t concurrentFile{1};  // Number of reads in each "job"
 
   single_parser parser(readFiles, 1, 1, maxReadGroup);
   parser.start();
@@ -84,21 +84,21 @@ void FASTAParser::updateTranscriptLevelIntron(
 
   std::vector<std::string> readFiles{fname_};
   size_t maxReadGroup{1000}; // Number of files to read simultaneously
-  size_t concurrentFile{1};  // Number of reads in each "job"
+  // size_t concurrentFile{1};  // Number of reads in each "job"
 
   single_parser parser(readFiles, 1, 1, maxReadGroup);
   parser.start();
 
-  constexpr char bases[] = {'A', 'C', 'G', 'T'};
+  // constexpr char bases[] = {'A', 'C', 'G', 'T'};
   // Create a random uniform distribution
   std::random_device rd;
   std::default_random_engine eng(rd());
   std::uniform_int_distribution<> dis(0, 3);
-  uint64_t numNucleotidesReplaced{0};
+  // uint64_t numNucleotidesReplaced{0};
 
   // All header names we encounter in the fasta file
   std::unordered_set<std::string> fastaNames;
-  size_t id{0} ;
+  // size_t id{0} ;
 
   auto rg = parser.getReadGroup();
   while (parser.refill(rg)){
@@ -117,7 +117,7 @@ void FASTAParser::updateTranscriptLevelIntron(
 
         auto& tr = transcripts[transcriptNameMap[name]] ;
         std::string& seq = read.seq;
-        size_t readLen = seq.length();
+        //size_t readLen = seq.length();
 
         //Replace non-ACGT bases
         //for (size_t b = 0; b < readLen; ++b) {
@@ -165,7 +165,7 @@ void FASTAParser::populateTargets(
 
   std::vector<std::string> readFiles{fname_};
   size_t maxReadGroup{1000}; // Number of files to read simultaneously
-  size_t concurrentFile{1};  // Number of reads in each "job"
+  //size_t concurrentFile{1};  // Number of reads in each "job"
 
   single_parser parser(readFiles, 1, 1, maxReadGroup);
   parser.start();
