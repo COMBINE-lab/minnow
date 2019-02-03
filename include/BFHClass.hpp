@@ -32,8 +32,11 @@ class BFHClass{
         Reference& refInfo,
         std::map<std::string, uint32_t>& cellWhiteListMap,
         bool generateNoiseProfile,
-        std::unordered_map<std::string, uint32_t>& cellNoisyMap
+        std::unordered_map<std::string, uint32_t>& cellNoisyMap,
+        std::string& outDir
     ) ;
+
+    void loadProbability(std::string& file, Reference& refInfo, bool geneLevel) ;
     void dumpClusterHistoGram(std::string& file_name) ;
     
     inline uint32_t getGeneLevelProbCount(uint32_t geneId, uint32_t count){

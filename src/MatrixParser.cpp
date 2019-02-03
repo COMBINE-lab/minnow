@@ -609,7 +609,8 @@ void DataMatrix<T>::loadAlevinData(
 			refInfo, 
 			cellWhiteListMap, 
 			false, 
-			cellNoisyMap
+			cellNoisyMap,
+			simOpts.outDir
 		) ;
 
 		preCalculatedSegProb.resize(numOfGenes) ; // per gene
@@ -680,14 +681,7 @@ void DataMatrix<T>::loadAlevinData(
 		std::cerr << " After loading bfh prob size " << preCalculatedSegProb.size() << "\n" ;
 		cellSegCount.resize(numCells + numOfDoublets) ;
 
-		std::ofstream probStream("/mnt/scratch1/hirak/minnow/geneLevelProb.txt") ;
-		probStream << eqClassPtr->geneCountHistogram.size() << "\n" ;
-		for(auto it : eqClassPtr->geneCountHistogram){
-			probStream << it.second.size() << "\n" ;
-			for(auto it2 : it.second){
-				probStream << it2.first << "\t" << it2.second << "\n" ;
-			}
-		}
+		
 
 	}
 	
@@ -1155,7 +1149,7 @@ void readUniqueness(
   
 ){
 
-	std::string uniquenessListFile{"../data/hg_stranded_gene_uniqueness.txt"} ;
+	std::string uniquenessListFile{"../data/hg/hg_stranded_gene_uniqueness.txt"} ;
 	std::ifstream uniqueFileStream(uniquenessListFile) ;
 
 	std::string line ;
@@ -1592,7 +1586,8 @@ void DataMatrix<T>::loadSplatterData(
 			refInfo, 
 			cellWhiteListMap, 
 			false, 
-			cellNoisyMap
+			cellNoisyMap,
+			simOpts.outDir
 		) ;
 
 		consoleLog->info("Loaded the bfh.txt file") ;

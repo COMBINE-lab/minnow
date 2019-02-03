@@ -36,7 +36,8 @@ void BFHClass::loadBFH(
     Reference& refInfo,
     std::map<std::string, uint32_t>& cellWhiteListMap,
     bool generateNoiseProfile,
-    std::unordered_map<std::string, uint32_t>& cellNoisyMap
+    std::unordered_map<std::string, uint32_t>& cellNoisyMap,
+    std::string& outDir
 ){
     
     if(! util::fs::FileExists(bfhFile.c_str())){
@@ -187,5 +188,84 @@ void BFHClass::loadBFH(
     for(auto it: countHistogram){
         countProbability[it.first] = static_cast<double>(it.second)/static_cast<double>(tot_reads) ; 
     }
+
+
+    {
+        std::string geneCountHistogramFile = outDir + "/geneLevelProb.txt" ;
+        std::ofstream probStream(geneCountHistogramFile.c_str()) ;
+		probStream << geneCountHistogram.size() << "\n" ;
+        for(auto it : refInfo.geneMap){
+            if(geneCountHistogram.find(it.second) != geneCountHistogram.end()){
+                // print gene name
+                probStream << it.first << "\n" ;
+                probStream << geneCountHistogram[it.second].size() << "\n" ;
+                for(auto it2: geneCountHistogram[it.second]){
+                    probStream << it2.first << "\t" << it2.second << "\n" ;
+                }
+            }
+        }
+
+    }
+
+    {
+        std::string countProbabilityFile = outDir + "/countProb.txt" ;
+        std::ofstream probStream(countProbabilityFile.c_str()) ;
+		probStream << countProbability.size() << "\n" ;
+        for(auto prob : countProbability){
+            // print gene name
+            probStream << prob << "\n" ;
+        }
+    }
     
+}
+
+void BFHClass::loadProbability(std::string& file, Reference& refInfo, bool geneLevel){
+    std::ifstream fileStream(file.c_str()) ;
+    if(geneLevel){
+        std::string line ;
+        std::getline(fileStream, line) ;
+        size_t numOfGenes = std::stoul(line) ;
+
+        for(size_t i = 0 ; i < numOfGenes ; ++i){
+            std::getline(fileStream, line) ;
+            std::string geneName = line ;
+            uint32_t geneId{0} ;
+            bool skipThisGene{false} ;
+            if(refInfo.geneMap.find(geneName) != refInfo.geneMap.end()){
+                geneId = refInfo.geneMap[geneName] ;
+            }else{
+                skipThisGene = true ;
+            }
+
+            std::getline(fileStream, line) ;
+            size_t numOfEntries = std::stoul(line) ;
+            for(size_t j =0 ; j < numOfEntries; ++j){
+                std::getline(fileStream, line) ;
+                
+                if(skipThisGene)
+                    continue ;
+
+                std::vector<std::string> tokens ;
+                util::split(line, tokens, "\t") ;
+                if(tokens.size()!= 2){
+                    std::cerr << "FATAL ERROR!!! The probability file is ill-formed\n" ;
+                    std::exit(1) ;
+                }
+                uint32_t value = std::stoul(tokens[0]) ;
+                uint32_t count = std::stoul(tokens[1]) ;
+
+                geneCountHistogram[geneId][value] = count ;
+                 
+            }
+        }
+    }else{
+        std::string line ;
+        std::getline(fileStream, line) ;
+        size_t numOfEntries = std::stoul(line) ;
+        countProbability.resize(numOfEntries) ;
+        for(size_t i = 0 ; i < numOfEntries; ++i){
+            std::getline(fileStream, line) ;
+            countProbability[i] = std::stod(line) ;
+        }
+    }
 }
