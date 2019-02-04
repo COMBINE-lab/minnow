@@ -1,5 +1,8 @@
 # Minnow ( read level simulator for dscRNA-seq data)
-Minnow is a read level simulator for droplet based single cell RNA-seq data. Minnow simulates the reads by sampling sequences from the underlying de-Bruijn graph (using `--dbg`) of the reference transcriptome or alternatively just sampling from the reference transcriptome. As the `--dbg` option also enables other features of the software, it is useful to describe those.
+
+Most analysis pipelines validate their results using known marker genes (which are not widely available for all types of analysis) and by using simulated data from gene-count-level simulators. Typically, the impact of using different read-alignment or UMI deduplication methods has not been widely explored. Assessments based on simulation tend to start at the level of assuming a simulated count matrix, ignoring the effect that different approaches for resolving UMI counts from the raw read data may produce. Here, we present minnow, a comprehensive sequence-level droplet-based single-cell RNA-seq (dscRNA-seq) experiment simulation framework.  Minnow accounts for important sequence-level characteristics of experimental scRNA-seq datasets and models effects such as PCR amplification,  CB (cellular barcodes) and UMI (Unique Molecule Identifiers) selection, and sequence fragmentation and sequencing. 
+
+Minnow is a read level simulator for droplet based single cell RNA-seq data. Minnow simulates the reads by sampling sequences from the underlying de-Bruijn graph (using `--dbg`) of the reference transcriptome or alternatively just samples sequences from the reference transcriptome. As the `--dbg` option also enables other features of the software, it is useful to describe those.
 
 <p align="center">
 <img src="data/minnow_main_figure.001.jpeg">
@@ -7,7 +10,7 @@ Minnow is a read level simulator for droplet based single cell RNA-seq data. Min
 
 
 ## Installation 
-Minnow is written in C++14 and tested in a ubintu server, please let us know if you have difficulty compiling it in your own machine.
+Minnow is written in C++14 and tested in a ubuntu server, please let us know if you have difficulty compiling it in your own machine.
 
 ```console
 git clone https://github.com/COMBINE-lab/minnow.git
