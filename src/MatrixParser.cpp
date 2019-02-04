@@ -617,7 +617,7 @@ void DataMatrix<T>::loadAlevinData(
 					true
 				) ;
 			}
-		}else{
+		}else if(bfhFile != ""){
 			eqClassPtr->loadBFH(
 				bfhFile, 
 				simOpts.clusterFile, 
@@ -627,6 +627,14 @@ void DataMatrix<T>::loadAlevinData(
 				cellNoisyMap,
 				simOpts.outDir
 			) ;
+		}else{
+			//load default file 
+			std::string geneProbFile = "../data/hg/geneLebelProb_pbmc_4k.txt" ;
+			eqClassPtr->loadProbability(
+					geneProbFile,
+					refInfo,
+					true
+			) ; 
 		}
 
 		preCalculatedSegProb.resize(numOfGenes) ; // per gene
@@ -1613,7 +1621,7 @@ void DataMatrix<T>::loadSplatterData(
 					true
 				) ;
 			}
-		}else{
+		}else if(bfhFile != ""){
 			eqClassPtr->loadBFH(
 				bfhFile, 
 				simOpts.clusterFile, 
@@ -1623,6 +1631,14 @@ void DataMatrix<T>::loadSplatterData(
 				cellNoisyMap,
 				simOpts.outDir
 			) ;
+		}else{
+			//load default file 
+			std::string countProbFile = "../data/hg/countProb_pbmc_4k.txt" ;
+			eqClassPtr->loadProbability(
+					countProbFile,
+					refInfo,
+					false
+			) ; 
 		}
 
 		consoleLog->info("Loaded the bfh.txt file") ;
