@@ -59,7 +59,7 @@ write.table(counts(sim), file= file.path(out_dir, "quants_mat.csv"), quote=FALSE
 
 ## Main model options 
 
-> How to generate a right `gfa` file given a particular `READ_LEN`
+### How to generate a right `gfa` file given a particular `READ_LEN`
 
 ```console
 # delete non unique k-mers of length <READ_LEN>
