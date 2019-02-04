@@ -603,15 +603,31 @@ void DataMatrix<T>::loadAlevinData(
 		std::string eqFileDir = "/mnt/scratch1/hirak/minnow/metadata/hg/" ;
 
 		eqClassPtr = new BFHClass(eqFileDir) ;
-		eqClassPtr->loadBFH(
-			bfhFile, 
-			cellClusterFile, 
-			refInfo, 
-			cellWhiteListMap, 
-			false, 
-			cellNoisyMap,
-			simOpts.outDir
-		) ;
+		if((simOpts.countProbFile != "") || (simOpts.geneProbFile != "")){
+			if(simOpts.countProbFile != ""){
+				eqClassPtr->loadProbability(
+					simOpts.countProbFile,
+					refInfo,
+					false
+				) ;
+			}else{
+				eqClassPtr->loadProbability(
+					simOpts.geneProbFile,
+					refInfo,
+					true
+				) ;
+			}
+		}else{
+			eqClassPtr->loadBFH(
+				bfhFile, 
+				simOpts.clusterFile, 
+				refInfo, 
+				cellWhiteListMap, 
+				false, 
+				cellNoisyMap,
+				simOpts.outDir
+			) ;
+		}
 
 		preCalculatedSegProb.resize(numOfGenes) ; // per gene
 		preSegOreMapVector.resize(numOfGenes) ;
@@ -1579,16 +1595,35 @@ void DataMatrix<T>::loadSplatterData(
 		// ignore other eqclass stuff 
 		std::string eqFileDir = "/mnt/scratch1/hirak/minnow/metadata/hg/" ;
 
+
+
 		eqClassPtr = new BFHClass(eqFileDir) ;
-		eqClassPtr->loadBFH(
-			bfhFile, 
-			simOpts.clusterFile, 
-			refInfo, 
-			cellWhiteListMap, 
-			false, 
-			cellNoisyMap,
-			simOpts.outDir
-		) ;
+
+		if((simOpts.countProbFile != "") || (simOpts.geneProbFile != "")){
+			if(simOpts.countProbFile != ""){
+				eqClassPtr->loadProbability(
+					simOpts.countProbFile,
+					refInfo,
+					false
+				) ;
+			}else{
+				eqClassPtr->loadProbability(
+					simOpts.geneProbFile,
+					refInfo,
+					true
+				) ;
+			}
+		}else{
+			eqClassPtr->loadBFH(
+				bfhFile, 
+				simOpts.clusterFile, 
+				refInfo, 
+				cellWhiteListMap, 
+				false, 
+				cellNoisyMap,
+				simOpts.outDir
+			) ;
+		}
 
 		consoleLog->info("Loaded the bfh.txt file") ;
 		consoleLog->info("The size of probability Vector {}",eqClassPtr->countProbability.size()) ;

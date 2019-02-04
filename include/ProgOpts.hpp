@@ -42,6 +42,8 @@ public:
   std::string gfaFile{""} ;
   std::string genomefile{""} ;
   std::string rspdFile{""} ;
+  std::string geneProbFile{""} ;
+  std::string countProbFile{""} ;
 
   std::string refFile ;
   std::string outDir ;

@@ -100,8 +100,16 @@ int main(int argc, char* argv[]) {
     "tab separated read start position distribution",
     
     (option("--bfh") & 
-    value("BFH gile", simulateOpt.bfhFile)) %
+    value("BFH file", simulateOpt.bfhFile)) %
     "BFH file",
+    
+    (option("--geneProb") & 
+    value("gene level probability", simulateOpt.geneProbFile)) %
+    "Gene level probability file (TSV)",
+    
+    (option("--countProb") & 
+    value("global count probability", simulateOpt.countProbFile)) %
+    "global scale count probability file",
     
     (option("--velocity").set(simulateOpt.velocityMode, true)) %
     "In velocity mode we generate reads from exon-exon junction",
