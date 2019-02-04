@@ -1,4 +1,4 @@
-# Minnow
+# Minnow ( read level simulator for dscRNA-seq data)
 Minnow is a read level simulator for droplet based single cell RNA-seq data. Minnow simulates the reads by sampling sequences from the underlying de-Bruijn graph (using `--dbg`) of the reference transcriptome or alternatively just sampling from the reference transcriptome. As the `--dbg` option also enables other features of the software, it is useful to describe those.
 
 <p align="center">
