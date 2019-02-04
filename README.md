@@ -78,8 +78,11 @@ TwoPaCo/build/graphdump/graphdump <tr.gfa> -k <READ_LEN+1> -s <fasta_file> -f gf
 
 
 ```
+The above process are required to be executed sequencially, 
 
-The above process are required to be executed sequencially, for ease of use we uploaded the de-Bruijn graph and reference transcripts are uploaded in zenodo. 
+### -OR- 
+
+for ease of use we uploaded the de-Bruijn graph and reference transcripts are uploaded in zenodo. 
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2556439.svg)](https://doi.org/10.5281/zenodo.2556439)
 
