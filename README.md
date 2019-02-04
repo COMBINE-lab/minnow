@@ -64,6 +64,8 @@ write.table(counts(sim), file= file.path(out_dir, "quants_mat.csv"), quote=FALSE
 
 ### How to generate a right `gfa` file given a particular `READ_LEN`
 
+#### Run [TwoPaCo](https://github.com/medvedevgroup/TwoPaCo)
+
 ```console
 # delete non unique k-mers of length <READ_LEN>
 fixFasta --klen <READ_LEN+1> --input <fasta_file> --output <fixed_fasta_file> 
@@ -71,7 +73,7 @@ fixFasta --klen <READ_LEN+1> --input <fasta_file> --output <fixed_fasta_file>
 # delete duplicated sequences 
 seqkit rmdup -s  <fixed_fasta_file> > <dedup_fasta>
 
-# run https://github.com/medvedevgroup/TwoPaCo to produce gfa
+# run TwoPaCo to produce gfa
 TwoPaCo/build/graphconstructor/twopaco -k <READ_LEN+1> -t 10 -f 20 <dedup_fasta> --outfile dbg.bin --tmpdir /tmp/
 
 TwoPaCo/build/graphdump/graphdump <tr.gfa> -k <READ_LEN+1> -s <fasta_file> -f gfa1 dbg.bin
@@ -80,7 +82,7 @@ TwoPaCo/build/graphdump/graphdump <tr.gfa> -k <READ_LEN+1> -s <fasta_file> -f gf
 ```
 The above process are required to be executed sequencially, 
 
-### -OR- 
+#### -OR- download files 
 
 for ease of use we uploaded the de-Bruijn graph and reference transcripts are uploaded in zenodo. 
 
