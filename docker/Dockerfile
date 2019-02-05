@@ -4,9 +4,15 @@
 #FROM insilicodb/bioconductor 
 FROM ubuntu:16.04
 
-ENV PACKAGES git gcc make g++ cmake  liblzma-dev libbz2-dev \
-    ca-certificates zlib1g-dev curl unzip autoconf vim wget time bzip2
+ENV PACKAGES  git gcc make g++ cmake  liblzma-dev libbz2-dev \
+    ca-certificates zlib1g-dev curl unzip autoconf vim wget time bzip2 wget 
     ENV MINNOW_VERSION 1.0
+
+WORKDIR /home
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ${PACKAGES} && \
+        apt-get clean
 
 # TwoPaCo
 RUN wget https://github.com/01org/tbb/releases/download/2018_U4/tbb2018_20180411oss_lin.tgz && \
