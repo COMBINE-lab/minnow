@@ -1,5 +1,8 @@
-# Minnow
-Minnow is a read level simulator for droplet based single cell RNA-seq data. Minnow simulates the reads by sampling sequences from the underlying de-Bruijn graph (using `--dbg`) of the reference transcriptome or alternatively just sampling from the reference transcriptome. As the `--dbg` option also enables other features of the software, it is useful to describe those.
+# Minnow ( read level simulator for dscRNA-seq data)
+
+Most analysis pipelines validate their results using known marker genes (which are not widely available for all types of analysis) and by using simulated data from gene-count-level simulators. Typically, the impact of using different read-alignment or UMI deduplication methods has not been widely explored. Assessments based on simulation tend to start at the level of assuming a simulated count matrix, ignoring the effect that different approaches for resolving UMI counts from the raw read data may produce. Here, we present minnow, a comprehensive sequence-level droplet-based single-cell RNA-seq (dscRNA-seq) experiment simulation framework.  Minnow accounts for important sequence-level characteristics of experimental scRNA-seq datasets and models effects such as PCR amplification,  CB (cellular barcodes) and UMI (Unique Molecule Identifiers) selection, and sequence fragmentation and sequencing. 
+
+Minnow is a read level simulator for droplet based single cell RNA-seq data. Minnow simulates the reads by sampling sequences from the underlying de-Bruijn graph (using `--dbg`) of the reference transcriptome or alternatively just samples sequences from the reference transcriptome. As the `--dbg` option also enables other features of the software, it is useful to describe those.
 
 <p align="center">
 <img src="data/minnow_main_figure.001.jpeg">
@@ -7,7 +10,7 @@ Minnow is a read level simulator for droplet based single cell RNA-seq data. Min
 
 
 ## Installation 
-Minnow is written in C++14 and tested in a ubintu server, please let us know if you have difficulty compiling it in your own machine.
+Minnow is written in C++14 and tested in a ubuntu server, please let us know if you have difficulty compiling it in your own machine.
 
 ```console
 git clone https://github.com/COMBINE-lab/minnow.git
@@ -49,8 +52,8 @@ sim <- splatSimulate(
 	batchCells=num_cells, 
 	verbose = FALSE
 )
-write.table(rownames(sim), file= file.path(out_dir, "quants_mat_cols.txt"), quote=FALSE, col.names=FALSE, row.names=FALSE)
-write.table(colnames(sim), file= file.path(out_dir, "quants_mat_rows.txt"), quote=FALSE, col.names=FALSE, row.names=FALSE)
+write.table(rownames(sim), file= file.path(out_dir, "quants_mat_rows.txt"), quote=FALSE, col.names=FALSE, row.names=FALSE)
+write.table(colnames(sim), file= file.path(out_dir, "quants_mat_cols.txt"), quote=FALSE, col.names=FALSE, row.names=FALSE)
 write.table(counts(sim), file= file.path(out_dir, "quants_mat.csv"), quote=FALSE, col.names=FALSE, row.names=FALSE, sep=",")  
 
 ```
@@ -61,6 +64,8 @@ write.table(counts(sim), file= file.path(out_dir, "quants_mat.csv"), quote=FALSE
 
 ### How to generate a right `gfa` file given a particular `READ_LEN`
 
+#### Run [TwoPaCo](https://github.com/medvedevgroup/TwoPaCo)
+
 ```console
 # delete non unique k-mers of length <READ_LEN>
 fixFasta --klen <READ_LEN+1> --input <fasta_file> --output <fixed_fasta_file> 
@@ -68,15 +73,18 @@ fixFasta --klen <READ_LEN+1> --input <fasta_file> --output <fixed_fasta_file>
 # delete duplicated sequences 
 seqkit rmdup -s  <fixed_fasta_file> > <dedup_fasta>
 
-# run https://github.com/medvedevgroup/TwoPaCo to produce gfa
+# run TwoPaCo to produce gfa
 TwoPaCo/build/graphconstructor/twopaco -k <READ_LEN+1> -t 10 -f 20 <dedup_fasta> --outfile dbg.bin --tmpdir /tmp/
 
 TwoPaCo/build/graphdump/graphdump <tr.gfa> -k <READ_LEN+1> -s <fasta_file> -f gfa1 dbg.bin
 
 
 ```
+The above process are required to be executed sequencially, 
 
-The above process are required to be executed sequencially, for ease of use we uploaded the de-Bruijn graph and reference transcripts are uploaded in zenodo. 
+#### -OR- download files 
+
+for ease of use we uploaded the de-Bruijn graph and reference transcripts are uploaded in zenodo. 
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2556439.svg)](https://doi.org/10.5281/zenodo.2556439)
 
