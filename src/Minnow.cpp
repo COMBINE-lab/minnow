@@ -88,6 +88,10 @@ int main(int argc, char* argv[]) {
     value("mat_file", simulateOpt.outDir)) %
     "the simulated reads will be written here",
     
+    (required("--numMolFile") & 
+    value("num mol file", simulateOpt.numMolFile)) %
+    "Number of molecules generated from each cell",
+    
     (option("--gencode").set(simulateOpt.gencode, true)) %
     "gencode reference has | separator",
     

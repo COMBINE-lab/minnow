@@ -240,6 +240,24 @@ void DataMatrix<T>::loadAlevinData(
 		
 	}
 
+	if(!dupCounts && (simOpts.numMolFile != "")){
+		if(! util::fs::FileExists(simOpts.numMolFile.c_str())){
+			std::cerr << simOpts.numMolFile << " does not exist\n" ;
+		}else{
+			std::ifstream dupCountStream(simOpts.numMolFile) ;
+			std::string line ; 
+			while(std::getline(dupCountStream, line)){
+				line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
+				std::vector<std::string> tokens ; 
+				util::split(line, tokens, "\t") ;
+				if (tokens.size() == 2){
+					cellNamesDupCount[tokens[0]] = std::stoul(tokens[1]) ;
+				}
+			}
+
+		}
+	}
+
 	// The map contains gid to tid map, where 
 	// the gid is created first time here as, we 
 	// get to know about them first here. The tids 
@@ -1329,7 +1347,7 @@ void DataMatrix<T>::loadSplatterData(
 	consoleLog->info("Number of genes in the txp2gene file: {}", geneMap.size()) ;
 	
 	consoleLog->info(
-		"Parsing {}/quants_mat_rows.txt",splatterDir) ;	
+		"Parsing {}/quants_mat_cols.txt",splatterDir) ;	
 	
 	std::map<std::string, uint32_t> allCellListMap ;
 	std::vector<std::string> allCellNames ;
@@ -1349,7 +1367,7 @@ void DataMatrix<T>::loadSplatterData(
 	consoleLog->info("{} cells are present ", allCellNames.size()) ;
 	consoleLog->info("Start parsing Splatter output") ;
 	consoleLog->info(
-		"Parsing {}/quants_mat_cols.txt",splatterDir) ;
+		"Parsing {}/quants_mat_rows.txt",splatterDir) ;
 	
 	std::unordered_map<std::string, std::string> splatterGeneMap ; //splatter gene name -> real gene name
 	std::vector<std::string> splatterGeneNames ;
@@ -1363,6 +1381,25 @@ void DataMatrix<T>::loadSplatterData(
 			line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
 			splatterGeneNames.push_back(line) ;
 		} 
+	}
+
+
+	if(simOpts.numMolFile != ""){
+		if(! util::fs::FileExists(simOpts.numMolFile.c_str())){
+			std::cerr << simOpts.numMolFile << " does not exist\n" ;
+		}else{
+			std::ifstream dupCountStream(simOpts.numMolFile) ;
+			std::string line ; 
+			while(std::getline(dupCountStream, line)){
+				line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
+				std::vector<std::string> tokens ; 
+				util::split(line, tokens, "\t") ;
+				if (tokens.size() == 2){
+					cellNamesDupCount[tokens[0]] = std::stoul(tokens[1]) ;
+				}
+			}
+
+		}
 	}
 
 	size_t numOfGenes = splatterGeneNames.size() ;

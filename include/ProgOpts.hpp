@@ -45,6 +45,7 @@ public:
   std::string rspdFile{""} ;
   std::string geneProbFile{""} ;
   std::string countProbFile{""} ;
+  std::string numMolFile{""} ;
 
   std::string refFile ;
   std::string outDir ;
