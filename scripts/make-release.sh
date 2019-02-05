@@ -44,14 +44,14 @@ echo -e "Copying over the binary\n"
 cp ${DIR}/../build/src/minnow ${DIR}/../RELEASES/${betaname}/bin/
 cp ${DIR}/../build/src/fixfasta ${DIR}/../RELEASES/${betaname}/bin/
 cp ${DIR}/../build/src/validate ${DIR}/../RELEASES/${betaname}/bin/
-#cp ${DIR}/../TwoPaCo/build/graphconstructor/twopaco ${DIR}/../RELEASES/${betaname}/bin/
-#cp ${DIR}/../TwoPaCo/build/graphdump/graphdump ${DIR}/../RELEASES/${betaname}/bin/
+cp ${DIR}/../TwoPaCo/build/graphconstructor/twopaco ${DIR}/../RELEASES/${betaname}/bin/
+cp ${DIR}/../TwoPaCo/build/graphdump/graphdump ${DIR}/../RELEASES/${betaname}/bin/
 
 # copy other dependencies (shared libraries)
 echo -e "Copying over other shared library dependencies\n"
 bash ${DIR}/../scripts/cpld.bash ${DIR}/../build/src/minnow ${DIR}/../RELEASES/${betaname}/lib/
-#bash ${DIR}/../scripts/cpld.bash ${DIR}/../TwoPaCo/build/graphconstructor/twopaco ${DIR}/../RELEASES/${betaname}/lib/
-#bash ${DIR}/../scripts/cpld.bash ${DIR}/../TwoPaCo/build/graphdump/graphdump ${DIR}/../RELEASES/${betaname}/lib/
+bash ${DIR}/../scripts/cpld.bash ${DIR}/../TwoPaCo/build/graphconstructor/twopaco ${DIR}/../RELEASES/${betaname}/lib/
+bash ${DIR}/../scripts/cpld.bash ${DIR}/../TwoPaCo/build/graphdump/graphdump ${DIR}/../RELEASES/${betaname}/lib/
 
 echo -e "Removing dangerous dependencies\n"
 rm ${DIR}/../RELEASES/${betaname}/lib/librt.so.1
