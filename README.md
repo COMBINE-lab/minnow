@@ -1,6 +1,5 @@
 
-[docker](docker pull hrksrkr/minnow)
-[tutorial](https://combine-lab.github.io/alevin-tutorial/2019/running-minnow/)
+
 [![Build Status](https://travis-ci.org/COMBINE-lab/salmon.svg?branch=master)](https://travis-ci.org/COMBINE-lab/salmon)
 
 # Minnow ( read level simulator for dscRNA-seq data)
@@ -12,6 +11,12 @@ Minnow is a read level simulator for droplet based single cell RNA-seq data. Min
 <p align="center">
 <img src="data/minnow_main_figure.001.jpeg">
 </p>
+
+## Pre-build images
+
+[docker](`docker pull hrksrkr/minnow`)
+
+[tutorial](https://combine-lab.github.io/alevin-tutorial/2019/running-minnow/)
 
 
 ## Installation 
