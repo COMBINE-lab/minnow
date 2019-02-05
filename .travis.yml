@@ -42,8 +42,7 @@ script:
     cmake \
       -DNO_RTM=TRUE \
       .. && \
-    make -j 4 VERBOSE=1 && \
-    make install && \
+    make -j 11 && \
     ./src/minnow --help
   - popd
 
