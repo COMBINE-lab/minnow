@@ -13,8 +13,6 @@
 #include "spdlog/sinks/ostream_sink.h"
 #include "spdlog/fmt/ostr.h"
 #include "spdlog/fmt/fmt.h"
-
-#include<Eigen/Dense>
 #include "MinnowUtil.hpp"
 #include "ReferenceInfo.hpp"
 #include "ProgOpts.hpp"
