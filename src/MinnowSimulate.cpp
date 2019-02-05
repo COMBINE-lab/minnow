@@ -1679,8 +1679,8 @@ void minnowSimulate(SimulateOptions& simOpts){
 
     printOptions(simOpts) ;
 
-    bool alevinMode = simOpts.alevinMode ;
-    bool splatterMode = simOpts.splatterMode ;
+    //bool alevinMode = simOpts.alevinMode ;
+    //bool splatterMode = simOpts.splatterMode ;
     //auto& matrixFileName = simOpts.matrixFile ;
     auto& refFileName = simOpts.refFile ;
     auto& gene2txpFile = simOpts.gene2txpFile ; 
@@ -1754,19 +1754,19 @@ void minnowSimulate(SimulateOptions& simOpts){
         consoleLog
     ) ;
 
-    consoleLog->info("Done genecount parsing matrix") ;
+    consoleLog->info("Done parsing matrix") ;
 
 
     uint32_t numOfWhiteListedCells ;
     uint32_t numOfNoisyCells ;
     uint32_t numOfDoublets ;
-    if (alevinMode ||  splatterMode){
+    //if (alevinMode ||  splatterMode || normalMode){
         numOfCells = dataMatrixObj.numCells ;
         numOfGenes = dataMatrixObj.numOfTranscripts ;
         numOfWhiteListedCells = dataMatrixObj.numOfWhiteListedCells ;
         numOfNoisyCells = dataMatrixObj.numOfNoisyCells ;
         numOfDoublets = dataMatrixObj.numOfDoublets ;
-    }
+    //}
 
 
     //check the parsed matrix 
@@ -1902,7 +1902,7 @@ void minnowSimulate(SimulateOptions& simOpts){
         dataMatrixObj.dumpTrueCellNames(cellNamesFile) ;
 
         // DEBUG dump intron counts 
-        dataMatrixObj.dumpIntronCount() ;
+        //dataMatrixObj.dumpIntronCount() ;
         consoleLog->info("Truth files dumped") ;
 
     }

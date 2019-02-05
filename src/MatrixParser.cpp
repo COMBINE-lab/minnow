@@ -1366,6 +1366,7 @@ void DataMatrix<T>::loadSplatterData(
 	}
 
 	size_t numOfGenes = splatterGeneNames.size() ;
+	size_t numOfOriginalGenes = numOfGenes ; 
 
 
 	// Let's assume no whitelist 
@@ -1382,28 +1383,38 @@ void DataMatrix<T>::loadSplatterData(
 
 	numCells = sampleCells ;
 
-	geneCounts.resize(sampleCells, std::vector<T>(numOfGenes)) ;
-
-	trueGeneCounts.resize(sampleCells, std::vector<int>(numOfGenes)) ;
+	std::vector<std::vector<T>> originalGeneCountMatrix ;
 
 	
-	for(auto& v : geneCounts)
+	originalGeneCountMatrix.resize(sampleCells, std::vector<T>(numOfGenes)) ;
+
+	//geneCounts.resize(sampleCells, std::vector<T>(numOfGenes)) ;
+
+	//trueGeneCounts.resize(sampleCells, std::vector<int>(numOfGenes)) ;
+
+	std::unordered_set<uint32_t> skippedGenes ;
+
+	for(auto& v : originalGeneCountMatrix)
     	std::memset(&v[0], 0, sizeof(v[0]) * v.size());
 
-	for(auto& v : trueGeneCounts)
-    	std::memset(&v[0], 0, sizeof(v[0]) * v.size());
 	
 	readSplatterMatrix(
 		countFile,
-		geneCounts, 
+		originalGeneCountMatrix, 
 		allCellNames.size(),
 		splatterGeneNames.size() 
 	) ;
 
 
 	std::cout << "\n" ;
-	consoleLog->info("Splatter matrix is read, with dimension {} x {}",geneCounts.size(), geneCounts[0].size()) ;
+	consoleLog->info(
+						"Splatter matrix is read, with dimension {} x {}", 
+						originalGeneCountMatrix.size(), 
+						originalGeneCountMatrix[0].size()
+					) ;
 	std::unordered_map<uint32_t, std::string> alevinGeneIndex2NameMap ;
+	size_t numOfSkippedGenes{0} ;
+
 	{
 		// go over gene to transcript map, include a 
 		// gene if contains a transcript that is present 
@@ -1425,7 +1436,7 @@ void DataMatrix<T>::loadSplatterData(
 			for(size_t geneId = 0 ; geneId < splatterGeneNames.size() ; geneId++){
 				int gcount{0} ;
 				for(size_t cellId = 0 ; cellId < allCellNames.size() ; cellId++){
-					if(geneCounts[cellId][geneId] > 0){
+					if(originalGeneCountMatrix[cellId][geneId] > 0){
 						gcount++ ;
 					}
 				}
@@ -1465,7 +1476,35 @@ void DataMatrix<T>::loadSplatterData(
 				}
 				mostUniqGeneId++ ;
 			}
-		}else{
+		}else if(simOpts.normalMode){
+			size_t splatterGeneId{0} ;
+			while(splatterGeneId < splatterGeneNames.size()){
+
+
+				auto spgName = splatterGeneNames[splatterGeneId] ;
+
+				if(geneMap.find(spgName) != geneMap.end()){
+					auto selectedGeneName = spgName ;
+					auto selectedGeneId = geneMap[spgName] ;
+					splatterGeneMap[selectedGeneName] = spgName ;
+					alevin2refMap[splatterGeneId] = selectedGeneId ;
+					alevinGeneIndex2NameMap[splatterGeneId] = selectedGeneName ;
+				}else{
+					//consoleLog->error("Possible FATAL ERROR: The reference file contains genes which are not present in the reference transcript to gene map") ;
+					//consoleLog->error("If you think that is not the error post an issue in n https://github.com/COMBINE-lab/minnow/issues with transcript reference") ;
+					skippedGenes.insert(splatterGeneId) ;
+					numOfSkippedGenes++ ;
+				}
+
+
+				splatterGeneId++ ;
+	
+				_verbose("\rIn Splatter: Number of genes processed : %lu", splatterGeneId);
+
+			}
+
+		}
+		else{
 			size_t splatterGeneId{0} ;
 			// Assign a random gene to the columns of the matrix  
 			// Go over geneMap assign a gene that exists
@@ -1521,7 +1560,7 @@ void DataMatrix<T>::loadSplatterData(
 			}
 
 		}
-		if(splatterGeneMap.size() != splatterGeneNames.size()){
+		if(splatterGeneMap.size() > splatterGeneNames.size()){
 			consoleLog->error("The splatter matrix contains more genes than provided in reference, truncating") ;
 			consoleLog->error("splatterGeneMap.size() {} splatterGeneNames.size() {} geneMap.size() {}", 
 								splatterGeneMap.size(), 
@@ -1531,6 +1570,36 @@ void DataMatrix<T>::loadSplatterData(
 			std::exit(2) ;
 		}
 	}
+
+	// Make a truncated geneCounts file
+	//T skippedCount{0} ;
+	geneCounts.resize(sampleCells, std::vector<T>(numOfGenes - numOfSkippedGenes)) ;
+	trueGeneCounts.resize(sampleCells, std::vector<int>(numOfGenes - numOfSkippedGenes)) ;
+	for(auto& v : geneCounts)
+    	std::memset(&v[0], 0, sizeof(v[0]) * v.size());
+
+	for(auto& v : trueGeneCounts)
+    	std::memset(&v[0], 0, sizeof(v[0]) * v.size());
+	
+	if(numOfSkippedGenes > 0){
+		consoleLog->warn("Skipping {} many genes, either they are short or absent in reference",numOfSkippedGenes) ;
+
+		for(size_t cell_id = 0 ; cell_id < originalGeneCountMatrix.size(); ++cell_id){
+			size_t geneCountsGeneIdx{0} ;
+			for(size_t gene_id = 0 ; gene_id < numOfOriginalGenes ; ++ gene_id){
+				if(skippedGenes.find(gene_id) == skippedGenes.end()){
+					geneCounts[cell_id][geneCountsGeneIdx] = originalGeneCountMatrix[cell_id][gene_id] ;
+					geneCountsGeneIdx++ ;
+				}
+			}
+		}	
+		consoleLog->info("Truncated the matrix ") ;
+	}else{
+		geneCounts = originalGeneCountMatrix ;
+	}
+
+	numOfGenes = geneCounts[geneCounts.size()-1].size() ;
+	
 
 
 	auto& gene2transcriptMap = refInfo.gene2transcriptMap ;
@@ -1999,10 +2068,10 @@ DataMatrix<T>::DataMatrix(
 	
     if (simOpts.alevinMode){
         loadAlevinData(simOpts, refInfo) ;
-    }else if(simOpts.splatterMode){
+    }else if(simOpts.splatterMode || simOpts.normalMode){
         loadSplatterData(simOpts, refInfo) ;
     }else{
-		consoleLog->info("Please specify either of --splatter-mode or --alevin-mode") ;
+		consoleLog->info("Please specify either of --splatter-mode or --alevin-mode or --normal-mode") ;
 	}
     //std::cerr << "Parsed the matrix\n" ; 
 }

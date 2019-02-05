@@ -8,6 +8,7 @@ public:
   bool alevinMode{false} ;
   
   bool splatterMode{false} ;
+  bool normalMode{false} ;
   bool testUniqness{false} ;
   bool reverseUniqness{false} ;
   

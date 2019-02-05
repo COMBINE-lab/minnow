@@ -60,6 +60,10 @@ int main(int argc, char* argv[]) {
     
     (option("--splatter-mode").set(simulateOpt.splatterMode, true)) %
     "matrix file is obtained from running splatter",
+
+
+    (option("--normal-mode").set(simulateOpt.normalMode, true)) %
+    "user provided matrix",
     
     (option("--testUniqness").set(simulateOpt.testUniqness, true)) %
     "matrix file is obtained from running splatter",
