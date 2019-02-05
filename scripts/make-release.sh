@@ -33,7 +33,7 @@ echo -e "Version = ${version}"
 echo -e "Host = ${host}"
 
 # create the binary directory 
-betaname=pufferfish-${version}_${host}
+betaname=minnow-${version}_${host}
 mkdir ${DIR}/../RELEASES
 mkdir ${DIR}/../RELEASES/${betaname}
 mkdir ${DIR}/../RELEASES/${betaname}/bin
@@ -42,7 +42,7 @@ mkdir ${DIR}/../RELEASES/${betaname}/lib
 # copy over the executable
 echo -e "Copying over the binary\n"
 cp ${DIR}/../build/src/minnow ${DIR}/../RELEASES/${betaname}/bin/
-cp ${DIR}/../build/src/fixFasta ${DIR}/../RELEASES/${betaname}/bin/
+cp ${DIR}/../build/src/fixfasta ${DIR}/../RELEASES/${betaname}/bin/
 cp ${DIR}/../build/src/validate ${DIR}/../RELEASES/${betaname}/bin/
 #cp ${DIR}/../TwoPaCo/build/graphconstructor/twopaco ${DIR}/../RELEASES/${betaname}/bin/
 #cp ${DIR}/../TwoPaCo/build/graphdump/graphdump ${DIR}/../RELEASES/${betaname}/bin/
