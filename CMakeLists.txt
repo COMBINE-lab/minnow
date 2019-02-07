@@ -33,6 +33,8 @@ message("${CMAKE_CXX_FLAGS}")
 #
 #include(ExternalProject)
 
+set(GAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
 message("Build system will NOT compile libgff")
 ##
 # Let us check the sha sum of our pacakges if we have the right tools

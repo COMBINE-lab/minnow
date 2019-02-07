@@ -51,6 +51,27 @@ add_library(fixfastalib STATIC ${FIXFASTA_LIB_SRC})
 add_executable(fixfasta FixFasta.cpp)
 target_link_libraries(fixfasta fixfastalib z)
 
+
+IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  SET(CMAKE_INSTALL_PREFIX
+    "${GAT_SOURCE_DIR}" CACHE PATH "Default install prefix" FORCE
+    )
+ENDIF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+
+set(INSTALL_LIB_DIR lib )
+set(INSTALL_BIN_DIR bin )
+set(INSTALL_INCLUDE_DIR include )
+
+
+install(
+    TARGETS minnow fixfasta minnowlib fixfastalib
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib 
+   
+)
+
+
 #add_executable(gfftest TestGFFParser.cpp)
 #target_link_libraries(gfftest gff)
 
