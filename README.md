@@ -24,7 +24,7 @@ Minnow is a read level simulator for droplet based single cell RNA-seq data. Min
 ## Installation
 ### Via conda 
 `conda install minnow -c bioconda`
-
+### Manual installation (latest)
 Minnow is written in C++14 and tested in a ubuntu server, please let us know if you have difficulty compiling it in your own machine.
 
 ```console
