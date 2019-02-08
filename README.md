@@ -93,7 +93,7 @@ The above process are required to be executed sequencially,
 
 for ease of use we uploaded the de-Bruijn graph and reference transcripts are uploaded in zenodo. 
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2556439.svg)](https://doi.org/10.5281/zenodo.2556439)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2556439.svg)](https://doi.org/10.5281/zenodo.2556439) [![Join the chat at https://gitter.im/minnow-sim/community](https://badges.gitter.im/minnow-sim/community.svg)](https://gitter.im/minnow-sim/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 
 
