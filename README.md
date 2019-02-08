@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/COMBINE-lab/minnow.svg?branch=master)](https://travis-ci.org/COMBINE-lab/minnow)
+[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat-square)](http://bioconda.github.io/)
 [![Join the chat at https://gitter.im/minnow-sim](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/minnow-sim?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 # Minnow ( read level simulator for dscRNA-seq data)
@@ -19,7 +20,11 @@ Minnow is a read level simulator for droplet based single cell RNA-seq data. Min
 [tutorial](https://combine-lab.github.io/alevin-tutorial/2019/running-minnow/)
 
 
-## Installation 
+
+## Installation
+### Via conda 
+`conda install minnow -c bioconda`
+
 Minnow is written in C++14 and tested in a ubuntu server, please let us know if you have difficulty compiling it in your own machine.
 
 ```console
