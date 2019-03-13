@@ -10,6 +10,8 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+
+#include <unistd.h>
 #include "MinnowFS.hpp"
 
 #include "string_view.hpp"
@@ -210,8 +212,15 @@ namespace util{
 
     std::vector<int> lines_to_select(indexArray.begin(), indexArray.begin() + numCells ) ;
     std::sort(lines_to_select.begin(), lines_to_select.end()) ;
+    
+    std::string file_path = __FILE__;
+    std::string dir_path = file_path.substr(0, file_path.rfind("/"));
+    std::string dir_path_root = dir_path.substr(0, dir_path.rfind("/"));
+    std::string whitelist_filename = dir_path_root + "/data/737K-august-2016.txt" ;
 
-    std::string whitelist_filename("../data/737K-august-2016.txt") ;
+    std::cerr << "10X whitelist file " << whitelist_filename << "\n";
+    
+    //std::string whitelist_filename("/mnt/scratch1/hirak/minnow/data/737K-august-2016.txt") ;
 
     std::string line;
     if(! util::fs::FileExists(whitelist_filename.c_str())){
