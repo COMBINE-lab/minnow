@@ -54,7 +54,27 @@ int main(int argc, char* argv[]) {
 
   auto simulateMode = (
     command("simulate").set(selected, mode::simulate),
+
+    // required options  
     
+    (required("-m", "--matdir") & 
+    value("mat_file", simulateOpt.matrixFile)) %
+    "directory with matrix file/ if this is a file instead of a dir",
+    
+    (required("-o", "--outdir") & 
+    value("mat_file", simulateOpt.outDir)) %
+    "the simulated reads will be written here",
+    
+    (required("-r", "--reffile") & 
+    value("ref_file", simulateOpt.refFile)) %
+    "transcriptome reference file (assumed from fasta file)",
+
+
+    
+    (option("--numMolFile") & 
+    value("num mol file", simulateOpt.numMolFile)) %
+    "Number of molecules generated from each cell",
+
     (option("--alevin-mode").set(simulateOpt.alevinMode, true)) %
     "The program would assume that the input matrix is obtained from Alevin",
     
@@ -80,24 +100,8 @@ int main(int argc, char* argv[]) {
     value("number of Doublets", simulateOpt.numOfDoublets)) %
     "Number of doublets to be generated",
     
-    (required("-m", "--matdir") & 
-    value("mat_file", simulateOpt.matrixFile)) %
-    "directory with matrix file/ if this is a file instead of a dir",
-    
-    (required("-o", "--outdir") & 
-    value("mat_file", simulateOpt.outDir)) %
-    "the simulated reads will be written here",
-    
-    (required("--numMolFile") & 
-    value("num mol file", simulateOpt.numMolFile)) %
-    "Number of molecules generated from each cell",
-    
     (option("--gencode").set(simulateOpt.gencode, true)) %
     "gencode reference has | separator",
-    
-    (required("-r", "--reffile") & 
-    value("ref_file", simulateOpt.refFile)) %
-    "transcriptome reference file (assumed from fasta file)",
     
     (option("--g2t") & 
     value("gene_tr", simulateOpt.gene2txpFile)) %
