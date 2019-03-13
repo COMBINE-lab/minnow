@@ -1,5 +1,9 @@
 [![Build Status](https://travis-ci.org/COMBINE-lab/minnow.svg?branch=master)](https://travis-ci.org/COMBINE-lab/minnow)
+[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat-square)](http://bioconda.github.io/)
+[![Join the chat at https://gitter.im/minnow-sim](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/minnow-sim?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 # Minnow ( read level simulator for dscRNA-seq data)
+
 
 Most analysis pipelines validate their results using known marker genes (which are not widely available for all types of analysis) and by using simulated data from gene-count-level simulators. Typically, the impact of using different read-alignment or UMI deduplication methods has not been widely explored. Assessments based on simulation tend to start at the level of assuming a simulated count matrix, ignoring the effect that different approaches for resolving UMI counts from the raw read data may produce. Here, we present minnow, a comprehensive sequence-level droplet-based single-cell RNA-seq (dscRNA-seq) experiment simulation framework.  Minnow accounts for important sequence-level characteristics of experimental scRNA-seq datasets and models effects such as PCR amplification,  CB (cellular barcodes) and UMI (Unique Molecule Identifiers) selection, and sequence fragmentation and sequencing. 
 
@@ -16,7 +20,11 @@ Minnow is a read level simulator for droplet based single cell RNA-seq data. Min
 [tutorial](https://combine-lab.github.io/alevin-tutorial/2019/running-minnow/)
 
 
-## Installation 
+
+## Installation
+### Via conda 
+`conda install minnow -c bioconda`
+### Manual installation (latest)
 Minnow is written in C++14 and tested in a ubuntu server, please let us know if you have difficulty compiling it in your own machine.
 
 ```console
@@ -93,7 +101,7 @@ The above process are required to be executed sequencially,
 
 for ease of use we uploaded the de-Bruijn graph and reference transcripts are uploaded in zenodo. 
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2556439.svg)](https://doi.org/10.5281/zenodo.2556439)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2556439.svg)](https://doi.org/10.5281/zenodo.2556439) [![Join the chat at https://gitter.im/minnow-sim/community](https://badges.gitter.im/minnow-sim/community.svg)](https://gitter.im/minnow-sim/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 
 
