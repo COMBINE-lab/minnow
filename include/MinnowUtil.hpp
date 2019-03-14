@@ -175,7 +175,7 @@ namespace util{
 
   inline std::vector<std::string> generateUMIList(){
     std::vector<std::string> whiteList ;
-    std::cerr << "DEBUG: POOL_SIZE " << POOL_SIZE << "\n\n" ;
+    std::cerr << "PRINTING DEBUG: POOL_SIZE " << POOL_SIZE << "\n\n" ;
     whiteList.resize(POOL_SIZE) ;
     for(int i=0 ; i < POOL_SIZE; ++i){
       whiteList[i] = genRandomSeq(UMI_LENGTH) ;
