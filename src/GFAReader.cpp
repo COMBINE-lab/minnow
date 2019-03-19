@@ -74,6 +74,11 @@ void GFAReader::updateEqClass(
 		auto ore = contigInfo.second ;
         if(unitigMap.find(contigId) != unitigMap.end()){
           auto sizeOfUnitig = unitigMap[contigInfo.first].size() ;
+          
+          if(sizeOfUnitig < READ_LEN){
+            std::cerr << sizeOfUnitig <<  " --- possible twopaco bug !!!!\n" ;
+            std::exit(1) ;
+          }
 
           auto tEnd = tStart + sizeOfUnitig - 1 ;
           eqClassMap[contigId][tid].emplace_back(tStart, tEnd, ore) ;

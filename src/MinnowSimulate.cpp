@@ -519,7 +519,7 @@ void doPCRBulkDBG(
     //fragmentLength
     //size_t fragmentLength{MAX_FRAGLENGTH} ;
     double efficiencyProb{0.98} ;
-    double mutationProb{0.001} ;
+    double mutationProb{0.01} ;
     double seqeneceErrorProb{0.005} ;
 
     auto totNum = std::pow(2, numOfPCRCycles) * uniqueMolecules.size() ;
@@ -539,6 +539,7 @@ void doPCRBulkDBG(
     auto unitigMap = dbgPtr->unitigMap ;  
     size_t smallerMu{0} ; 
     size_t biggerMu{0} ; 
+
 
     for(uint32_t i = 0 ; i < uniqueMolecules.size() ; ++i){
         
@@ -573,14 +574,31 @@ void doPCRBulkDBG(
             fragLen = MAX_FRAGLENGTH ;
         }
         // clip the segment start pos 
+        auto segStartPosOld = segStartPos ;
         if(segStartPos < fragmentStartPos){
             segStartPos = fragmentStartPos ;
         }
-
+        
+        uint32_t slack_val{50} ; // mohsen number
 
         if(rspdMode){
             //fragmentStartPos = std::min(segStartPos, static_cast<uint32_t>(MAX_FRAGLENGTH)) ;
-            fragLen = tr.RefLength - segStartPos ;
+            //fragLen = tr.RefLength - segStartPos ;
+
+            auto segmentLength = segEndPos - segStartPos + 1 ;
+            if(segmentLength < READ_LEN){
+                fragLen = READ_LEN + slack_val ;
+            }else{
+                fragLen = segmentLength ;
+            }
+
+            if(segStartPos + fragLen > tr.RefLength){
+                fragLen = tr.RefLength - segStartPos + 1; 
+            }
+
+            if(segStartPos + fragLen > tr.RefLength){
+                std::cerr << fragLen << "\t" << tr.RefLength << "\t" << segStartPosOld << "\t" << segStartPos << "\t" << segEndPos << "\n" ;
+            }
 
             //fragmentEnd = segStartPos + fragLen - 1 ;
             fragmentSeq = std::string{tr.Sequence() + segStartPos, fragLen} ;
@@ -817,7 +835,7 @@ void doPCRBulk(
     std::default_random_engine generator;
     std::uniform_real_distribution<double> distribution(0.0,1.0);
     double efficiencyProb{0.98} ;
-    double mutationProb{0.001} ;
+    double mutationProb{0.01} ;
     double seqeneceErrorProb{0.005} ;
 
     //fragmentLength
@@ -970,29 +988,18 @@ void doPCRBulk(
     }
 
 
+
     bool doPCR{true} ;
-
     if(doPCR){
-        if(switchOnEffModel){
-            pcrClassPtr = new PCRClass(
-                uniqueMolecules.size(),
-                numOfPCRCycles,
-                mutationProb,
-                efficiencyProb,
-                errorRate,
-                switchOnEffModel
-            ) ;
-        }else{
-            pcrClassPtr = new PCRClass(
-                uniqueMolecules.size(),
-                numOfPCRCycles,
-                0.01,
-                0.99,
-                errorRate
-            ) ;
-
-        }
-
+        pcrClassPtr = new PCRClass(
+            uniqueMolecules.size(),
+            numOfPCRCycles,
+            mutationProb,
+            efficiencyProb,
+            errorRate,
+            switchOnEffModel
+        ) ;
+        
         pcrClassPtr->runPCR(
             sequenceMap
         );
@@ -1193,6 +1200,11 @@ void generateSequencesForCellDBG(
                     auto fixTidInfo = dataMatrixObj.getRandomTrInfo(git.first, sit.first, refInfo, present) ;
                     if(!present){
                         std::cerr << "DBG ::: GHOST ALERT ::: spooky tid " << fixTidInfo.tid << "\n" ;
+                    }
+
+                    if((fixTidInfo.end - fixTidInfo.start) < READ_LEN){
+                        std::cerr << " In minnow simulate length of contig is smaller than read length \n"
+                                  << fixTidInfo.start << "\t" << fixTidInfo.end << "\n" ;
                     }
 
                     uniqueMolecules.emplace_back(

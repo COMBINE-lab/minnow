@@ -122,6 +122,12 @@ public :
 			while(checked < trVec.size()){
 				int ind = rand() % trVec.size() ;
 				auto& fixTrInfo = trVec[ind] ; 
+
+				if((fixTrInfo.end - fixTrInfo.start) < READ_LEN){
+					std::cerr << "Should not happend REPORT IT \n" ;
+					std::exit(1) ;
+				}
+
 				int mid = fixTrInfo.start + std::round((fixTrInfo.end - fixTrInfo.start)/2) ;
 				if((refInfo.transcripts[fixTrInfo.tid].RefLength - mid) < READ_LEN){
 					checked++;

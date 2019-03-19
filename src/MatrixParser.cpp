@@ -219,9 +219,9 @@ void DataMatrix<T>::loadAlevinData(
 	// Here we model the exact same duplicated counts for each 
 	// cell, this is proportional to the actually mapped the 
 	// reference. This is explicitely obtained fron alevin run 
-	 
-
 	if (dupCounts){
+
+		consoleLog->info("Reading duplicated read numbers") ;
 		std::string dupCountFile = alevinDir + "/MappedUmi.txt" ;
 		if(! util::fs::FileExists(dupCountFile.c_str())){
 			std::cerr <<"filtered_cb_frequency.txt file does not exist\n" ;
@@ -691,6 +691,12 @@ void DataMatrix<T>::loadAlevinData(
 								auto tcInfoVec = dbgPtr->eqClassMap[seg][tid] ;
 								for(auto tInfo : tcInfoVec){
 									if(refInfo.transcripts[tid].RefLength - tInfo.eposInContig <= MAX_FRAGLENGTH){
+										if(tInfo.eposInContig - tInfo.sposInContig < READ_LEN){
+											std::cerr << "\n seg id " << tInfo.eposInContig << "\t" << tInfo.sposInContig << "\n" ;
+											std::exit(1) ;
+										}
+
+
 										localGeneProb[seg] = bfhCount ;
 										localTrVector[seg].emplace_back(
 											tid,
