@@ -72,6 +72,16 @@ std::map<char , std::vector<char>> charMap = {
     {'C', {'A', 'G', 'T', 'N'}} 
 };
 
+std::map<char, size_t> nuclMap = {
+    {'A', 0},
+    {'T', 1},
+    {'G', 2},
+    {'C', 3},
+    {'N', 4}
+} ;
+
+std::vector<char> nuclMapRev = {'A','T','G','C','N'} ;
+
 std::map<char , std::vector<char>> charMapUMI = {
     {'A', {'T', 'G', 'C'}}, 
     {'T', {'A', 'G', 'C'}},
@@ -81,6 +91,8 @@ std::map<char , std::vector<char>> charMapUMI = {
 
 using string_pair = std::pair<std::string, std::string> ;
 using stream_pair_ptr = std::pair<std::stringstream*, std::stringstream*> ;
+
+using ErrorMatrix = std::vector<std::vector<std::vector<double>>> ;
 
 void indexDistribution(
     int UMIPoolSize,
@@ -150,6 +162,29 @@ std::string imputeErrorInString(
     }
     return seq ;
 }
+
+std::string imputeIlluminaModel(
+    std::vector<std::vector<std::vector<double>>>& errorModel,
+    std::string& seq 
+){
+    std::random_device rdg;
+    std::mt19937 geng(rdg());
+
+    for(size_t pos = 0 ; pos < seq.size() ; ++pos){
+       int ind = nuclMap[seq[pos]] ;
+       auto probVec = errorModel[pos][ind]  ;
+	   
+       std::discrete_distribution<> dg(probVec.begin(), probVec.end()) ;
+       auto mutatedInd = dg(geng) ;
+       if (mutatedInd != ind){
+
+           seq[ind] = nuclMapRev[mutatedInd] ;
+       }
+
+    }
+    return seq ;
+}
+
 
 std::string imputeErrorInStringUMI(
     double errorProbability,
@@ -506,6 +541,7 @@ void doPCRBulkDBG(
     uint32_t& numOfPCRCycles,
     double& errorRate,
     bool switchOnEffModel,
+    ErrorMatrix& errorModel,
     fmt::MemoryWriter& sstream_left,
     fmt::MemoryWriter& sstream_right
 ){
@@ -575,8 +611,11 @@ void doPCRBulkDBG(
         }
         // clip the segment start pos 
         auto segStartPosOld = segStartPos ;
+        bool max_frag_on{false} ;
+
         if(segStartPos < fragmentStartPos){
             segStartPos = fragmentStartPos ;
+            max_frag_on = true ;
         }
         
         uint32_t slack_val{50} ; // mohsen number
@@ -586,6 +625,12 @@ void doPCRBulkDBG(
             //fragLen = tr.RefLength - segStartPos ;
 
             auto segmentLength = segEndPos - segStartPos + 1 ;
+            if(!max_frag_on){
+                if (segStartPos > slack_val){
+                    segStartPos = segStartPos - slack_val ;
+                }
+            }
+
             if(segmentLength < READ_LEN){
                 fragLen = READ_LEN + slack_val ;
             }else{
@@ -716,8 +761,11 @@ void doPCRBulkDBG(
                               << ":" << uniqReadId 
                               << "\n" ;
 
-
-                sstream_right << imputeErrorInString(seqeneceErrorProb, readSeq) << "\n" ;
+                if(errorModel.size() != 0){
+                    sstream_right << imputeIlluminaModel(errorModel, readSeq) << "\n" ;
+                }else{
+                    sstream_right << imputeErrorInString(seqeneceErrorProb, readSeq) << "\n" ;
+                }
                 sstream_right << "+\n" ;
                 sstream_right << std::string(READ_LEN, 'N') << "\n" ; 
                 uniqReadId++ ;              
@@ -775,7 +823,11 @@ void doPCRBulkDBG(
                                 << "\n" ;
 
 
-                    sstream_right << imputeErrorInString(seqeneceErrorProb, readSeq)  << "\n" ;
+                    if(errorModel.size() != 0){
+                        sstream_right << imputeIlluminaModel(errorModel, readSeq) << "\n" ;
+                    }else{
+                        sstream_right << imputeErrorInString(seqeneceErrorProb, readSeq) << "\n" ;
+                    }
                     sstream_right << "+\n" ;
                     sstream_right << std::string(READ_LEN, 'N') << "\n" ; 
                     uniqReadId++ ;    
@@ -816,6 +868,7 @@ void doPCRBulk(
     bool& switchOnEffModel,
     bool& isNoisyCell,
     bool& isDoublet,
+    ErrorMatrix errorModel,
     fmt::MemoryWriter& sstream_left ,
     fmt::MemoryWriter& sstream_right,
     bool debug = false 
@@ -1053,8 +1106,14 @@ void doPCRBulk(
                               << ":" << i 
                               << ":" << uniqReadId 
                               << "\n" ;
+                
+                if(errorModel.size() != 0){
+                    sstream_right << imputeIlluminaModel(errorModel, readSeqMap[ind]) << "\n" ;
+                }else{
+                    sstream_right << imputeErrorInString(seqeneceErrorProb, readSeqMap[ind]) << "\n" ;
+                }
 
-                sstream_right << imputeErrorInString(seqeneceErrorProb, readSeqMap[ind]) << "\n" ;
+                //sstream_right << imputeErrorInString(seqeneceErrorProb, readSeqMap[ind]) << "\n" ;
                 sstream_right << "+\n" ;
                 sstream_right << std::string(READ_LEN, 'N') << "\n" ; 
                 uniqReadId++ ;              
@@ -1107,7 +1166,14 @@ void doPCRBulk(
                                     << ":" << uniqReadId 
                                     << "\n" ;
                     uniqReadId++ ;
-                    sstream_right << imputeErrorInString(seqeneceErrorProb, readSeq) << "\n" ;
+                    
+                    if(errorModel.size() != 0){
+                        sstream_right << imputeIlluminaModel(errorModel, readSeq) << "\n" ;
+                    }else{
+                        sstream_right << imputeErrorInString(seqeneceErrorProb, readSeq) << "\n" ;
+                    }
+
+                    //sstream_right << imputeErrorInString(seqeneceErrorProb, readSeq) << "\n" ;
                     // wrtie + and quality
                     sstream_right << "+\n" ;
                     sstream_right << std::string(READ_LEN, 'N') << "\n" ; 
@@ -1143,6 +1209,7 @@ void generateSequencesForCellDBG(
     std::vector<std::string>& UMIList,
     Reference& refInfo,
     std::vector<Transcript>& transcripts,
+    ErrorMatrix& errorModel,
     moodycamel::ConcurrentQueue<stream_pair_ptr, MyTraits>& conQueue,
     MutexT* iomutex
 ){
@@ -1239,6 +1306,7 @@ void generateSequencesForCellDBG(
             numOfPCRCycles,
             errorRate,
             switchOnEffModel,
+            errorModel,
             sstream_left,
             sstream_right
         ) ;
@@ -1299,6 +1367,7 @@ void generateSequencesForCell(
     std::vector<std::string>& UMIList,
     std::unordered_set<uint32_t>& emptyCellVector,
     std::vector<Transcript>& transcripts,
+    ErrorMatrix& errorModel,
     moodycamel::ConcurrentQueue<stream_pair_ptr, MyTraits>& conQueue,
     MutexT* iomutex
 )
@@ -1465,6 +1534,7 @@ void generateSequencesForCell(
             switchOnEffModel,
             isNoisyCell,
             isDoublet,
+            errorModel,
             sstream_left, 
             sstream_right
            // sstream_matrix
@@ -1573,6 +1643,16 @@ bool spawnCellThreads(
 
     bool useDBG = simOpts.useDBG ;
 
+    std::string illuminaModelFile = simOpts.illuminaModelFile ;
+
+    ErrorMatrix errorModel ;
+
+    if(illuminaModelFile != ""){
+        util::readIlluminaErrorModel(illuminaModelFile, errorModel) ;
+        consoleLog->info("Illumuna error model is loaded") ;
+    }
+
+
     //concurrent queue to store the simulated reads
     moodycamel::ConcurrentQueue<stream_pair_ptr, MyTraits> conQueue(1, 0, nthread -1 ) ;  
 
@@ -1614,6 +1694,7 @@ bool spawnCellThreads(
                 std::ref(UMIList),
                 std::ref(emptyCellVector),
                 std::ref(transcripts),
+                std::ref(errorModel),
                 std::ref(conQueue),
                 &iomutex
             );
@@ -1632,6 +1713,7 @@ bool spawnCellThreads(
                 std::ref(UMIList),
                 std::ref(refInfo),
                 std::ref(transcripts),
+                std::ref(errorModel),
                 std::ref(conQueue),
                 &iomutex
             );
@@ -1723,6 +1805,7 @@ void minnowSimulate(SimulateOptions& simOpts){
     // Collect reference information
     // this will populate the transcript 
     // sequences too 
+
     
     consoleLog->info("Reading reference sequences ...") ;
     

@@ -12,7 +12,9 @@
 #include "GFAReader.hpp"
 
 #include <unordered_set>
+#include <iomanip> 
 #include <numeric>
+#include <cmath>
 
 #include "zstr.hpp"
 
@@ -827,6 +829,12 @@ void DataMatrix<T>::loadAlevinData(
 		// filled up and ready to be converted to the transcript level 
 		// counts 
 
+		//std::string diff_file_name = "diff_file.txt" ;
+		//std::ofstream diffFileStream(diff_file_name) ;
+		//diffFileStream << "l1" << "\t" << "l2" << "\t" << "sum_sampled" << "\t" << "sum_true" << "\t"
+		//				<< "after" << "\t" << "before" << "\n" ;
+	
+
 		size_t cellId{0} ;
 		size_t numOfExpressedGenesInput{0}; 
 		//size_t numOfExpressedGenesOutput{0} ;
@@ -904,6 +912,8 @@ void DataMatrix<T>::loadAlevinData(
 
 				//std::cerr << "DEBUG: Double and Int " << totGeneCountDouble << "\t" << totGeneCount << "\n" ;
 
+				auto cellGeneCountsCopy = cellGeneCounts ;
+
 				int toSubTract{0} ; 
 				for(uint32_t i = 0; i < cellGeneCounts.size() ; ++i){
 					if(cellGeneCounts[i] >= 1) {
@@ -917,8 +927,8 @@ void DataMatrix<T>::loadAlevinData(
 				// Sample form a multinomial dist with prob dist cellGeneCounts
 				
 
-				std::random_device rdg;
-    			std::mt19937 geng(rdg());
+				//std::random_device rdg;
+    			std::mt19937 geng(1);
 				std::discrete_distribution<> dg(cellGeneCounts.begin(), cellGeneCounts.end()) ;
 				for(int i = 0; i < totGeneCount ; ++i){
 					++cellGeneCountSampled[dg(geng)] ; 
@@ -926,13 +936,56 @@ void DataMatrix<T>::loadAlevinData(
 				//std::cerr << "\nDEBUG --> After multinomial sampling\n" ;
 				//std::cerr << "\nDEBUG --> cellGeneCountSampled size "<< cellGeneCountSampled.size() <<"\n" ;
 				trueGeneCounts[cellId].assign(cellGeneCountSampled.begin(), cellGeneCountSampled.end()) ;	
-				size_t numOfExpressedGenes2{0} ;
-				for(auto v : cellGeneCountSampled){
-						if(v > 0){
-							numOfExpressedGenes2 += 1 ;
-					}
-				}
+				//size_t numOfExpressedGenes2{0} ;
+				//size_t numOfExpressedGenes3{0} ;
+
+				//// before sampling 
+				//for(auto v : cellGeneCountsCopy){
+
+				//		if(v > 0){
+				//			numOfExpressedGenes3 += 1 ;
+				//	}
+				//}
+
+
+				//for(auto v : cellGeneCountSampled){
+				//		if(v > 0){
+				//			numOfExpressedGenes2 += 1 ;
+				//	}
+				//}
+				
+
+				//double l1_diff{0.0} ; 
+				//double l2_diff{0.0} ; 
+
+
+				//for(size_t i = 0; i < cellGeneCountSampled.size() ; ++i){
+				//	l1_diff += std::abs(
+				//		static_cast<double>(cellGeneCountSampled[i]) - 
+				//		cellGeneCountsCopy[i]
+				//	) ; 
+
+				//	l2_diff += pow((
+				//		static_cast<double>(cellGeneCountSampled[i]) - 
+				//		cellGeneCountsCopy[i]
+				//	         ),2) ; 
+				//}
+
+				//int totGeneCountRecheck = static_cast<int>(std::accumulate(cellGeneCountSampled.begin(), cellGeneCountSampled.end(), 0)) ; 
+
+
+
+				//diffFileStream << l1_diff << "\t" << std::fixed << std::setprecision(5) << "\t"
+				//               << std::sqrt(l2_diff) << std::fixed << std::setprecision(5)  << "\t" 
+				//			   << totGeneCountDouble << "\t" 
+				//			   << totGeneCountRecheck <<  "\t" 
+				//			   << numOfExpressedGenes3 << "\t" 
+				//			   << numOfExpressedGenes2 << "\n" ;
+				
 				int numOfDroppedGenes{0} ;
+				
+
+
 				//totGeneCountDouble = std::accumulate(cellGeneCounts.begin(), cellGeneCounts.end(), 0.0) ;
 				//std::cerr << "DEBUG: After multinomial sampling number of expressed genes " << numOfExpressedGenes2 
 				//          << "  Before number of expressed genes " << toSubTract <<  "\n" ;
@@ -1193,11 +1246,17 @@ void readSplatterMatrix(
 void readUniqueness(
      std::vector<std::pair<std::string, double>>& uniquenessInfo,
 	 std::unordered_map<std::string, uint32_t>& geneMap, 
+	 std::string& uniquenessListFile,
      bool useReverse
   
 ){
 
-	std::string uniquenessListFile{"../data/hg/hg_stranded_gene_uniqueness.txt"} ;
+	//std::string uniquenessListFile{"../data/hg/hg_stranded_gene_uniqueness.txt"} ;
+	if(!util::fs::FileExists(uniquenessListFile.c_str())){
+		std::cerr << uniquenessListFile << " does not exist, should exist, EXITING !!"; 
+		std::exit(1) ;
+	}
+
 	std::ifstream uniqueFileStream(uniquenessListFile) ;
 
 	std::string line ;
@@ -1236,11 +1295,18 @@ void readUniqueness(
 
 void makeUniquenessBins(
 	std::vector<std::unordered_set<std::string>>& uniqBins,
-	std::unordered_map<std::string, uint32_t>& geneMap
+	std::unordered_map<std::string, uint32_t>& geneMap,
+	std::string& uniquenessListFile
 ){
 
 
-	std::string uniquenessListFile{"../data/hg_stranded_gene_uniqueness.txt"} ;
+	//std::string uniquenessListFile{"../data/hg_stranded_gene_uniqueness.txt"} ;
+
+	if(!util::fs::FileExists(uniquenessListFile.c_str())){
+		std::cerr << uniquenessListFile << " does not exist, should exist, EXITING !!"; 
+		std::exit(1) ;
+	}
+
 	std::ifstream uniqueFileStream(uniquenessListFile) ;
 	std::vector<std::pair<std::string, double>> uniquenessInfo ;	
 	uniqBins.resize(10) ;
@@ -1292,9 +1358,9 @@ void makeUniquenessBins(
 		}
 	}
 
-	for(size_t i = 0 ; i < uniqBins.size() ; ++i){
-		//std::cerr << scoreBins[i] << "\t" << uniqBins[i].size() << "\n" ;
-	}
+	//for(size_t i = 0 ; i < uniqBins.size() ; ++i){
+	//	std::cerr << scoreBins[i] << "\t" << uniqBins[i].size() << "\n" ;
+	//}
 
 
 }
@@ -1312,13 +1378,14 @@ void DataMatrix<T>::loadSplatterData(
 	std::string outDir = simOpts.outDir ;
 	std::string bfhFile = simOpts.bfhFile ;
 	std::string gfaFile = simOpts.gfaFile ;
+	std::string uniquenessListFile = simOpts.uniquenessFile ; 
 	//bool useEqClass = simOpts.useEqClass ;
 	bool useWeibull = simOpts.useWeibull ;
 	bool useDBG = simOpts.useDBG ;
 
 
-	std::string geneListFile = splatterDir + "/quants_mat_rows.txt" ;
-	std::string cellListFile = splatterDir + "/quants_mat_cols.txt" ;
+	std::string geneListFile = splatterDir + "/quants_mat_cols.txt" ;
+	std::string cellListFile = splatterDir + "/quants_mat_rows.txt" ;
 
 	// this is gene to cell matrix 
 	std::string countFile = splatterDir + "/quants_mat.csv" ;
@@ -1464,7 +1531,7 @@ void DataMatrix<T>::loadSplatterData(
 		// in the reference fasta file
 
 		bool testUniqueness{simOpts.testUniqness} ;
-    bool revUniqness{simOpts.reverseUniqness} ;
+    	bool revUniqness{simOpts.reverseUniqness} ;
 
 		if(testUniqueness){
 			// read uniqueness file 
@@ -1472,7 +1539,7 @@ void DataMatrix<T>::loadSplatterData(
 			std::vector<std::pair<std::string, double>> uniquenessInfo ;
 			std::vector<std::pair<size_t, int>> countInfo ;
 
-			readUniqueness(uniquenessInfo, refInfo.geneMap, revUniqness) ;
+			readUniqueness(uniquenessInfo, refInfo.geneMap, uniquenessListFile, revUniqness) ;
 			size_t mostUniqGeneId{0} ;
 			size_t leastUniqGeneId{uniquenessInfo.size() - 1} ;
 
@@ -1548,6 +1615,7 @@ void DataMatrix<T>::loadSplatterData(
 
 		}
 		else{
+
 			size_t splatterGeneId{0} ;
 			// Assign a random gene to the columns of the matrix  
 			// Go over geneMap assign a gene that exists
@@ -1556,15 +1624,15 @@ void DataMatrix<T>::loadSplatterData(
 			std::vector<std::unordered_set<std::string>> uniqBins ;
 			std::vector<int> uniqHist ;
 
-			makeUniquenessBins(uniqBins, geneMap) ;
+			makeUniquenessBins(uniqBins, geneMap, uniquenessListFile) ;
 			uniqHist.resize(uniqBins.size()) ;
 
-			//std::cout << "Made uniqueness bins " << uniqBins.size() << "\t" << uniqHist.size() << "\n"; 
+			//std::cerr << "Made uniqueness bins " << uniqBins.size() << "\t" << uniqHist.size() << "\n"; 
 			size_t totalGenes{0} ;
 
 			for(size_t i = 0; i < uniqBins.size(); ++i){
 				uniqHist[i] = uniqBins[i].size() ;
-				//std::cout << "Bin " << i << " " << uniqHist[i] << "\n" ;
+				std::cout << "Bin " << i << " " << uniqHist[i] << " " << uniqBins[i].size() << "\n" ;
 				totalGenes +=uniqHist[i] ; 
 			}
 
@@ -1576,14 +1644,14 @@ void DataMatrix<T>::loadSplatterData(
 
 				std::discrete_distribution<> d(uniqHist.begin(), uniqHist.end());
 				int ind = d(gen) ;
-				while(!uniqHist[ind]){
-					for(size_t i = 0; i < uniqBins.size(); ++i){
-						uniqHist[i] = uniqBins[i].size() ;
-						//std::cout << "Bin " << i << " " << uniqHist[i] << "\n" ;
-					}	
-					ind = d(gen) ;
-					//std::exit(1) ;
-				}
+				//while(!uniqHist[ind]){
+				//	for(size_t i = 0; i < uniqBins.size(); ++i){
+				//		uniqHist[i] = uniqBins[i].size() ;
+				//		//std::cout << "Bin " << i << " " << uniqHist[i] << "\n" ;
+				//	}	
+				//	ind = d(gen) ;
+				//	//std::exit(1) ;
+				//}
 
 				auto randIt = uniqBins[ind].begin() ;
 				auto selectedGeneName = *randIt ;
@@ -1679,7 +1747,7 @@ void DataMatrix<T>::loadSplatterData(
 	if(useDBG){
 
 		if(!util::fs::FileExists(gfaFile.c_str())){
-			std::cerr << gfaFile << " should exist EXITING !!"; 
+			std::cerr << gfaFile << " does not exist, should exist EXITING !!"; 
 			std::exit(2) ;
 		}
 
@@ -1790,8 +1858,10 @@ void DataMatrix<T>::loadSplatterData(
 							//	segCount 
 							//) ;
 							auto bfhCount = eqClassPtr->countProbability[segCount] ;
-					
-							if(bfhCount != 0){
+							if (bfhCount == 0)
+								bfhCount = 1 ;
+
+							//if(bfhCount != 0){
 								// old one
 								// localTrVector[seg].emplace_back(tid) ;
 
@@ -1815,9 +1885,7 @@ void DataMatrix<T>::loadSplatterData(
 								}else{
 									localSegOreMap[seg] = true ;
 								}
-							}else{
-								//std::cerr << "segCount " << segCount << "\n" ;
-							}
+							//}
 						}
 					}
 				}
@@ -1989,7 +2057,7 @@ void DataMatrix<T>::loadSplatterData(
 			numOfDroppedGenes = 0 ;
 			_verbose("\rIn Splatter: Number of cells processed : %lu", cellId);
 		
-			if(useDBG){
+			if(useDBG && droppedGeneExpression > 0){
 				std::cerr << " Num of genes dropped due to dbg " << droppedGeneExpression 
 				<< " out of " <<  cellSum << "\n" ;
 

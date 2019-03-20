@@ -142,14 +142,14 @@ namespace util{
   }
 
   inline std::string genRandomSeq(uint32_t length){
-    std::vector<char> nuclMap = {'A', 'T', 'G', 'C'} ;
+    std::vector<char> nuclVec = {'A', 'T', 'G', 'C'} ;
     std::random_device rd; // obtain a random number from hardware
     std::mt19937 eng(rd()); // seed the generator
     std::uniform_int_distribution<> distr(0, 3); // define the range
 
     std::string seq(length, 'A') ;
     for(size_t i = 0; i < length; ++i){
-      seq[i] = nuclMap[distr(eng)] ;
+      seq[i] = nuclVec[distr(eng)] ;
     }
     return seq ;
   }
@@ -283,6 +283,55 @@ namespace util{
 
     return (index % (blockSize * static_cast<size_t>(std::pow(2, prevPcrCycleNum)))) ;
   }
+
+
+  inline void readIlluminaErrorModel(
+    std::string& errorProfileFile, 
+    std::vector<std::vector<std::vector<double>>>& errorModel
+  ){
+
+    if(! util::fs::FileExists(errorProfileFile.c_str())){
+      std::cerr << "Error model file " << errorProfileFile << " does not exist \n" ;
+      std::exit(1) ;
+    }
+    
+    errorModel.resize(101) ;
+    for (int i = 0; i < 101; i++){
+        errorModel[i].resize(5);
+        for (int j = 0; j < 5; j++)
+        {
+          errorModel[i][j].resize(5);
+        }
+    }
+
+
+    std::string line;
+    std::ifstream modelStream{errorProfileFile.c_str()} ;
+
+    size_t lineCount = 0 ;
+    size_t nuclCount = 0 ;
+
+    while(std::getline(modelStream, line)){
+      if(lineCount == 0){
+        lineCount++ ;
+        continue ;
+      }
+
+      std::vector<std::string> cellCountsString ; 
+      util::split(line, cellCountsString, "\t") ;
+      int pos = std::stoi(cellCountsString[6]) ;
+
+      for(size_t fid = 1 ; fid < 6 ; ++fid){
+
+        errorModel[pos][nuclCount%5][fid - 1] = std::stod(cellCountsString[fid]) ; 
+      
+      }
+      nuclCount += 1 ;
+    }
+  }
+
 }
+
+
 
 #endif

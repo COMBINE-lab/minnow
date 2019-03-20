@@ -46,6 +46,8 @@ public:
   std::string geneProbFile{""} ;
   std::string countProbFile{""} ;
   std::string numMolFile{""} ;
+  std::string uniquenessFile{""} ;
+  std::string illuminaModelFile{""} ;
 
   std::string refFile ;
   std::string outDir ;

@@ -138,6 +138,14 @@ int main(int argc, char* argv[]) {
     (option("--gfa") & 
     value("gfa_file", simulateOpt.gfaFile)) %
     "gfa file for contigs",
+
+    (option("--uniq") & 
+    value("sequence uniqueness file", simulateOpt.uniquenessFile)) %
+    "sequence uniqueness file",
+    
+    (option("--illum") & 
+    value("illumina model", simulateOpt.illuminaModelFile)) %
+    "illumina error model file",
     
     //read dedup counts 
     (option("--dupCounts").set(simulateOpt.dupCounts, true)) %
