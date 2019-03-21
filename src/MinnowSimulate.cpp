@@ -178,7 +178,7 @@ std::string imputeIlluminaModel(
        auto mutatedInd = dg(geng) ;
        if (mutatedInd != ind){
 
-           seq[ind] = nuclMapRev[mutatedInd] ;
+           seq[pos] = nuclMapRev[mutatedInd] ;
        }
 
     }
