@@ -12,7 +12,7 @@
 #include "GFAReader.hpp"
 
 #include <unordered_set>
-#include <iomanip> 
+#include <iomanip>
 #include <numeric>
 #include <cmath>
 
@@ -85,6 +85,134 @@ void loadTSVFile(
 	}
 	
 }
+
+template<typename T>
+void populateGeneCountFromBinaryNew(
+                                    std::string& countMatFilename, 
+                                    std::vector<std::vector<T>>& geneCount,
+                                    uint32_t& numCells, 
+                                    size_t& numOfGenes,
+                                    std::unordered_map<uint32_t, uint32_t>& original2whitelistMap,
+                                    std::unordered_map<uint32_t, uint32_t>& original2NoisyMap,
+                                    uint32_t& numOfOriginalCells
+){
+
+
+      if(! util::fs::FileExists(countMatFilename.c_str())){
+        std::cerr << "quants_mat.gz file does not exist\n" ;
+        std::exit(1) ; 
+      }
+
+      bool predefinedCells = (original2whitelistMap.size() != 0) ;
+      auto popcount = [](uint8_t n) {
+        size_t count {0};
+        while (n) {
+          n &= n-1;
+          ++count;
+        }
+        return count;
+      };
+
+      uint32_t zerod_cells {0};
+      size_t numFlags = (numOfGenes/8)+1;
+      std::vector<uint8_t> alphasFlag (numFlags, 0);
+      size_t flagSize = sizeof(decltype(alphasFlag)::value_type);
+
+      std::vector<float> alphasSparse;
+      alphasSparse.reserve(numFlags/2);
+      size_t elSize = sizeof(decltype(alphasSparse)::value_type);
+
+      std::unique_ptr<std::istream> in =
+        std::unique_ptr<std::istream> (new zstr::ifstream(countMatFilename.c_str(), std::ios::in | std::ios::binary)) ;
+
+      // Loop over the binary matrix
+
+      size_t cellCount{0} ;
+      for (size_t cellId = 0 ; cellId < numOfOriginalCells ; ++cellId){
+
+        // read the row in alphasSparse
+        in->read(reinterpret_cast<char*>(alphasFlag.data()), flagSize * numFlags);
+        size_t numExpGenes {0};
+
+        std::vector<size_t> indices;
+        for (size_t j=0; j < alphasFlag.size(); j++) {
+          uint8_t flag = alphasFlag[j];
+          size_t numNonZeros = popcount(flag);
+          numExpGenes += numNonZeros;
+
+          for (size_t i=0; i<8; i++){
+            if (flag & (128 >> i)) {
+              indices.emplace_back( i+(8*j) );
+            }
+          }
+        }
+
+        if (indices.size() != numExpGenes) {
+          std::cerr<< "binary format reading error "  << indices.size() << numExpGenes << "\n";
+          exit(84);
+        }
+        alphasSparse.clear();
+        alphasSparse.resize(numExpGenes);
+        in->read(reinterpret_cast<char*>(alphasSparse.data()), elSize * numExpGenes);
+        // the cell quant values are present in alphasSparse
+
+        float readCount {0.0};
+        readCount += std::accumulate(alphasSparse.begin(), alphasSparse.end(), 0.0);
+
+
+        if(predefinedCells){
+          if (original2whitelistMap.find(cellId) != original2whitelistMap.end()){
+            uint32_t whitelistCellId = original2whitelistMap[cellId] ;
+            if(whitelistCellId >= numCells)
+              continue ;
+            for(size_t i = 0 ; i < numExpGenes ; i++){
+              geneCount[whitelistCellId][indices[i]] = alphasSparse[i] ;
+            }
+            cellCount++ ;
+            _verbose("\rNumber of cells read  : %lu", cellCount);
+
+            if(cellCount == numCells){
+              break ;
+            }
+
+          }else if(original2NoisyMap.find(cellId) != original2NoisyMap.end()){
+            uint32_t noisyCellId = original2NoisyMap[cellId] ;
+
+            for(size_t i = 0 ; i < numExpGenes ; i++){
+              geneCount[noisyCellId][indices[i]] = alphasSparse[i] ;
+            }
+            cellCount++ ;
+            _verbose("\rNumber of cells read noisy  : %lu", cellCount);
+            if (cellCount == numCells){
+              break ;
+            }
+          }
+        }else{
+
+          cellCount++ ;
+
+          for(size_t i = 0 ; i < numExpGenes ; i++){
+            geneCount[cellId][indices[i]] = alphasSparse[i] ;
+          }
+          cellCount++ ;
+          _verbose("\rNumber of cells read noisy  : %lu", cellCount);
+          if (cellCount == numCells){
+            break ;
+          }
+
+        }
+
+
+        if (readCount == 0.0){
+          zerod_cells += 1;
+        }
+      } // end-for each cell
+
+      if (zerod_cells > 0) {
+        std::cerr << "Found {} cells with 0 counts " <<  zerod_cells << "\n";
+      }
+}
+
 
 template<typename T>
 void populateGeneCountFromBinary(
@@ -618,6 +746,9 @@ void DataMatrix<T>::loadAlevinData(
 		dbgPtr = new GFAReader(gfaFile) ;
 		dbgPtr->parseFile(refInfo) ;
 
+    std::cerr << " Read GFA file \n" << std::flush ;
+    
+
 		// stand alone call to bfh
 		// ignore other eqclass stuff 
 		std::string eqFileDir = "/mnt/scratch1/hirak/minnow/metadata/hg/" ;
@@ -657,15 +788,27 @@ void DataMatrix<T>::loadAlevinData(
 			) ; 
 		}
 
+    std::cerr << " Read BFH file \n" << std::flush ;
+    std::cerr << numOfGenes << "\n" << " alven2refMap.size(): " << alevin2refMap.size() << "\n"  << std::flush ;
+
+    std::cerr << " Space to be allocated \n" << std::flush ;
+
 		preCalculatedSegProb.resize(numOfGenes) ; // per gene
 		preSegOreMapVector.resize(numOfGenes) ;
 		geneSpecificTrVector.resize(numOfGenes) ;
 
+
+    std::cerr << " Space allocated \n" << std::flush ;
+
 		// fill segment based probability
-		// gene to tr to prob mapping 
+		// gene to tr to prob 
+
 
 		//uint32_t trackGid{54819} ;
 		for(uint32_t i = 0; i < numOfGenes; ++i){
+
+      //std::cerr << i << " gene\n" << std::flush ;
+
 			auto it = alevin2refMap.find(i) ;
 			if(it != alevin2refMap.end()){
 				auto originalGeneId = it->second ;
@@ -728,15 +871,15 @@ void DataMatrix<T>::loadAlevinData(
 			}
 		} 
 
-		std::cerr << " After loading bfh prob size " << preCalculatedSegProb.size() << "\n" ;
+		std::cerr << " After loading bfh prob size " << preCalculatedSegProb.size() << "\n" << std::flush  ;
 		cellSegCount.resize(numCells + numOfDoublets) ;
 
-		
+
 
 	}
-	
 
-	{
+
+  {
 
 		size_t nonWhiteLisBarcodesSkipped{0} ;
 
@@ -771,7 +914,7 @@ void DataMatrix<T>::loadAlevinData(
 		}else{
 			std::cout << "\n" ;
 			consoleLog->info("Loading the binary Matrix") ;
-			populateGeneCountFromBinary(countFileBinary, originalGeneCountMatrix, numCells, numOfOriginalGenes, original2whitelistMap, original2NoisyMap, numOfOriginalCells) ;
+			populateGeneCountFromBinaryNew(countFileBinary, originalGeneCountMatrix, numCells, numOfOriginalGenes, original2whitelistMap, original2NoisyMap, numOfOriginalCells) ;
 		}
 
 		consoleLog->info("Loaded the Matrix") ;

@@ -40,14 +40,17 @@ void BFHClass::loadBFH(
     std::string& outDir
 ){
     
+
+
     if(! util::fs::FileExists(bfhFile.c_str())){
-		std::cerr << bfhFile << " does not exists \n" ;
-		std::exit(1) ; 
-	}
+      std::cerr << bfhFile << " does not exists \n" ;
+      std::exit(1) ; 
+	  }
 
     bool createClusterLevelHist{false} ;
-    std::cout << "cell Clust file " << cellClusterFile << "\n" ;
     if(cellClusterFile != ""){
+        std::cout << "[DEBUG] cell Clust file " << cellClusterFile << "\n" ;
+
         if(! util::fs::FileExists(cellClusterFile.c_str())){
             std::cerr << cellClusterFile << " is not empty and does not exist \n" ;
             std::exit(1) ;
@@ -72,11 +75,13 @@ void BFHClass::loadBFH(
                 std::cerr << "Avoiding this cluster\n" ;
             }
         }
+        std::cerr << "[DEBUG] read cluster file with size " << cell2ClusterMap.size() << "\n" ;
     }
-    std::cerr << "DEBUG : read cluster file with size " << cell2ClusterMap.size() << "\n" ;
 
-	std::ifstream dataStream(bfhFile.c_str()) ;
-	std::string line ; 
+    std::cerr<< "[DEBUG] Reading BFH file ........ \n" ;
+
+	  std::ifstream dataStream(bfhFile.c_str()) ;
+	  std::string line ;
 
     std::getline(dataStream, line) ;
     uint32_t numTranscripts = std::stoul(line) ;
@@ -85,7 +90,9 @@ void BFHClass::loadBFH(
     std::getline(dataStream, line) ;
     uint32_t numEqClasses = std::stoul(line) ;
 
-    std::cerr << "DEBUG: numEqClasses: " << numEqClasses << "\n" ;
+    std::cerr << "[DEBUG] numTranscripts: " << numTranscripts << "\n" ;
+    std::cerr << "[DEBUG] numCells: " << numCells << "\n" ;
+    std::cerr << "[DEBUG] numEqClasses: " << numEqClasses << "\n" ;
 
     std::vector<std::string> trNames(numTranscripts) ;
     std::vector<std::string> CBNames(numCells) ;
@@ -93,17 +100,21 @@ void BFHClass::loadBFH(
         std::getline(dataStream, line) ;
         trNames[i] = line ;
     }
-    
+
+    std::cerr << "[DEBUG] Transcripts read \n" ;
     for(size_t i  = 0; i < numCells; ++i){
         std::getline(dataStream, line) ;
         CBNames[i] = line ;
     }
 
-    // read equivalence classes now 
-    uint32_t tot_reads{0} ; 
+
+    std::cerr << "[DEBUG] Cell names read \n" ;
+
+    // read equivalence classes now
+    uint32_t tot_reads{0} ;
     std::unordered_map<uint32_t, uint32_t> countHistogram ;
     auto& transcript2geneMap = refInfo.transcript2geneMap ;
-   
+
     while(std::getline(dataStream, line)){
         std::vector<std::string> tokens ;
         util::split(line, tokens, "\t") ;
@@ -114,15 +125,20 @@ void BFHClass::loadBFH(
             auto it = refInfo.transcriptNameMap.find(tname) ;
             if(it != refInfo.transcriptNameMap.end()){
                 auto tid = it->second ;
-                auto gid = transcript2geneMap[tid] ;
-                geneIds.insert(gid) ;
+                if(transcript2geneMap.find(tid) != transcript2geneMap.end()){
+                  auto gid = transcript2geneMap[tid] ;
+                  geneIds.insert(gid) ;
+                }else{
+                  std::cerr << "transcript is in the list but no corresponding gene found \n" ;
+                  std::exit(2) ;
+                }
             }
         }
 
         uint32_t num_reads = std::stoul(tokens[num_labels+1]) ;
 
         for(auto gid : geneIds){
-            geneCountHistogram[gid][num_labels] += num_reads ;    
+          geneCountHistogram[gid][num_labels] += num_reads ;
         }
 
         if(createClusterLevelHist){
@@ -134,19 +150,19 @@ void BFHClass::loadBFH(
 
             for(uint32_t i = 0; i < numOfCells ; ++i){
                 size_t internalCellBarcodeId = std::stoul(tokens[idx]) ;
-                
-                // cell specific information 
+
+                // cell specific information
                 size_t numOfUmis = std::stoul(tokens[idx+1]) ;
                 uint32_t umiCountSum{0} ;
 
                 for(size_t umi_id = 0 ; umi_id < numOfUmis ; ++umi_id){
                     size_t umi_cnt_idx = idx + 1 + ((umi_id * 2) + 2) ;
-                    //std::cerr << " umi_cnt_idx " << umi_cnt_idx << "\n" ;                        
+                    //std::cerr << " umi_cnt_idx " << umi_cnt_idx << "\n" ;
                     umiCountSum += std::stoul(tokens[umi_cnt_idx]) ;
                 }
 
                 std::string cell_name = CBNames[internalCellBarcodeId] ;
-                // for now concentrate on cell id that are whitelisted 
+                // for now concentrate on cell id that are whitelisted
                 auto it = cellWhiteListMap.find(cell_name) ;
                 if(it != cellWhiteListMap.end()){
                     auto globalCellBarcodeId = it->second ;
@@ -168,7 +184,7 @@ void BFHClass::loadBFH(
                 idx += 1 + std::stoul(tokens[idx+1]) * 2 + 1 ;
             }
         }
-        
+ 
         auto it = countHistogram.find(num_labels) ;
         if(it != countHistogram.end()){
             countHistogram[num_labels] += num_reads ;
@@ -178,22 +194,36 @@ void BFHClass::loadBFH(
         tot_reads += num_reads ;
     }
 
-    
+
+    std::cerr << "[DEBUG] countHistogram.size() " << countHistogram.size() << "\n" ;
+
+
 
     auto x = std::max_element( countHistogram.begin(), countHistogram.end(),
         [](const std::pair<uint32_t, uint32_t>& p1, const std::pair<uint32_t, uint32_t>& p2) {
         return p1.first < p2.first; });
 
-    countProbability.resize(x->first, 0.0) ;
+    std::cerr << "[DEBUG] x->first, x->second tot_reads "
+              << x->first << "\t" << x->second
+              << "\t" << tot_reads << "\n" ;
+
+    countProbability.resize(x->first + 1, 0.0) ;
     for(auto it: countHistogram){
+      if(it.first >= countProbability.size()){
+        std::cerr << "[DEBUG] out of memory " << it.first << "\t" << countProbability.size() << "\n" ;
+      }
+
         countProbability[it.first] = static_cast<double>(it.second)/static_cast<double>(tot_reads) ; 
     }
 
 
+
     {
         std::string geneCountHistogramFile = outDir + "/geneLevelProb.txt" ;
+        std::cerr << "DEBUG:  " << geneCountHistogramFile << "\n" ;
         std::ofstream probStream(geneCountHistogramFile.c_str()) ;
-		probStream << geneCountHistogram.size() << "\n" ;
+        probStream << geneCountHistogram.size() << "\n" ;
+        std::cerr << "DEBUG: " << geneCountHistogram.size() << " " << geneCountHistogramFile << "\n" << std::flush;
         for(auto it : refInfo.geneMap){
             if(geneCountHistogram.find(it.second) != geneCountHistogram.end()){
                 // print gene name
@@ -207,16 +237,19 @@ void BFHClass::loadBFH(
 
     }
 
+
     {
         std::string countProbabilityFile = outDir + "/countProb.txt" ;
         std::ofstream probStream(countProbabilityFile.c_str()) ;
-		probStream << countProbability.size() << "\n" ;
+        probStream << countProbability.size() << "\n" ;
         for(auto prob : countProbability){
             // print gene name
             probStream << prob << "\n" ;
         }
     }
-    
+
+    std::cerr << "[DEBUG] Exiting after reading BFH \n" ;
+
 }
 
 void BFHClass::loadProbability(std::string& file, Reference& refInfo, bool geneLevel){

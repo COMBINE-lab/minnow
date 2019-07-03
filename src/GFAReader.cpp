@@ -257,7 +257,7 @@ void GFAReader::parseFile(
 			  << "\ttrSegmentMap size " << trSegmentMap.size() 
 			  << "\ttranscript map size " << refInfo.transcriptNameMap.size() << "\n" ;
 
-	//std::cerr << "After filtering eqclassSize " << eqClassMap.size() << " \n" ;
+    //std::cerr << "After filtering eqclassSize " << eqClassMap.size() << " \n" ;
 
 }
 
