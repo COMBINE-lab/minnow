@@ -114,7 +114,7 @@ void populateGeneCountFromBinaryNew(
       };
 
       uint32_t zerod_cells {0};
-      size_t numFlags = (numOfGenes/8)+1;
+      size_t numFlags = std::ceil(numOfGenes/8);
       std::vector<uint8_t> alphasFlag (numFlags, 0);
       size_t flagSize = sizeof(decltype(alphasFlag)::value_type);
 
@@ -123,8 +123,16 @@ void populateGeneCountFromBinaryNew(
       size_t elSize = sizeof(decltype(alphasSparse)::value_type);
 
       std::unique_ptr<std::istream> in =
-        std::unique_ptr<std::istream> (new zstr::ifstream(countMatFilename.c_str(), std::ios::in | std::ios::binary)) ;
+        std::unique_ptr<std::istream> (
+             new zstr::ifstream(countMatFilename.c_str(),
+             std::ios::in | std::ios::binary)
+        ) ;
 
+      //std::unique_ptr<std::istream> in =
+      //  std::unique_ptr<std::istream> (
+      //                                 new std::ifstream(countMatFilename.c_str(),
+      //                                 std::ios::in | std::ios::binary)
+      //                                 ) ;
       // Loop over the binary matrix
 
       size_t cellCount{0} ;
@@ -152,13 +160,19 @@ void populateGeneCountFromBinaryNew(
           exit(84);
         }
         alphasSparse.clear();
-        alphasSparse.resize(numExpGenes);
+        alphasSparse.resize(numExpGenes, 0.0);
+
         in->read(reinterpret_cast<char*>(alphasSparse.data()), elSize * numExpGenes);
         // the cell quant values are present in alphasSparse
 
         float readCount {0.0};
-        readCount += std::accumulate(alphasSparse.begin(), alphasSparse.end(), 0.0);
-
+        readCount = std::accumulate(alphasSparse.begin(), alphasSparse.end(), 0.0);
+        for(size_t k = 0; k < alphasSparse.size() ; ++k){
+          std::cerr << alphasSparse[k] << "\t" ;
+          if(k == 10)
+            break ;
+          readCount += alphasSparse[k] ;
+        }
 
         if(predefinedCells){
           if (original2whitelistMap.find(cellId) != original2whitelistMap.end()){
@@ -166,6 +180,7 @@ void populateGeneCountFromBinaryNew(
             if(whitelistCellId >= numCells)
               continue ;
             for(size_t i = 0 ; i < numExpGenes ; i++){
+              //std::cerr << alphasSparse[i] << "\n" ;
               geneCount[whitelistCellId][indices[i]] = alphasSparse[i] ;
             }
             cellCount++ ;
@@ -179,6 +194,7 @@ void populateGeneCountFromBinaryNew(
             uint32_t noisyCellId = original2NoisyMap[cellId] ;
 
             for(size_t i = 0 ; i < numExpGenes ; i++){
+              //std::cerr << alphasSparse[i] << "\n";
               geneCount[noisyCellId][indices[i]] = alphasSparse[i] ;
             }
             cellCount++ ;
@@ -192,9 +208,10 @@ void populateGeneCountFromBinaryNew(
           cellCount++ ;
 
           for(size_t i = 0 ; i < numExpGenes ; i++){
+            //std::cerr << alphasSparse[i] << "\n";
             geneCount[cellId][indices[i]] = alphasSparse[i] ;
           }
-          cellCount++ ;
+
           _verbose("\rNumber of cells read noisy  : %lu", cellCount);
           if (cellCount == numCells){
             break ;
@@ -206,10 +223,19 @@ void populateGeneCountFromBinaryNew(
         if (readCount == 0.0){
           zerod_cells += 1;
         }
+
       } // end-for each cell
 
       if (zerod_cells > 0) {
         std::cerr << "Found {} cells with 0 counts " <<  zerod_cells << "\n";
+      }
+
+
+      double totSum{0} ;
+      for(size_t i = 0 ; i < geneCount.size() ; ++i){
+        for(size_t j = 0 ; j < geneCount[0].size() ; ++j){
+          totSum += geneCount[i][j] ;
+        }
       }
 }
 
@@ -919,6 +945,7 @@ void DataMatrix<T>::loadAlevinData(
 
 		consoleLog->info("Loaded the Matrix") ;
 
+
 		// Make a truncated geneCounts file
 		//T skippedCount{0} ;
 		if(numOfSkippedGenes > 0){
@@ -984,6 +1011,7 @@ void DataMatrix<T>::loadAlevinData(
 			
 
 		for(auto& cellGeneCounts : geneCounts){
+
 			// check if this cell Id is in cellWhiteListMap
 			// std::cerr << "\nreading cell line\n" ;
 			int droppedGeneExpression{0} ;
@@ -1053,7 +1081,7 @@ void DataMatrix<T>::loadAlevinData(
 
 				int totGeneCount = static_cast<int>(std::accumulate(cellGeneCounts.begin(), cellGeneCounts.end(), 0.0)) ;
 
-				//std::cerr << "DEBUG: Double and Int " << totGeneCountDouble << "\t" << totGeneCount << "\n" ;
+				//std::cerr << "[DEBUG]: Double and Int " << totGeneCountDouble << "\t" << totGeneCount << "\n" ;
 
 				auto cellGeneCountsCopy = cellGeneCounts ;
 
@@ -1076,8 +1104,8 @@ void DataMatrix<T>::loadAlevinData(
 				for(int i = 0; i < totGeneCount ; ++i){
 					++cellGeneCountSampled[dg(geng)] ; 
 				}
-				//std::cerr << "\nDEBUG --> After multinomial sampling\n" ;
-				//std::cerr << "\nDEBUG --> cellGeneCountSampled size "<< cellGeneCountSampled.size() <<"\n" ;
+				//std::cerr << "[DEBUG] --> After multinomial sampling\n" ;
+				//std::cerr << "[DEBUG] --> cellGeneCountSampled size "<< cellGeneCountSampled.size() <<"\n" ;
 				trueGeneCounts[cellId].assign(cellGeneCountSampled.begin(), cellGeneCountSampled.end()) ;	
 				//size_t numOfExpressedGenes2{0} ;
 				//size_t numOfExpressedGenes3{0} ;
