@@ -167,12 +167,6 @@ void populateGeneCountFromBinaryNew(
 
         float readCount {0.0};
         readCount = std::accumulate(alphasSparse.begin(), alphasSparse.end(), 0.0);
-        for(size_t k = 0; k < alphasSparse.size() ; ++k){
-          std::cerr << alphasSparse[k] << "\t" ;
-          if(k == 10)
-            break ;
-          readCount += alphasSparse[k] ;
-        }
 
         if(predefinedCells){
           if (original2whitelistMap.find(cellId) != original2whitelistMap.end()){
@@ -375,44 +369,84 @@ void DataMatrix<T>::loadAlevinData(
 	// Here we model the exact same duplicated counts for each 
 	// cell, this is proportional to the actually mapped the 
 	// reference. This is explicitely obtained fron alevin run 
+
+  
 	if (dupCounts){
 
-		consoleLog->info("Reading duplicated read numbers") ;
-		std::string dupCountFile = alevinDir + "/MappedUmi.txt" ;
-		if(! util::fs::FileExists(dupCountFile.c_str())){
-			std::cerr <<"filtered_cb_frequency.txt file does not exist\n" ;
-			std::exit(1) ; 
-		}
-		std::ifstream dupCountStream(dupCountFile) ;
-		std::string line ; 
-		while(std::getline(dupCountStream, line)){
-			line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
-			std::vector<std::string> tokens ; 
-			util::split(line, tokens, "\t") ;
-			if (tokens.size() == 2){
-				cellNamesDupCount[tokens[0]] = std::stoul(tokens[1]) ;
-			}
-		}
-		
-	}
+    consoleLog->info("Reading duplicated read numbers") ;
+    bool alevin_updated{false} ;
 
-	if(!dupCounts && (simOpts.numMolFile != "")){
-		if(! util::fs::FileExists(simOpts.numMolFile.c_str())){
-			std::cerr << simOpts.numMolFile << " does not exist\n" ;
-		}else{
-			std::ifstream dupCountStream(simOpts.numMolFile) ;
-			std::string line ; 
-			while(std::getline(dupCountStream, line)){
-				line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
-				std::vector<std::string> tokens ; 
-				util::split(line, tokens, "\t") ;
-				if (tokens.size() == 2){
-					cellNamesDupCount[tokens[0]] = std::stoul(tokens[1]) ;
-				}
-			}
+    std::string dupCountFile_1 = alevinDir + "/MappedUmi.txt" ;
+    std::string dupCountFile_2 = alevinDir + "/featureDump.txt" ;
 
-		}
-	}
+    std::string dupCountFile ;
+
+    if(! util::fs::FileExists(dupCountFile_2.c_str())){
+      if(! util::fs::FileExists(dupCountFile_1.c_str())){
+        std::cerr << "Neither MappedUmi.txt nor featureDump.txt exists run without --dupCounts\n" ;
+        std::exit(1) ;
+      }else{
+        dupCountFile = dupCountFile_1 ;
+      }
+    }else{
+      alevin_updated = true ;
+      dupCountFile = dupCountFile_2 ;
+    }
+
+
+    consoleLog->info("Reading duplicated read numbers") ;
+
+    if(!alevin_updated){
+      std::ifstream dupCountStream(dupCountFile) ;
+      std::string line ;
+      while(std::getline(dupCountStream, line)){
+        line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
+        std::vector<std::string> tokens ;
+        util::split(line, tokens, "\t") ;
+        if (tokens.size() == 2){
+          cellNamesDupCount[tokens[0]] = std::stoul(tokens[1]) ;
+        }
+      }
+    }else{
+
+        std::ifstream dupCountStream(dupCountFile) ;
+        std::string line ;
+
+        // throw away the first line
+        std::getline(dupCountStream, line) ;
+
+        while(std::getline(dupCountStream, line)){
+          line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
+          std::vector<std::string> tokens ; 
+          util::split(line, tokens, "\t") ;
+          if (tokens.size() > 2){
+            cellNamesDupCount[tokens[0]] = std::stoul(tokens[2]) ;
+          }
+        }
+    }
+
+    
+    if(!dupCounts && (simOpts.numMolFile != "")){
+      if(! util::fs::FileExists(simOpts.numMolFile.c_str())){
+        std::cerr << simOpts.numMolFile << " does not exist\n" ;
+      }else{
+        std::ifstream dupCountStream(simOpts.numMolFile) ;
+        std::string line ; 
+        while(std::getline(dupCountStream, line)){
+          line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
+          std::vector<std::string> tokens ; 
+          util::split(line, tokens, "\t") ;
+          if (tokens.size() == 2){
+            cellNamesDupCount[tokens[0]] = std::stoul(tokens[1]) ;
+          }
+        }
+
+      }
+    }
+    
+  }
+
+  
 
 	// The map contains gid to tid map, where 
 	// the gid is created first time here as, we 
@@ -1424,7 +1458,7 @@ void readUniqueness(
 
 	//std::string uniquenessListFile{"../data/hg/hg_stranded_gene_uniqueness.txt"} ;
 	if(!util::fs::FileExists(uniquenessListFile.c_str())){
-		std::cerr << uniquenessListFile << " does not exist, should exist, EXITING !!"; 
+		std::cerr << "[ERROR] The gene uniqueness file:: " << uniquenessListFile << " does not exist, should exist, EXITING !!"; 
 		std::exit(1) ;
 	}
 
@@ -1705,7 +1739,7 @@ void DataMatrix<T>::loadSplatterData(
     	bool revUniqness{simOpts.reverseUniqness} ;
 
 		if(testUniqueness){
-			// read uniqueness file 
+			// read uniqueness file
 
 			std::vector<std::pair<std::string, double>> uniquenessInfo ;
 			std::vector<std::pair<size_t, int>> countInfo ;
@@ -1728,7 +1762,7 @@ void DataMatrix<T>::loadSplatterData(
 
 			std::sort(countInfo.begin(), countInfo.end(), [](ptype &left, ptype &right) {
 	    		return left.second > right.second;
-			});	
+			});
 
 			std::cerr << "\nIn Splattermode countInfo.size() " << countInfo.size() 
 					  << "\t uniquenessInfo.size() " << uniquenessInfo.size() 
@@ -1740,7 +1774,7 @@ void DataMatrix<T>::loadSplatterData(
 					mostUniqGeneId++ ;
 				}
 
-				//std::cerr << "found " << uniquenessInfo[mostUniqGeneId].first << "\n" ; 
+				//std::cerr << "found " << uniquenessInfo[mostUniqGeneId].first << "\n" ;
 				if (mostUniqGeneId <= leastUniqGeneId){
 					auto splatterGeneId = it.first ;
 					auto spgName = splatterGeneNames[splatterGeneId] ;
@@ -1750,10 +1784,10 @@ void DataMatrix<T>::loadSplatterData(
 
 					splatterGeneMap[realGeneName] = spgName ; // keep the real name
 
-					alevin2refMap[splatterGeneId] = refGeneId ; // gene id to real gene id 
+					alevin2refMap[splatterGeneId] = refGeneId ; // gene id to real gene id
 					// this one is extra
-					alevinGeneIndex2NameMap[splatterGeneId] = realGeneName ; // keep mapping from real gene name  
-					
+					alevinGeneIndex2NameMap[splatterGeneId] = realGeneName ; // keep mapping from real gene name
+
 				}
 				mostUniqGeneId++ ;
 			}

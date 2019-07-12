@@ -1840,6 +1840,12 @@ void minnowSimulate(SimulateOptions& simOpts){
     // needed for vpolo
     std::string alevinLikeDir = outDir + "/alevin" ;
     util::fs::MakeDir(outDir.c_str()) ;
+    if(!util::fs::DirExists(outDir.c_str())){
+      consoleLog->error("we can not create nested direcory {} if that is what is intended", outDir) ;
+      std::exit(2) ;
+    }
+
+
     util::fs::MakeDir(alevinLikeDir.c_str()) ;
 
     
