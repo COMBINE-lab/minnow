@@ -565,8 +565,11 @@ void doPCRBulkDBG(
     std::map<uint32_t, std::string> sequenceMap ;
     std::map<uint32_t, std::string> readSeqMap ;
     std::map<uint32_t, uint32_t> startPosMap ;
-    
-    
+
+    std::map<uint32_t, uint32_t> absStartPosMap ;
+
+
+
     std::unordered_map<uint32_t, std::pair<size_t, size_t>> startPositionMap ;
     
     std::vector<uint32_t> muMap(uniqueMolecules.size()) ;
@@ -597,6 +600,7 @@ void doPCRBulkDBG(
 
         std::string readSeq ;
         uint32_t startPos{0} ;
+        uint32_t absStartPos{0} ;
         std::string fragmentSeq{""} ;
         uint32_t fragmentStartPos{0} ;
         //uint32_t fragmentEnd{0} ;
@@ -604,7 +608,7 @@ void doPCRBulkDBG(
         
         if(tr.RefLength < MAX_FRAGLENGTH) {
                 fragmentStartPos = 0 ;
-                fragLen = tr.RefLength;
+               fragLen = tr.RefLength;
         }else {
             fragmentStartPos = tr.RefLength - MAX_FRAGLENGTH ;
             fragLen = MAX_FRAGLENGTH ;
@@ -647,6 +651,8 @@ void doPCRBulkDBG(
 
             //fragmentEnd = segStartPos + fragLen - 1 ;
             fragmentSeq = std::string{tr.Sequence() + segStartPos, fragLen} ;
+            //store the abs start
+            absStartPos = segStartPos ;
 
             startPos = generateSegmentRSPD(fragmentSeq, readSeq, rspdVec) ;
         }else{
@@ -665,6 +671,7 @@ void doPCRBulkDBG(
             // goes through PCR
             fragmentSeq = std::string{tr.Sequence() + fragmentStartPos, fragLen} ;
             startPos = generateFragmentSeqFromSegment(fragmentSeq, mu, readSeq) ;
+            absStartPos = fragmentStartPos ;
         }
 
         
@@ -675,6 +682,7 @@ void doPCRBulkDBG(
         
         readSeqMap[i] = readSeq ;
         startPosMap[i] = startPos ;
+        absStartPosMap[i] = absStartPos ;
     }
     //std::cerr << "smaller mu " << smallerMu << "\t" << "bigger mu " << biggerMu << "\n" ;
 
@@ -738,13 +746,14 @@ void doPCRBulkDBG(
                 std::string readSeq = readSeqMap[ind] ;
                 //auto startPos = generateFragmentSegment(fragmentStr, readSeq, ore) ;
                 auto startPos = startPosMap[ind] ;
+                auto absStartPos = absStartPosMap[ind] + startPos ;
 
 
                 sstream_left << "@" << cellName
-                             << ":" << uniqueMolecules[ind].transcriptId 
-                             << ":" << startPos
-                             << ":" << i 
-                             << ":" << uniqReadId 
+                             << ":" << transcripts[uniqueMolecules[ind].transcriptId].RefName
+                             << ":" << absStartPos
+                             << ":" << ind
+                             << ":" << uniqReadId
                              << "\n" ;
 
                 std::string tagSeq{sequenceMap[ind].substr(0, CB_LENGTH + UMI_LENGTH)} ;
@@ -754,10 +763,10 @@ void doPCRBulkDBG(
 
 
                 sstream_right << "@" << cellName 
-                              << ":" << uniqueMolecules[ind].transcriptId
-                              << ":" << startPos
-                              //<< ":" << (ore ? "+" : "-")
-                              << ":" << i 
+                              << ":" << transcripts[uniqueMolecules[ind].transcriptId].RefName
+                              << ":" << absStartPos
+                  //<< ":" << (ore ? "+" : "-")
+                              << ":" << ind
                               << ":" << uniqReadId 
                               << "\n" ;
 
@@ -790,6 +799,7 @@ void doPCRBulkDBG(
                     auto fragmentStr = sequenceMap[grandParentId].substr(CB_LENGTH + UMI_LENGTH) ; 
                     auto mu = muMap[grandParentId] ;
                     uint32_t startPos{0} ;
+                    
                     std::string readSeq ;
                     //auto startPos = generateFragmentSegment(fragmentStr, readSeq, ore) ;
                     if(rspdMode){
@@ -798,11 +808,12 @@ void doPCRBulkDBG(
                         startPos = generateFragmentSeqFromSegment(fragmentStr, mu, readSeq) ;
                     }
                     
-                    
+                    uint32_t absStartPos = absStartPosMap[grandParentId] + startPos ;
+
                     sstream_left << "@" << cellName
-                             << ":" << uniqueMolecules[grandParentId].transcriptId 
-                             << ":" << startPos
-                             << ":" << i 
+                             << ":" << transcripts[uniqueMolecules[grandParentId].transcriptId].RefName
+                             << ":" << absStartPos 
+                             << ":" << ind
                              << ":" << uniqReadId 
                              << "\n" ;
 
@@ -815,10 +826,10 @@ void doPCRBulkDBG(
                 
 
                     sstream_right << "@" << cellName 
-                                << ":" << uniqueMolecules[grandParentId].transcriptId
-                                << ":" << startPos 
-                                //<< ":" << (ore ? "+" : "-")
-                                << ":" << i 
+                                << ":" << transcripts[uniqueMolecules[grandParentId].transcriptId].RefName
+                                << ":" << absStartPos
+                      //            << ":" << (ore ? "+" : "-")
+                                << ":" << ind
                                 << ":" << uniqReadId 
                                 << "\n" ;
 

@@ -76,6 +76,10 @@ void refValidate(
 	for(size_t i = 0 ; i < transcripts.size(); ++i){
 		trMap[transcripts[i].RefName] = i ;
 	}
+
+  std::cerr << transcripts[0].RefName << "\n" ;
+  // std::exit(1) ;
+
 	std::map<int, int> editDistanceMap ;
 
 	{
@@ -110,9 +114,8 @@ void refValidate(
         size_t position{0} ;
 
         if(headerVec.size() == 5){
-				  position = std::stol(headerVec[3]) ;
+				  position = std::stol(headerVec[2]) ;
         }else{
-
 				  position = std::stol(headerVec[2]) ;
         }
 
@@ -129,11 +132,23 @@ void refValidate(
 				);
 				auto& result = ae_.result() ;
 				auto it = editDistanceMap.find(result.editDistance) ;
+        if(result.editDistance == -1){
+
+          std::cerr << refSeq << "\n"
+                    << transcriptName << "\n"
+                    << headerVec.size() << "\n"
+                    << refSeq.size() << "\n"
+                    << position << "\n"
+                    << header << "\n"
+                    << r1 << "\n" ;
+          std::exit(1) ;
+        }
+
 				if(it != editDistanceMap.end()){
 					it->second += 1 ;
 				}else{
 					editDistanceMap.insert({result.editDistance, 1}) ;
-				}	
+				}
 			}
 		}
     std::cout << "Done with " << rn << " reads \n" ;
@@ -173,7 +188,7 @@ void gfaValidate(
 		// size_t kmer_pos{0};
 		auto rg = parser.getReadGroup();
 		while (parser.refill(rg)) {
-		// Here, rg will contain a chunk of read pairs
+		// Here, rg will contain a chunk o f read pairs
 		// we can process.
 			for (auto& rp : rg) {
 				// kmer_pos = 0;
@@ -242,6 +257,8 @@ void gfaValidate(
 
 void validate(ValidateOpt& valOpts){
   if(valOpts.gfaFile == ""){
+    std::cerr << "\n Running ref validate \n" ;
+
     refValidate(
       valOpts.fastqFile,
       valOpts.referenceFile,
@@ -267,7 +284,8 @@ int main(int argc, char* argv[]) {
   mode selected = mode::help ;
 
   ValidateOpt valOpts ;
-  
+
+  std::cout << "here" ;
 
   auto simulateMode = (
     command("validate").set(selected, mode::validate),
@@ -309,6 +327,7 @@ int main(int argc, char* argv[]) {
 
   decltype(parse(argc, argv, cli)) res;
   try {
+    std::cout << "here\n" ;
     res = parse(argc, argv, cli);
   } catch (std::exception& e) {
     std::cout << "\n\nParsing command line failed with exception: " << e.what() << "\n";
