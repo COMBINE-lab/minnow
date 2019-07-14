@@ -714,32 +714,24 @@ void doPCRBulkDBG(
         indexArray[i] = i ;
     }
 
-    std::random_device rd;
-    std::mt19937 g(rd());
-
-    std::shuffle(indexArray.begin(), indexArray.end(), g) ;
-    
-    if(dupCount == 0){
-        dupCount = MAXNUM ;
-    }
-    if (dupCount > totNum){
-        dupCount = totNum ;
-    }
-
-    auto numMol = std::min(indexArray.size(), static_cast<size_t>(dupCount)) ;
-    //std::sort(indexArray.begin(), indexArray.begin() + numMol) ;
-    size_t blockSize = uniqueMolecules.size() ;
 
     size_t numOfWritten{0} ;
 
-    if(doPCR){
-        for(uint32_t i = 0 ; i < indexArray.size() ; ++i){
-            //std::cerr << "iteration " << i << "\n" ;
-            auto ind = indexArray[i] ;
+    if(dupCount == 0){
+      dupCount = MAXNUM ;
+    }
+    if (dupCount > totNum){
+      dupCount = totNum ;
+    }
 
-            if(ind < blockSize){
-                numOfWritten++ ;
+    auto numMol = std::min(indexArray.size(), static_cast<size_t>(dupCount)) ;
+    // Write down the normal stuff
+    {
+      for(uint32_t i = 0; i < uniqueMolecules.size(); ++i){
+        uint32_t ind = i ;
+                 numOfWritten++ ;
 
+                 std::string modifiedCellName = sequenceMap[ind].substr(0, CB_LENGTH) ;
                 //bool ore = uniqueMolecules[ind].count ; 
 
                 //auto fragmentStr = sequenceMap[ind].substr(CB_LENGTH + UMI_LENGTH) ; 
@@ -749,7 +741,7 @@ void doPCRBulkDBG(
                 auto absStartPos = absStartPosMap[ind] + startPos ;
 
 
-                sstream_left << "@" << cellName
+                sstream_left << "@" << modifiedCellName 
                              << ":" << transcripts[uniqueMolecules[ind].transcriptId].RefName
                              << ":" << absStartPos
                              << ":" << ind
@@ -762,7 +754,7 @@ void doPCRBulkDBG(
                 sstream_left << std::string(CB_LENGTH + UMI_LENGTH, 'N') << "\n" ;                 
 
 
-                sstream_right << "@" << cellName 
+                sstream_right << "@" << modifiedCellName
                               << ":" << transcripts[uniqueMolecules[ind].transcriptId].RefName
                               << ":" << absStartPos
                   //<< ":" << (ore ? "+" : "-")
@@ -782,6 +774,23 @@ void doPCRBulkDBG(
 
                 if(numOfWritten >= numMol)
                     break ;
+      }
+    }
+
+    std::random_device rd;
+    std::mt19937 g(rd());
+
+    std::shuffle(indexArray.begin(), indexArray.end(), g) ;
+
+    //std::sort(indexArray.begin(), indexArray.begin() + numMol) ;
+    size_t blockSize = uniqueMolecules.size() ;
+
+    if(doPCR && numOfWritten < numMol){
+        for(uint32_t i = 0 ; i < indexArray.size() ; ++i){
+            //std::cerr << "iteration " << i << "\n" ;
+            auto ind = indexArray[i] ;
+
+            if(ind < blockSize){
             
                 continue ;
             }
@@ -795,7 +804,8 @@ void doPCRBulkDBG(
                 auto it = sequenceMap.find(ind) ;
                 if(it != sequenceMap.end()){
                     auto parentSeq = it->second ;
-                    
+
+                    std::string modifiedCellName = sequenceMap[grandParentId].substr(0, CB_LENGTH) ;
                     auto fragmentStr = sequenceMap[grandParentId].substr(CB_LENGTH + UMI_LENGTH) ; 
                     auto mu = muMap[grandParentId] ;
                     uint32_t startPos{0} ;
@@ -810,7 +820,7 @@ void doPCRBulkDBG(
                     
                     uint32_t absStartPos = absStartPosMap[grandParentId] + startPos ;
 
-                    sstream_left << "@" << cellName
+                    sstream_left << "@" << modifiedCellName
                              << ":" << transcripts[uniqueMolecules[grandParentId].transcriptId].RefName
                              << ":" << absStartPos 
                              << ":" << ind
@@ -825,7 +835,7 @@ void doPCRBulkDBG(
                     //bool ore = uniqueMolecules[grandParentId].count ; 
                 
 
-                    sstream_right << "@" << cellName 
+                    sstream_right << "@" << modifiedCellName
                                 << ":" << transcripts[uniqueMolecules[grandParentId].transcriptId].RefName
                                 << ":" << absStartPos
                       //            << ":" << (ore ? "+" : "-")
@@ -1278,6 +1288,7 @@ void generateSequencesForCellDBG(
                     auto fixTidInfo = dataMatrixObj.getRandomTrInfo(git.first, sit.first, refInfo, present) ;
                     if(!present){
                         std::cerr << "DBG ::: GHOST ALERT ::: spooky tid " << fixTidInfo.tid << "\n" ;
+                        std::exit(1) ;
                     }
 
                     if((fixTidInfo.end - fixTidInfo.start) < READ_LEN){

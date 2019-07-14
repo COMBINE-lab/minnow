@@ -19,6 +19,8 @@
 #include "edlib.h"
 #include "macros.hpp"
 
+#include "zstr.hpp"
+
 #define _verbose(fmt, args...) fprintf(stderr, fmt, ##args)
 
 #define READ_LEN 100
@@ -59,6 +61,147 @@ stx::string_view sampleSequence(
     );
 }
 
+
+void parset2gFile(std::map<std::string, std::string>& t2gMap){
+  std::string t2gFile = "/mnt/scratch1/hirak/minnow/data/hg/human_t2g.tsv" ;
+  std::ifstream t2gStream(t2gFile.c_str()) ;
+  std::string line ;
+
+
+
+  while(std::getline(t2gStream, line)){
+    std::vector<std::string> valueOfCells ; 
+    line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
+    split2(line, valueOfCells, "\t") ;
+
+    // get the transcript name 
+    auto transcriptName = valueOfCells[0] ;
+    auto geneName = valueOfCells[1] ;
+
+    t2gMap[transcriptName] = geneName ;
+  }
+
+}
+
+void queryCellName(
+                   std::string& fastqFile,
+                   std::string& queryCellName,
+                   std::string& outFile
+                   ){
+  std::ifstream fileStream(outFile.c_str()) ;
+
+	{
+		ScopedTimer st ;
+		std::vector<std::string> read_file = {fastqFile} ;
+		fastx_parser::FastxParser<fastx_parser::ReadSeq> parser(read_file, 1, 1);
+		parser.start() ;
+
+		// Get the read group by which this thread will
+		// communicate with the parser (*once per-thread*)
+		size_t rn{0};
+		// size_t kmer_pos{0};
+		auto rg = parser.getReadGroup();
+		while (parser.refill(rg)) {
+		// Here, rg will contain a chunk of read pairs
+		// we can process.
+			for (auto& rp : rg) {
+				// kmer_pos = 0;
+				++rn;
+        if(rn % 1000 == 0)
+          _verbose("\rNumber of reads processed : %lu", rn);
+
+        auto& header = rp.name ;
+				std::vector<std::string> headerVec; 
+				split2(header, headerVec, ":") ;
+
+        std::string cellName = headerVec[0] ;
+				std::string transcriptName = headerVec[1] ;
+        if(cellName == queryCellName){
+          fileStream << rp.name << "\n" << rp.seq << "\n" ;
+        }
+
+
+			}
+		}
+    std::cout << "Done with " << rn << " reads \n" ;
+
+    parser.stop() ;
+	}
+
+  fileStream.close() ;
+}
+
+void validateGeneCount(
+    std::string& fastqFile,
+    std::string& outFile
+){
+  std::map<std::string, std::string> t2gMap ;
+  parset2gFile(t2gMap) ;
+
+  std::map<std::string, std::map<std::string, uint32_t>> cellGeneCountMap ;
+
+	{
+		ScopedTimer st ;
+		std::vector<std::string> read_file = {fastqFile} ;
+		fastx_parser::FastxParser<fastx_parser::ReadSeq> parser(read_file, 1, 1);
+		parser.start() ;
+
+		// Get the read group by which this thread will
+		// communicate with the parser (*once per-thread*)
+		size_t rn{0};
+		// size_t kmer_pos{0};
+		auto rg = parser.getReadGroup();
+		while (parser.refill(rg)) {
+		// Here, rg will contain a chunk of read pairs
+		// we can process.
+			for (auto& rp : rg) {
+				// kmer_pos = 0;
+				++rn;
+        if(rn % 1000 == 0)
+          _verbose("\rNumber of reads processed : %lu", rn);
+
+        auto& header = rp.name ;
+				std::vector<std::string> headerVec; 
+				split2(header, headerVec, ":") ;
+
+        std::string cellName = headerVec[0] ;
+				std::string transcriptName = headerVec[1] ;
+
+        auto geneName = t2gMap[transcriptName] ;
+
+        auto it1 = cellGeneCountMap.find(cellName) ;
+        if(it1 != cellGeneCountMap.end()){
+          auto it = cellGeneCountMap[cellName].find(geneName) ;
+
+
+          if(it != cellGeneCountMap[cellName].end()){
+            cellGeneCountMap[cellName][geneName] += 1 ;
+          }else{
+            cellGeneCountMap[cellName].insert({geneName, 1}) ;
+          }
+        }else{
+          
+          cellGeneCountMap[cellName].insert({geneName, 1}) ;
+        }
+			}
+		}
+    std::cout << "Done with " << rn << " reads \n" ;
+
+    parser.stop() ;
+	}
+	zstr::ofstream dictFile{outFile.c_str(), std::ios::out | std::ios::binary } ;
+  dictFile << cellGeneCountMap.size() << "\n" ;
+	for(auto it: cellGeneCountMap){
+    auto geneCount = it.second ;
+    dictFile << it.first << "\n" ;
+    dictFile << geneCount.size() << "\n" ;
+    for(auto it2 : geneCount){
+      dictFile << it2.first << "\t" << it2.second << "\n" ; 
+    }
+	}
+	// dictFile.close() ;
+
+}
 
 void refValidate(
 	std::string& fastqFile,
@@ -257,14 +400,22 @@ void gfaValidate(
 
 void validate(ValidateOpt& valOpts){
   if(valOpts.gfaFile == ""){
-    std::cerr << "\n Running ref validate \n" ;
+    if(valOpts.referenceFile == ""){
+      validateGeneCount(
+                        valOpts.fastqFile,
+                        valOpts.outFile
+                        ) ;
 
-    refValidate(
-      valOpts.fastqFile,
-      valOpts.referenceFile,
-      valOpts.edit_max_lim,
-      valOpts.outFile
-    ) ;
+    }else{
+      std::cerr << "\n Running ref validate \n" ;
+
+      refValidate(
+                  valOpts.fastqFile,
+                  valOpts.referenceFile,
+                  valOpts.edit_max_lim,
+                  valOpts.outFile
+                  ) ;
+    }
   }else{
     gfaValidate(
       valOpts.gfaFile,

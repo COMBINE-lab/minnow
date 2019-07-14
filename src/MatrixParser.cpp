@@ -114,7 +114,7 @@ void populateGeneCountFromBinaryNew(
       };
 
       uint32_t zerod_cells {0};
-      size_t numFlags = std::ceil(numOfGenes/8);
+      size_t numFlags = std::ceil(numOfGenes/8.0);
       std::vector<uint8_t> alphasFlag (numFlags, 0);
       size_t flagSize = sizeof(decltype(alphasFlag)::value_type);
 
@@ -147,6 +147,7 @@ void populateGeneCountFromBinaryNew(
           uint8_t flag = alphasFlag[j];
           size_t numNonZeros = popcount(flag);
           numExpGenes += numNonZeros;
+
 
           for (size_t i=0; i<8; i++){
             if (flag & (128 >> i)) {
@@ -231,6 +232,7 @@ void populateGeneCountFromBinaryNew(
           totSum += geneCount[i][j] ;
         }
       }
+      std::cerr << "Total sum " << totSum << "\n" ;
 }
 
 
@@ -1195,10 +1197,11 @@ void DataMatrix<T>::loadAlevinData(
 				//std::cerr << "DEBUG: After multinomial sampling number of expressed genes " << numOfExpressedGenes2 
 				//          << "  Before number of expressed genes " << toSubTract <<  "\n" ;
 				for(size_t i = 0 ; i < cellGeneCountSampled.size(); ++i){
-					// geneId 
-					std::string geneName = alevinGeneIndex2NameMap[i] ;	
+					// geneId
+					std::string geneName = alevinGeneIndex2NameMap[i] ;
 
 					int geneCount =  cellGeneCountSampled[i] ;
+
 					//int geneLevelTrCount{0} ;
 					//int geneLevelExCount{0} ;
 
@@ -1209,7 +1212,7 @@ void DataMatrix<T>::loadAlevinData(
 						numOfExpressedGenesInput++ ;
 
 						auto it = alevin2refMap.find(i) ;
-						
+
 
 						if (it != alevin2refMap.end()){
 							auto originalGeneId = it->second ;
@@ -1224,26 +1227,26 @@ void DataMatrix<T>::loadAlevinData(
 									if(fractionVector[originalGeneId]){
 										intronicCount = static_cast<int>(geneCount * fractionVector[originalGeneId]) ;
 										geneCount = geneCount - intronicCount ;
-									}		
-								} 
+									}
+								}
 							}
 
 							auto transcriptIds = refInfo.gene2transcriptMap[originalGeneId] ;
 
-							// multinomial distribution with probabilities 
+							// multinomial distribution with probabilities
 							// from the weibull distribution above
 							std::vector<double> probVec(transcriptIds.size()) ;
 							std::unordered_map<uint32_t, size_t> transcriptIdMap ;
-							
+
 							for(size_t ttid = 0 ; ttid < transcriptIds.size() ; ++ttid){
-								transcriptIdMap[transcriptIds[ttid]] = ttid ; 
+								transcriptIdMap[transcriptIds[ttid]] = ttid ;
 							}
 
 							// DBG based allocation
 							if(useDBG){
 								dropThisGene = false ;
 								auto segCountHist = preCalculatedSegProb[i] ;
-								
+
 								if(segCountHist.size() == 0){
 									droppedGeneExpression++ ;
 									dropThisGene = true ;
@@ -1254,7 +1257,7 @@ void DataMatrix<T>::loadAlevinData(
 									std::vector<size_t> segIndex(segCountHist.size()) ;
 									std::vector<uint32_t> segProbVec(segCountHist.size()) ;
 									std::vector<int> segCounts(segCountHist.size(),0) ;
-									
+
 									size_t ind{0} ;
 									for(auto it : segCountHist){
 										segIndex[ind] = it.first ;
@@ -1266,7 +1269,7 @@ void DataMatrix<T>::loadAlevinData(
 									std::mt19937 gent4(rdt4());
 
 									std::unordered_map<size_t, int> segCountMap ;
-									
+
 									std::discrete_distribution<> dmt(segProbVec.begin(), segProbVec.end()) ;
 									for(int j = 0 ; j < geneCount ; ++j){
 										++segCounts[dmt(gent4)] ;
@@ -1277,6 +1280,8 @@ void DataMatrix<T>::loadAlevinData(
 									}
 
 									cellSegCount[actualCellId][i] = segCountMap ;
+
+                  //cell2GeneNameMap[actualCellId].append()
 
 								}
 							}

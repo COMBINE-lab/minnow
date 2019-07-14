@@ -170,7 +170,7 @@ public :
 	std::unordered_map<std::string, uint32_t> cellNoisyMap ;
 	std::unordered_map<std::string, uint32_t> cellDoubletMap ;
 
-    std::unordered_map<uint32_t, uint32_t> cell2ClusterMap ;
+   std::unordered_map<uint32_t, uint32_t> cell2ClusterMap ;
 	std::shared_ptr<spdlog::logger> consoleLog ; // Logger for outputting errors 
  
 	std::map<uint32_t, uint32_t> alevin2refMap ; // Map Col 0f Input Matrix -> Gene ID from t2g tsv
