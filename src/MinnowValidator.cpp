@@ -35,6 +35,13 @@ struct ValidateOpt{
 
 } ;
 
+struct ExtractOpt{
+  std::string fastqFile{""} ;
+  std::string queryFileName{""} ;
+  std::string outFile{""} ;
+
+} ;
+
 void split2(const std::string& str, std::vector<std::string>& tokens, const std::string& delim){
     const std::string whiteSpace = " " ;
     size_t prev = 0, pos = 0;
@@ -85,14 +92,28 @@ void parset2gFile(std::map<std::string, std::string>& t2gMap){
 
 void queryCellName(
                    std::string& fastqFile,
-                   std::string& queryCellName,
+                   std::string& queryFileName,
                    std::string& outFile
                    ){
-  std::ifstream fileStream(outFile.c_str()) ;
+  std::ofstream fileStream(outFile.c_str()) ;
+  std::ifstream queryStream(queryFileName.c_str()) ;
+
+  std::map<std::string,bool> cellNames ;
+  std::string line ;
+  while(std::getline(queryStream, line)){
+    cellNames[line] = true  ;
+  }
+
+  std::cerr << "in extract\n" ;
+
 
 	{
 		ScopedTimer st ;
+
+    std::cerr << fastqFile << "\n" ;
+
 		std::vector<std::string> read_file = {fastqFile} ;
+
 		fastx_parser::FastxParser<fastx_parser::ReadSeq> parser(read_file, 1, 1);
 		parser.start() ;
 
@@ -116,8 +137,10 @@ void queryCellName(
 
         std::string cellName = headerVec[0] ;
 				std::string transcriptName = headerVec[1] ;
-        if(cellName == queryCellName){
-          fileStream << rp.name << "\n" << rp.seq << "\n" ;
+
+        auto it = cellNames.find(cellName) ;
+        if(it != cellNames.end()){
+          fileStream << ">" << rp.name << "\n" << rp.seq << "\n" ;
         }
 
 
@@ -128,6 +151,7 @@ void queryCellName(
     parser.stop() ;
 	}
 
+  queryStream.close() ;
   fileStream.close() ;
 }
 
@@ -231,7 +255,7 @@ void refValidate(
 		fastx_parser::FastxParser<fastx_parser::ReadSeq> parser(read_file, 1, 1);
 		parser.start() ;
 
-		// Get the read group by which this thread will
+		// Get the read group by hich this thread will
 		// communicate with the parser (*once per-thread*)
 		size_t rn{0};
 		// size_t kmer_pos{0};
@@ -427,16 +451,44 @@ void validate(ValidateOpt& valOpts){
 
 }
 
+void extract(ExtractOpt& valOpts){
+  queryCellName(
+                valOpts.fastqFile,
+                valOpts.queryFileName,
+                valOpts.outFile
+                ) ;
+
+}
+
 int main(int argc, char* argv[]) {
   using namespace clipp ;
   using std::cout ;
-  enum class mode {help, validate} ;
+  enum class mode {help, validate, extract} ;
 
   mode selected = mode::help ;
 
   ValidateOpt valOpts ;
+  ExtractOpt extOpt ;
 
   std::cout << "here" ;
+
+  auto extractMode = (
+     command("extract").set(selected, mode::extract),
+
+     (option("-f", "--fastq-file") &
+      value("alevin-dir", extOpt.fastqFile)) %
+     "fastq file",
+
+     (option("-c", "--cell-list") &
+      value("cell-list", extOpt.queryFileName)) %
+     "list of cell files",
+
+     (option("-o", "--output") &
+      value("output", extOpt.outFile)) %
+     "output fastq file"
+
+                      );
+
 
   auto simulateMode = (
     command("validate").set(selected, mode::validate),
@@ -468,11 +520,13 @@ int main(int argc, char* argv[]) {
   );
 
   auto cli = (
-    (simulateMode | 
+    (simulateMode |
+     extractMode | 
      command("--help").set(selected,mode::help) |
      command("-h").set(selected,mode::help) |
      command("help").set(selected,mode::help)
     ),
+    
     option("-v", "--version").call([]{std::cout << "version 0.1.0\n\n";}).doc("show version")
   );
 
@@ -483,15 +537,18 @@ int main(int argc, char* argv[]) {
   } catch (std::exception& e) {
     std::cout << "\n\nParsing command line failed with exception: " << e.what() << "\n";
     std::cout << "\n\n";
-    std::cout << make_man_page(cli, "validate");
+    std::cout << make_man_page(cli, "validate") << make_man_page(cli, "extract") ;
     return 1;
   }
 
   if(res){
     switch(selected){
       case mode::validate: validate(valOpts) ; break ; 
-      case mode::help: std::cout << make_man_page(cli, "validate") ; 
+      case mode::extract: extract(extOpt) ; break ; 
+    case mode::help: std::cout << make_man_page(cli, "validate") << make_man_page(cli, "extract") ; 
     }
+  }else{
+    cout << usage_lines(cli, "validate") << '\n';
   }
   std::exit(0) ;
 
