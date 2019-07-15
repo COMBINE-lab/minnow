@@ -95,7 +95,9 @@ void queryCellName(
                    std::string& queryFileName,
                    std::string& outFile
                    ){
-  std::ofstream fileStream(outFile.c_str()) ;
+
+	zstr::ofstream fileStream{outFile.c_str(), std::ios::out } ;
+  //std::ofstream fileStream(outFile.c_str()) ;
   std::ifstream queryStream(queryFileName.c_str()) ;
 
   std::map<std::string,bool> cellNames ;
@@ -104,7 +106,7 @@ void queryCellName(
     cellNames[line] = true  ;
   }
 
-  std::cerr << "in extract\n" ;
+  std::cerr << "will extract " << cellNames.size() <<" cells \n" ;
 
 
 	{
@@ -140,7 +142,7 @@ void queryCellName(
 
         auto it = cellNames.find(cellName) ;
         if(it != cellNames.end()){
-          fileStream << ">" << rp.name << "\n" << rp.seq << "\n" ;
+          fileStream << "@" << rp.name << "\n" << rp.seq << "\n" << "+" << "\n" << std::string(rp.seq.size(), 'N') << "\n" ;
         }
 
 
@@ -152,7 +154,6 @@ void queryCellName(
 	}
 
   queryStream.close() ;
-  fileStream.close() ;
 }
 
 void validateGeneCount(
