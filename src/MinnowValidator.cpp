@@ -36,7 +36,8 @@ struct ValidateOpt{
 } ;
 
 struct ExtractOpt{
-  std::string fastqFile{""} ;
+  std::string leftFastqFile{""} ;
+  std::string rightFastqFile{""} ;
   std::string queryFileName{""} ;
   std::string outFile{""} ;
 
@@ -91,15 +92,22 @@ void parset2gFile(std::map<std::string, std::string>& t2gMap){
 }
 
 void queryCellName(
-                   std::string& fastqFile,
+                   std::string& leftFastq,
+                   std::string& rightFastq,
                    std::string& queryFileName,
                    std::string& outFile
                    ){
 
-	zstr::ofstream fileStream{outFile.c_str(), std::ios::out } ;
+	//zstr::ofstream fileStream{outFile.c_str(), std::ios::out } ;
   //std::ofstream fileStream(outFile.c_str()) ;
-  std::ifstream queryStream(queryFileName.c_str()) ;
 
+  std::string right_out_file = outFile + "_2.fastq.gz" ;
+  std::string left_out_file = outFile + "_1.fastq.gz" ;
+
+  zstr::ofstream leftFileStream(left_out_file.c_str(), std::ios::out ) ; 
+  zstr::ofstream rightFileStream(right_out_file.c_str(), std::ios::out ) ; 
+
+  std::ifstream queryStream(queryFileName.c_str()) ;
   std::map<std::string,bool> cellNames ;
   std::string line ;
   while(std::getline(queryStream, line)){
@@ -112,11 +120,12 @@ void queryCellName(
 	{
 		ScopedTimer st ;
 
-    std::cerr << fastqFile << "\n" ;
 
-		std::vector<std::string> read_file = {fastqFile} ;
+		std::vector<std::string> left_read_file = {leftFastq} ;
+		std::vector<std::string> right_read_file = {rightFastq} ;
 
-		fastx_parser::FastxParser<fastx_parser::ReadSeq> parser(read_file, 1, 1);
+    //using paired_parser = fastx_parser::FastxParser<fastx_parser::ReadPair>
+		fastx_parser::FastxParser<fastx_parser::ReadPair> parser(left_read_file, right_read_file, 1, 1);
 		parser.start() ;
 
 		// Get the read group by which this thread will
@@ -133,7 +142,7 @@ void queryCellName(
         if(rn % 1000 == 0)
           _verbose("\rNumber of reads processed : %lu", rn);
 
-        auto& header = rp.name ;
+        auto& header = rp.second.name ;
 				std::vector<std::string> headerVec; 
 				split2(header, headerVec, ":") ;
 
@@ -142,7 +151,15 @@ void queryCellName(
 
         auto it = cellNames.find(cellName) ;
         if(it != cellNames.end()){
-          fileStream << "@" << rp.name << "\n" << rp.seq << "\n" << "+" << "\n" << std::string(rp.seq.size(), 'N') << "\n" ;
+          leftFileStream << "@" << rp.first.name
+                         << "\n" << rp.first.seq
+                         << "\n" << "+"
+                         << "\n" << std::string(rp.first.seq.size(), 'N') << "\n" ;
+
+          rightFileStream << "@" << rp.second.name
+                          << "\n" << rp.second.seq
+                          << "\n" << "+"
+                          << "\n" << std::string(rp.second.seq.size(), 'N') << "\n" ;
         }
 
 
@@ -214,7 +231,7 @@ void validateGeneCount(
 
     parser.stop() ;
 	}
-	zstr::ofstream dictFile{outFile.c_str(), std::ios::out | std::ios::binary } ;
+	zstr::ofstream dictFile{outFile.c_str(), std::ios::out } ;
   dictFile << cellGeneCountMap.size() << "\n" ;
 	for(auto it: cellGeneCountMap){
     auto geneCount = it.second ;
@@ -454,7 +471,8 @@ void validate(ValidateOpt& valOpts){
 
 void extract(ExtractOpt& valOpts){
   queryCellName(
-                valOpts.fastqFile,
+                valOpts.leftFastqFile,
+                valOpts.rightFastqFile,
                 valOpts.queryFileName,
                 valOpts.outFile
                 ) ;
@@ -476,8 +494,12 @@ int main(int argc, char* argv[]) {
   auto extractMode = (
      command("extract").set(selected, mode::extract),
 
-     (option("-f", "--fastq-file") &
-      value("alevin-dir", extOpt.fastqFile)) %
+     (option("-1", "--left-fastq-file") &
+      value("alevin-dir", extOpt.leftFastqFile)) %
+     "fastq file",
+
+     (option("-2", "--right-fastq-file") &
+      value("alevin-dir", extOpt.rightFastqFile)) %
      "fastq file",
 
      (option("-c", "--cell-list") &
