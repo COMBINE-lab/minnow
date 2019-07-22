@@ -1086,32 +1086,22 @@ void doPCRBulk(
         indexArray[i] = i ;
     }
 
-    std::random_device rd;
-    std::mt19937 g(rd());
+    size_t numOfWritten{0} ;
 
-    std::shuffle(indexArray.begin(), indexArray.end(), g) ;
-    
-    if(dupCount == 0){
-        dupCount = MAXNUM ;
-    }
-    if (dupCount > totNum){
-        dupCount = totNum ;
-    }
 
 
     auto numMol = std::min(indexArray.size(), static_cast<size_t>(dupCount)) ;
 
-    size_t numOfWritten{0} ;
-    size_t blockSize = uniqueMolecules.size() ;
-    
-    if(doPCR){
-        for(uint32_t i = 0 ; i < indexArray.size() ; ++i){
-            auto ind = indexArray[i] ;
-            if(ind < blockSize){
+    // Write down the root of the PCR trees
+    {
+      for(uint32_t i = 0; i < uniqueMolecules.size(); ++i){
+        uint32_t ind = i ;
+        
+                std::string modifiedCellName = sequenceMap[ind].substr(0, CB_LENGTH) ;
                 numOfWritten++ ;
 
-                sstream_left << "@" << cellName
-                             << ":" << transcripts[uniqueMolecules[ind].transcriptId].RefName + addedString 
+                sstream_left << "@" << modifiedCellName
+                             << ":" << transcripts[uniqueMolecules[ind].transcriptId].RefName + addedString
                              << ":" << 0
                              << ":" << i 
                              << ":" << uniqReadId 
@@ -1121,7 +1111,7 @@ void doPCRBulk(
                 sstream_left << "+\n" ;
                 sstream_left << std::string(CB_LENGTH + UMI_LENGTH, 'N') << "\n" ; 
 
-                sstream_right << "@" << cellName 
+                sstream_right << "@" << modifiedCellName 
                               << ":" << transcripts[uniqueMolecules[ind].transcriptId].RefName + addedString
                               << ":" << 0 
                               << ":" << i 
@@ -1137,14 +1127,37 @@ void doPCRBulk(
                 //sstream_right << imputeErrorInString(seqeneceErrorProb, readSeqMap[ind]) << "\n" ;
                 sstream_right << "+\n" ;
                 sstream_right << std::string(READ_LEN, 'N') << "\n" ; 
-                uniqReadId++ ;              
+                uniqReadId++ ; 
                 
                 if(numOfWritten >= numMol)
                     break ;
-                
-                continue ;
-            }
+ 
 
+      }
+    }
+
+    std::random_device rd;
+    std::mt19937 g(rd());
+
+    std::shuffle(indexArray.begin(), indexArray.end(), g) ;
+    
+    if(dupCount == 0){
+      dupCount = MAXNUM ;
+    }
+    if (dupCount > totNum){
+      dupCount = totNum ;
+    }
+
+    size_t blockSize = uniqueMolecules.size() ;
+    
+    if(doPCR && numOfWritten < numMol){
+        for(uint32_t i = 0 ; i < indexArray.size() ; ++i){
+            auto ind = indexArray[i] ;
+
+            if(ind < blockSize){
+            
+              continue ;
+            }
 
 
             bool validBlock = pcrClassPtr->constructOrCacheSequence(ind, sequenceMap) ;
@@ -1153,6 +1166,8 @@ void doPCRBulk(
 
             if(validBlock){
 
+
+              std::string modifiedCellName = sequenceMap[grandParentId].substr(0, CB_LENGTH) ;
                 auto it = sequenceMap.find(ind) ;
                 if(it != sequenceMap.end()){
                     auto parentSeq = it->second ;
@@ -1164,7 +1179,7 @@ void doPCRBulk(
                     auto absStartPos = fStart + startPos ;                
 
                     // left end            
-                    sstream_left << "@" << cellName 
+                    sstream_left << "@" << modifiedCellName
                                     << ":" << transcripts[uniqueMolecules[grandParentId].transcriptId].RefName + addedString
                                     << ":" << absStartPos
                                     << ":" << grandParentId
@@ -1180,7 +1195,7 @@ void doPCRBulk(
                     sstream_left << std::string(CB_LENGTH + UMI_LENGTH, 'N') << "\n" ; 
 
                     // right end
-                    sstream_right << "@" << cellName
+                    sstream_right << "@" << modifiedCellName
                                     << ":" << transcripts[uniqueMolecules[grandParentId].transcriptId].RefName + addedString
                                     << ":" << absStartPos
                                     << ":" << grandParentId
