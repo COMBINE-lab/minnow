@@ -13,10 +13,9 @@
 #define FRAGMENT_RANGE (FRAGMENT_END_DIST - FRAGMENT_START_DIST)
 
 
-#define CB_LENGTH 16
-#define UMI_LENGTH 10
-#define POOL_SIZE std::pow(4, UMI_LENGTH)
-//#define POOL_SIZE 1000
+//#define CB_LENGTH 16
+//#define UMI_LENGTH 10
+//#define POOL_SIZE std::pow(4, UMI_LENGTH)
 #define TENX_WHITELIST_LENGTH 737280
 
 #endif // MACROS_HEADER

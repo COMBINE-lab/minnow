@@ -46,7 +46,9 @@ using SpinLockT = std::mutex;
 #define FRAGMENT_START_DIST 53 + READ_LEN // this is from the empirical limit e^4
 #define FRAGMENT_RANGE (FRAGMENT_END_DIST - FRAGMENT_START_DIST)
 
-
+uint32_t CB_LENGTH ;
+uint32_t UMI_LENGTH ;
+uint32_t POOL_SIZE ;
 
 #define _verbose(fmt, args...) fprintf(stderr, fmt, ##args)
 
@@ -1819,6 +1821,11 @@ void minnowSimulate(SimulateOptions& simOpts){
     auto& numOfCells = simOpts.numOfCells ;
     auto& numOfGenes = simOpts.numOfTranscripts ;
 
+    CB_LENGTH = simOpts.CBLength ;
+    UMI_LENGTH = simOpts.UMILength ;
+    POOL_SIZE = std::pow(4, UMI_LENGTH) ;
+
+
     //auto& numOfSampleCells = simOpts.sampleCells ;
     //auto& numOfPCRCycles = simOpts.numOfPCRCycles ;
     //auto& errorRate = simOpts.errorRate ;
@@ -2048,7 +2055,7 @@ void minnowSimulate(SimulateOptions& simOpts){
 
 
     // generate UMI list 
-    std::vector<std::string> UMIList = util::generateUMIList() ; 
+    std::vector<std::string> UMIList = util::generateUMIList(UMI_LENGTH, POOL_SIZE) ; 
 
     // If we usedbg none of other stuff needed
 

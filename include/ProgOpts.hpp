@@ -59,6 +59,9 @@ public:
   double mutationProb{0.01};
   uint32_t numThreads{2};
   uint32_t numOfDoublets{0};
+
+  uint32_t CBLength{16} ;
+  uint32_t UMILength{10} ;
 };
 
 class EstimateOptions {

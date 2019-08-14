@@ -74,6 +74,14 @@ int main(int argc, char* argv[]) {
     (option("--numMolFile") & 
     value("num mol file", simulateOpt.numMolFile)) %
     "Number of molecules generated from each cell",
+    
+    (option("--CBLength") & 
+     value("Cell barcode length", simulateOpt.CBLength)) %
+    "Cell barcode length by default is 16",
+    
+    (option("--UMILength") & 
+     value("Cell barcode length", simulateOpt.UMILength)) %
+    "Cell barcode length by default is 10",
 
     (option("--alevin-mode").set(simulateOpt.alevinMode, true)) %
     "The program would assume that the input matrix is obtained from Alevin",

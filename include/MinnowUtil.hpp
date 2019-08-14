@@ -174,17 +174,17 @@ namespace util{
     return static_cast<uint32_t>(std::exp(distr(eng)));
   }
 
-  inline std::vector<std::string> generateUMIList(){
+  inline std::vector<std::string> generateUMIList(const uint32_t UMI_LENGTH, const uint32_t POOL_SIZE){
     std::vector<std::string> whiteList ;
     std::cerr << "PRINTING DEBUG: POOL_SIZE " << POOL_SIZE << "\n\n" ;
     whiteList.resize(POOL_SIZE) ;
-    for(int i=0 ; i < POOL_SIZE; ++i){
+    for(size_t i=0 ; i < POOL_SIZE; ++i){
       whiteList[i] = genRandomSeq(UMI_LENGTH) ;
     }
     return whiteList ;
   }
 
-  inline std::vector<std::string> generateCBList(int numCells){
+  inline std::vector<std::string> generateCBList(int numCells, const uint32_t CB_LENGTH){
     std::vector<std::string> CBList;
     CBList.resize(numCells) ;
     for(int i=0 ; i < numCells; ++i){
