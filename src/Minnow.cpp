@@ -82,6 +82,10 @@ int main(int argc, char* argv[]) {
     (option("--UMILength") & 
      value("Cell barcode length", simulateOpt.UMILength)) %
     "Cell barcode length by default is 10",
+    
+    (option("--ReadLength") & 
+     value("Read length", simulateOpt.UMILength)) %
+    "read length by default is 100",
 
     (option("--alevin-mode").set(simulateOpt.alevinMode, true)) %
     "The program would assume that the input matrix is obtained from Alevin",

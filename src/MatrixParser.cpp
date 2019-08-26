@@ -1743,8 +1743,9 @@ void DataMatrix<T>::loadSplatterData(
 		bool testUniqueness{simOpts.testUniqness} ;
     	bool revUniqness{simOpts.reverseUniqness} ;
 
-		if(testUniqueness){
+		if(testUniqueness || revUniqness){
 			// read uniqueness file
+      std::cout << "\n !!!!!!!!!!!!!!!!!! IN TEST UNIQUENESS MODE !!!!!!!!!!!!!!!!!!!!!!!\n" ;
 
 			std::vector<std::pair<std::string, double>> uniquenessInfo ;
 			std::vector<std::pair<size_t, int>> countInfo ;
@@ -1760,6 +1761,8 @@ void DataMatrix<T>::loadSplatterData(
 						gcount++ ;
 					}
 				}
+
+        // std::cout << "\n gcount " << gcount << "\n" ;
 				countInfo.push_back({geneId, gcount}) ;
 				_verbose("\rIn Splatter: Number of gene sum processed : %lu", geneId);
 			}
@@ -1797,6 +1800,9 @@ void DataMatrix<T>::loadSplatterData(
 				mostUniqGeneId++ ;
 			}
 		}else if(simOpts.normalMode){
+
+      std::cout << "\n !!!!!!!!!!!!!!!!!! IN NORMAL MODE !!!!!!!!!!!!!!!!!!!!!!!\n" ;
+
 			size_t splatterGeneId{0} ;
 			while(splatterGeneId < splatterGeneNames.size()){
 
@@ -1825,6 +1831,8 @@ void DataMatrix<T>::loadSplatterData(
 
 		}
 		else{
+
+      std::cout << "\n !!!!!!!!!!!!!!!!!! IN DBG MODE !!!!!!!!!!!!!!!!!!!!!!!\n" ;
 
 			size_t splatterGeneId{0} ;
 			// Assign a random gene to the columns of the matrix  
@@ -1921,8 +1929,6 @@ void DataMatrix<T>::loadSplatterData(
 
 	numOfGenes = geneCounts[geneCounts.size()-1].size() ;
 	
-
-
 	auto& gene2transcriptMap = refInfo.gene2transcriptMap ;
 	std::map<uint32_t, uint32_t> alevinReverseMap ;
 	{
@@ -2125,12 +2131,16 @@ void DataMatrix<T>::loadSplatterData(
 		for(auto&  cellGeneCounts : geneCounts){
 			size_t droppedGeneExpression{0} ;
 			size_t cellSum{0} ;
+
+      size_t cellSumCheck{0} ;
 			auto barcode = cellNames[cellId] ;
 			for(size_t i = 0 ; i < cellGeneCounts.size() ; ++i){
 				
 				std::string geneName = aleviGeneIndex2NameMap[i] ;
 
 				int geneCount = cellGeneCounts[i] ;
+
+        // std::cerr << "\n new gcount " << geneCount << "\n" ;
 				//int geneLevelTrCount{0} ;
 				//int geneLevelExCount{0} ;
 
@@ -2139,7 +2149,7 @@ void DataMatrix<T>::loadSplatterData(
 					cellSum += geneCount ;
 
 					bool dropThisGene{false} ;
-					
+
 					auto originalGeneId = alevin2refMap[i] ;
 					auto transcriptIds = refInfo.gene2transcriptMap[originalGeneId] ;
 
@@ -2150,7 +2160,7 @@ void DataMatrix<T>::loadSplatterData(
 						transcriptIdMap[transcriptIds[ttid]] = ttid ; 
 					}
 
-					
+
 					// follow weibull 
 					if(useWeibull){
 						std::random_device rdt;
@@ -2169,6 +2179,7 @@ void DataMatrix<T>::loadSplatterData(
 						for(size_t j = 0; j < transcriptIds.size() ; ++j ){
 							probVec[tIndex[j]] = dwt(gent) ;
 						}
+
 					}else if(useDBG){
 
 						dropThisGene = false ;
@@ -2178,7 +2189,7 @@ void DataMatrix<T>::loadSplatterData(
 						//if(i == 53593){
 					    //std::cerr << "segCountHist Size " << segCountHist.size() << "\n" ;
 						//}	
-						
+
 						if(segCountHist.size() == 0){
 							//std::cerr << "No seg hist for this gene " << i << "\n" ; 
 							droppedGeneExpression += geneCount ;
@@ -2256,10 +2267,14 @@ void DataMatrix<T>::loadSplatterData(
 						auto alevinTid = alevinReverseMap[tid] ;
 						data[cellId][alevinTid] = transcriptCounts[j] ;
 						totCount += data[cellId][alevinTid] ;
+
+            cellSumCheck += data[cellId][alevinTid] ;
 						//lastAlevinTid = alevinTid ;
 					}
 				}
 			}
+
+      //std::cerr << "\n cell sum before running " << cellSum << " cell sum after running " << cellSumCheck << "\n" ;
 			cellId++ ;
 			if(numOfDroppedGenes > numOfGenes - 100){
 				numOfBadCells++ ;
@@ -2271,7 +2286,7 @@ void DataMatrix<T>::loadSplatterData(
 				std::cerr << " Num of genes dropped due to dbg " << droppedGeneExpression 
 				<< " out of " <<  cellSum << "\n" ;
 
-			}	
+			}
 		}
 
 	}

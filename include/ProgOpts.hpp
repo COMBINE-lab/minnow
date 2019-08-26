@@ -62,6 +62,7 @@ public:
 
   uint32_t CBLength{16} ;
   uint32_t UMILength{10} ;
+  uint32_t ReadLength{100} ;
 };
 
 class EstimateOptions {

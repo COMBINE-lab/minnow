@@ -1006,7 +1006,7 @@ void doPCRBulk(
             std::string intronSeq{""} ;
             if (simulateFromIntrons and (toss < 0.02)){
                 intronInclusion = tr.loadUnplicedIntronSeq() ;
-                    
+
             }
             if(tr.RefLength < MAX_FRAGLENGTH) {
                 fragmentStartPos = 0 ;
@@ -1091,6 +1091,13 @@ void doPCRBulk(
     size_t numOfWritten{0} ;
 
 
+    
+    if(dupCount == 0){
+      dupCount = MAXNUM ;
+    }
+    if (dupCount > totNum){
+      dupCount = totNum ;
+    }
 
     auto numMol = std::min(indexArray.size(), static_cast<size_t>(dupCount)) ;
 
@@ -1142,13 +1149,6 @@ void doPCRBulk(
     std::mt19937 g(rd());
 
     std::shuffle(indexArray.begin(), indexArray.end(), g) ;
-    
-    if(dupCount == 0){
-      dupCount = MAXNUM ;
-    }
-    if (dupCount > totNum){
-      dupCount = totNum ;
-    }
 
     size_t blockSize = uniqueMolecules.size() ;
     
@@ -1413,6 +1413,9 @@ void generateSequencesForCell(
 {
     uint32_t cellId{0} ;
 
+
+
+
     while((cellId = ccount++) < numCells){
         if(emptyCellVector.find(cellId) != emptyCellVector.end()){
             continue ;
@@ -1450,7 +1453,8 @@ void generateSequencesForCell(
         std::vector<util::CellBarcodeUMIBasicBlock> uniqueMolecules ;         
         std::vector<T> cellExpressionVector = dataMatrixObj.fetchCellByIdConst(cellId) ;
         int totalNumberOfMolecules = std::accumulate(cellExpressionVector.begin(), cellExpressionVector.end(), 0) ;
-        
+
+        //std::cerr << "\n----------------------cell id before uniq " << cellId << " sum " << totalNumberOfMolecules << "\n" ;
         int totalIntronCount{0} ;
         auto& intronCountMap = dataMatrixObj.intronCountMap ;
         std::vector<std::pair<uint32_t, int>> intronExpressionVector ;
@@ -1514,6 +1518,8 @@ void generateSequencesForCell(
             }
             cumExpressionCount += expressionCount ; 
         }
+
+        // std::cerr << "\n----------------------cell id after uniq " << cellId << " sum " << uniqueMolecules.size() << "\n" ;
 
 
         // If this cell is marked for polyA clipping then we need to take that sequence too 
@@ -1719,6 +1725,7 @@ bool spawnCellThreads(
     for(size_t tn = 0; tn < nthread -1 ; ++tn){
 
         if(!useDBG){
+
             workerThreads.emplace_back(
                 generateSequencesForCell<SpinLockT,T>,
                 std::ref(threadsDone),
