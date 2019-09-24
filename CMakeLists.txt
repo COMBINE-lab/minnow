@@ -190,11 +190,6 @@ set (CPACK_SOURCE_IGNORE_FILES
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/twopaco)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/ntcard)
 
-include_directories(
-  include
-)
-
-link_directories(
-  lib
-)
+include_directories(include)
+link_directories(lib)
 add_subdirectory(src)

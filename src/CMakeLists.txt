@@ -26,6 +26,7 @@ set(
 #)
 
 set(minnow_lib_srcs
+    PuffIndexer.cpp
     MinnowSimulate.cpp
     MinnowEstimate.cpp
     GFAReader.cpp
@@ -34,7 +35,6 @@ set(minnow_lib_srcs
     FASTAParser.cpp
     FastxParser.cpp
     FixFasta.cpp
-    PuffIndexer.cpp
     MinnowFS.cpp
     MinnowUtil.cpp
     BFHClass.cpp
