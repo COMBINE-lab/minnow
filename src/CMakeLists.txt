@@ -1,6 +1,10 @@
+include_directories(
+${TBB_INCLUDE_DIRS}
+)
+
 link_directories(
 		${GAT_SOURCE_DIR}/external/install/lib
-		${TBB_LIBRARIES}
+                $(TBB_LIBRARY_DIRS)
 )
 
 set(
