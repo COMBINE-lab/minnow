@@ -1,3 +1,7 @@
+link_directories(
+	${GAT_SOURCE_DIR}/external/install/lib
+)
+
 set(
     GRAPH_LIB_SRC
     Graph.cpp
@@ -37,7 +41,7 @@ set(minnow_lib_srcs
 
 add_library(minnowlib STATIC ${minnow_lib_srcs})
 add_executable(minnow Minnow.cpp)
-target_link_libraries(minnow minnowlib z)
+target_link_libraries(minnow minnowlib z twopaco graphdump)
 
 add_library(graphlib STATIC ${GRAPH_LIB_SRC})
 add_executable(constructgraph UMIGraphConstructor.cpp)
