@@ -54,6 +54,8 @@ add_library(validatelib STATIC ${VALIDATE_LIB_SRC})
 add_executable(validate MinnowValidator.cpp)
 target_link_libraries(validate validatelib z)
 
+add_dependencies(minnow libtbb)
+
 #add_library(fixfastalib STATIC ${FIXFASTA_LIB_SRC})
 #add_executable(fixfasta FixFasta.cpp)
 #target_link_libraries(fixfasta fixfastalib z)
