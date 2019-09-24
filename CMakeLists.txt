@@ -139,7 +139,7 @@ else()
     message("TBB libraries found")
 endif()
 
-add_dependencies(minnow libtbb)
+#add_dependencies(minnow libtbb)
 
 ##
 # If we're fetching tbb, we need to have dummy paths for these variables
