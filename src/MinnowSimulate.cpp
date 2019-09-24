@@ -175,7 +175,7 @@ std::string imputeIlluminaModel(
     for(size_t pos = 0 ; pos < seq.size() ; ++pos){
        int ind = nuclMap[seq[pos]] ;
        auto probVec = errorModel[pos][ind]  ;
-	   
+
        std::discrete_distribution<> dg(probVec.begin(), probVec.end()) ;
        auto mutatedInd = dg(geng) ;
        if (mutatedInd != ind){
@@ -192,7 +192,7 @@ std::string imputeErrorInStringUMI(
     double errorProbability,
     std::string& seq
 ){
-    
+
     //std::vector<double> prob(seq.size()) ;
     std::random_device r;
     std::mt19937 generator(r()) ;
