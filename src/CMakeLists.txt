@@ -46,6 +46,9 @@ add_library(minnowlib STATIC ${minnow_lib_srcs})
 add_executable(minnow Minnow.cpp)
 target_link_libraries(minnow minnowlib z twopaco graphdump ntcard ${TBB_LIBRARIES})
 
+add_dependencies(minnowlib libtbb)
+add_dependencies(minnow libtbb)
+
 add_library(graphlib STATIC ${GRAPH_LIB_SRC})
 add_executable(constructgraph UMIGraphConstructor.cpp)
 target_link_libraries(constructgraph graphlib)
@@ -54,8 +57,6 @@ add_library(validatelib STATIC ${VALIDATE_LIB_SRC})
 add_executable(validate MinnowValidator.cpp)
 target_link_libraries(validate validatelib z)
 
-add_dependencies(minnowlib libtbb)
-add_dependencies(minnow libtbb)
 
 #add_library(fixfastalib STATIC ${FIXFASTA_LIB_SRC})
 #add_executable(fixfasta FixFasta.cpp)
@@ -72,6 +73,11 @@ set(INSTALL_LIB_DIR lib )
 set(INSTALL_BIN_DIR bin )
 set(INSTALL_INCLUDE_DIR include )
 
+install(DIRECTORY
+        ${GAT_SOURCE_DIR}/external/install/lib/
+        DESTINATION ${INSTALL_LIB_DIR}
+	    FILES_MATCHING PATTERN "libtbb*.${SHARED_LIB_EXTENSION}*"
+    )
 
 install(
     TARGETS minnow minnowlib
