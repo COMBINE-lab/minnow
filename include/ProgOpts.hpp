@@ -3,15 +3,32 @@
 #include <cstdint>
 #include <string>
 
+class IndexOptions {
+public:
+  uint32_t k{31};
+  uint32_t p{16};
+  std::string gfa_file;
+  std::string cfile;
+  std::vector<std::string> rfile;
+  std::string outdir;
+  std::string header_sep{""};
+  bool isSparse{false};
+  bool keep_duplicates{false};
+  uint32_t lossy_rate{5};
+  int32_t filt_size{-1};
+  std::string twopaco_tmp_dir{""};
+};
+
+
 class SimulateOptions {
 public:
   bool alevinMode{false} ;
-  
+
   bool splatterMode{false} ;
   bool normalMode{false} ;
   bool testUniqness{false} ;
   bool reverseUniqness{false} ;
-  
+
 
   bool velocityMode{false} ;
   

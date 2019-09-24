@@ -10,44 +10,66 @@
 #include <string>
 #include <cstdlib>
 
+#include <ghc/filesystem.hpp>
 #include "ProgOpts.hpp"
 
 int minnowSimulate(SimulateOptions& simOpts) ;
 int minnowEstimate(EstimateOptions& eopts) ;
+int puffIndex(IndexOptions& iopts) ;
 
 int main(int argc, char* argv[]) {
   using namespace clipp ;
   using std::cout ;
 
+  IndexOptions indexOpt ;
   SimulateOptions simulateOpt ;
   EstimateOptions estimateOpt ;
 
-  enum class mode {help, simulate, estimate} ;
+  enum class mode {help, index, simulate, estimate} ;
 
   mode selected = mode::help ;
+
+  auto ensure_file_exists = [](const std::string& s) -> bool {
+                              bool exists = ghc::filesystem::exists(s);
+                              if (!exists) {
+                                std::string e = "The required input file " + s + " does not seem to exist.";
+                                throw std::runtime_error{e};
+                              }
+                              return true;
+                            };
+
+  auto indexMode = (
+                    command("index").set(selected, mode::index),
+                    (required("-r", "--ref") & values(ensure_file_exists, "ref_file", indexOpt.rfile)) % "path to the reference fasta file",
+                    (required("-o", "--output") & value("output_dir", indexOpt.outdir)) % "directory where index is written",
+                    (option("-f", "--filt-size") & value("filt_size", indexOpt.filt_size)) % "filter size to pass to TwoPaCo when building the reference dBG",
+                    (option("--tmpdir") & value("twopaco_tmp_dir", indexOpt.twopaco_tmp_dir)) % "temporary work directory to pass to TwoPaCo when building the reference dBG",
+                    (option("-k", "--klen") & value("kmer_length", indexOpt.k))  % "length of the k-mer with which the dBG was built (default = 101)",
+                    (option("-p", "--threads") & value("threads", indexOpt.p))  % "total number of threads to use for building MPHF (default = 16)"
+                   );
 
   auto estimateMode = (
     command("estimate").set(selected, mode::estimate),
 
-    (required("-eq", "--eqClassDir") & 
+    (required("-eq", "--eqClassDir") &
     value("eqclass_dir", estimateOpt.eqClassFolder)) %
     "directory containing relevent files produced by the python script",
 
-    (required("-o", "--outdir") & 
+    (required("-o", "--outdir") &
     value("mat_file", estimateOpt.outDir)) %
-    "the simulated models will be written", 
+    "the simulated models will be written",
 
-    (required("--g2t") & 
+    (required("--g2t") &
     value("gene_tr", estimateOpt.gene2txpFile)) %
-    "tab separated list of Gene to Transcirpt mapping", 
+    "tab separated list of Gene to Transcirpt mapping",
 
-    (required("--bfh") & 
+    (required("--bfh") &
     value("bfh_file", estimateOpt.bfhFile)) %
-    "BFH file produced by alevin", 
+    "BFH file produced by alevin",
 
-    (option("--cluster") & 
+    (option("--cluster") &
     value("cluster", estimateOpt.clusterFile)) %
-    "Optional cluster file to model cluster based histogram" 
+    "Optional cluster file to model cluster based histogram"
 
   );
 
@@ -56,15 +78,15 @@ int main(int argc, char* argv[]) {
     command("simulate").set(selected, mode::simulate),
 
     // required options  
-    
+
     (required("-m", "--matdir") & 
     value("mat_file", simulateOpt.matrixFile)) %
     "directory with matrix file/ if this is a file instead of a dir",
-    
+
     (required("-o", "--outdir") & 
     value("mat_file", simulateOpt.outDir)) %
     "the simulated reads will be written here",
-    
+
     (required("-r", "--reffile") & 
     value("ref_file", simulateOpt.refFile)) %
     "transcriptome reference file (assumed from fasta file)",
@@ -226,7 +248,9 @@ int main(int argc, char* argv[]) {
   );
 
   auto cli = (
-    (simulateMode | estimateMode |  
+    (simulateMode |
+     estimateMode |
+     indexMode |
      command("--help").set(selected,mode::help) |
      command("-h").set(selected,mode::help) |
      command("help").set(selected,mode::help)
@@ -246,13 +270,14 @@ int main(int argc, char* argv[]) {
 
   if(res){
     switch(selected){
-      case mode::simulate: minnowSimulate(simulateOpt) ; break ; 
-      case mode::estimate: minnowEstimate(estimateOpt) ; break ;
-      case mode::help: std::cout << make_man_page(cli, "minnow") ; 
-    }    
+    case mode::index: puffIndex(indexOpt) ; break ;
+    case mode::simulate: minnowSimulate(simulateOpt) ; break ;
+    case mode::estimate: minnowEstimate(estimateOpt) ; break ;
+    case mode::help: std::cout << make_man_page(cli, "minnow") ;
+    }
   }else{
       std::cout << usage_lines(cli, "minnow") << '\n';
       return 1;
   }
-  
+
 }
