@@ -276,8 +276,22 @@ int main(int argc, char* argv[]) {
     case mode::help: std::cout << make_man_page(cli, "minnow") ;
     }
   }else{
+    auto b = res.begin() ;
+    auto e = res.end() ;
+    if(std::distance(b,e) > 0){
+      if(b->arg() == "index"){
+        std::cout << make_man_page(indexMode, "minnow") ;
+      }else if(b->arg() == "simulate"){
+        std::cout << make_man_page(simulateMode, "minnow") ;
+      }else{
+        std::cout << "There is no command \"" << b->arg() << "\"\n" ;
+        std::cout << usage_lines(cli, "minnow") << '\n';
+      }
+    } else{
       std::cout << usage_lines(cli, "minnow") << '\n';
       return 1;
+    }
   }
 
+  return 0 ;
 }

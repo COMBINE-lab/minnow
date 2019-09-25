@@ -3,9 +3,21 @@
 #include <cstdint>
 #include <string>
 
+enum class BarcodeEnd { FIVE = 5, THREE = 3 };
+enum class Sequence { BARCODE, UMI };
+enum class ProtocolType {
+                         CHROMIUMV3 = 0,
+                         CHROMIUM = 1,
+                         DROPSEQ = 2,
+                         CELSEQ = 3,
+                         CELSEQ2 = 4,
+                         CUSTOM = 5
+};
+
 class IndexOptions {
 public:
   uint32_t k{31};
+  // k-mer to build the de-Bruijn graph
   uint32_t p{16};
   std::string gfa_file;
   std::string cfile;
@@ -20,70 +32,95 @@ public:
 };
 
 
+
+
 class SimulateOptions {
 public:
-  bool alevinMode{false} ;
 
+  // ===============================================
+  // common options shared by both modes
+  // ===============================================
+  std::string inputdir ;
+  std::string outDir ;
+  std::string protocol{""} ;
+  uint32_t numOfPCRCycles{5};
+  double errorRate{0.01};
+  double mutationProb{0.01};
+  std::string refFile ;
+  uint32_t sampleCells{0} ;
+  uint32_t numOfCells{10};
+  uint32_t numThreads{2};
+  bool gencode{false} ;
+  bool useDBG{false} ;
+  bool switchOnEffModel{false} ;
+  // PCR model
+  uint32_t CBLength{16} ;
+  uint32_t UMILength{10} ;
+  uint32_t ReadLength{100} ;
+  std::string gene2txpFile{""} ;
+  std::string gfaFile{""} ;
+  std::string clusterFile{""} ;
+  std::string bfhFile{""} ;
+  std::string rspdFile{""} ;
+  bool noDump{false} ;
+  // intended for not dumping the output files
+  std::string illuminaModelFile{""} ;
+  bool generateNoisyCells{false} ;
+
+  // ===============================================
+  // options for running from alevinMode
+  // ===============================================
+  bool alevinMode{false} ;
+  bool dupCounts{false} ;
+  bool useWhiteList{false} ;
+  bool useEqClass{false} ;
+
+  // ===============================================
+  // options for running from splatterMode
+  // ===============================================
   bool splatterMode{false} ;
   bool normalMode{false} ;
   bool testUniqness{false} ;
   bool reverseUniqness{false} ;
-
-
-  bool velocityMode{false} ;
-  
-  bool useDBG{false} ;
-  
-  bool binary{false} ;
-  bool gencode{false} ;
-  bool dupCounts{false} ;
-  bool useWhiteList{false} ;
-  bool generateNoisyCells{false} ;
-  bool useEqClass{false} ;
-  bool noDump{false} ;
   bool useWeibull{false} ;
-  bool switchOnEffModel{false} ;
-
-  bool samplePolyA{false} ;
-
-  std::string clusterFile{""} ;
-  std::string bfhFile{""} ;
-  
-  std::string modelDir{""} ;
-
-  std::string intronFile{""} ;
-  std::string exonLengthFile{""} ;
-  std::string polyAsiteFile{""} ;
-  std::string polyAsiteFractionFile{""} ;
-  std::string matrixFile;
-  std::string gene2txpFile{""} ;
-  std::string gfaFile{""} ;
-  std::string genomefile{""} ;
-  std::string rspdFile{""} ;
+  std::string uniquenessFile{""} ;
   std::string geneProbFile{""} ;
   std::string countProbFile{""} ;
   std::string numMolFile{""} ;
-  std::string uniquenessFile{""} ;
-  std::string illuminaModelFile{""} ;
 
-  std::string refFile ;
-  std::string outDir ;
-  uint32_t sampleCells{0} ;
-  uint32_t numOfCells{10};
+  // ================================================
+  // currently not used in main branch
+  // ================================================
+  bool binary{false} ;
+  // intended for reading the binary mode of the file
+  std::string modelDir{""} ;
+  // intended for storing all model files for analysis
+  bool velocityMode{false} ;
+  // to switch on the velocity mode
+  std::string intronFile{""} ;
+  // intended for intron retention
+  std::string exonLengthFile{""} ;
+  // exon lengths are stored to help simulate intron
+  // retained reads
+  bool samplePolyA{false} ;
+  // Sample polyA tails
+  std::string polyAsiteFile{""} ;
+  // File that stores polyA site files
+  std::string polyAsiteFractionFile{""} ;
+  // Fraction of polyA site again needed for intron retention
+  std::string matrixFile;
+  // We don't use it now as input directory is changed
+  std::string genomefile{""} ;
+  // We needed genome file for intron sequences
   uint32_t numOfTranscripts{100};
-  uint32_t numOfPCRCycles{5};
-  double errorRate{0.01};
-  double mutationProb{0.01};
-  uint32_t numThreads{2};
+  // In case this was a transcript level matrix
   uint32_t numOfDoublets{0};
+  // The number of doublets to be produced
 
-  uint32_t CBLength{16} ;
-  uint32_t UMILength{10} ;
-  uint32_t ReadLength{100} ;
 };
 
 class EstimateOptions {
-  // To estimate we need the exon junctions taken 
+  // To estimate we need the exon junctions taken
   // from a gtf file and gene name
   public:
     std::string gene2txpFile{""} ;
@@ -92,8 +129,8 @@ class EstimateOptions {
     std::string bfhFile{""} ;
     std::string outDir{""} ;
     std::string clusterFile{""} ;
-    
+
 };
 
 
-#endif 
+#endif

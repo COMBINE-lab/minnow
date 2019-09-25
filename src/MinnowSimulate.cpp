@@ -7,7 +7,7 @@
 #include <memory>
 #include <mutex>
 #include <thread>
-#include <algorithm> 
+#include <algorithm>
 #include <sstream>
 #include <functional>
 
@@ -29,6 +29,8 @@
 #include "concurrentqueue.h"
 #include "PCR.hpp"
 #include "GFAReader.hpp"
+
+#include "LibraryConfig.hpp"
 
 #include "zstr.hpp"
 
@@ -1807,11 +1809,11 @@ bool spawnCellThreads(
 
 
 void printOptions(SimulateOptions& simOpts){
-    std::cerr << "Matrix File Name "  << simOpts.matrixFile << "\n" 
-              << "Reference Fasta " << simOpts.refFile << "\n" 
-              << "Number of PCR cycles " << simOpts.numOfPCRCycles << "\n" 
-              << "Erorr rate " << simOpts.errorRate << "\n" 
-              << "Numeber of threads " << simOpts.numThreads << "\n" ; 
+    std::cerr << "Input directory  "  << simOpts.inputdir << "\n"
+              << "Reference Fasta " << simOpts.refFile << "\n"
+              << "Number of PCR cycles " << simOpts.numOfPCRCycles << "\n"
+              << "Erorr rate " << simOpts.errorRate << "\n"
+              << "Numeber of threads " << simOpts.numThreads << "\n" ;
 }
 
 
@@ -1822,15 +1824,19 @@ void minnowSimulate(SimulateOptions& simOpts){
     //bool alevinMode = simOpts.alevinMode ;
     //bool splatterMode = simOpts.splatterMode ;
     //auto& matrixFileName = simOpts.matrixFile ;
+
+    // Load the library configuration file
+    protocol::SingleCellProtocolConfig expConfig = protocol::constructProtocol(simOpts.protocol);
+
     auto& refFileName = simOpts.refFile ;
-    auto& gene2txpFile = simOpts.gene2txpFile ; 
+    auto& gene2txpFile = simOpts.gene2txpFile ;
 
     auto& numOfCells = simOpts.numOfCells ;
     auto& numOfGenes = simOpts.numOfTranscripts ;
 
-    CB_LENGTH = simOpts.CBLength ;
-    UMI_LENGTH = simOpts.UMILength ;
-    POOL_SIZE = std::pow(4, UMI_LENGTH) ;
+    CB_LENGTH = expConfig.barcodeLength ;
+    UMI_LENGTH = expConfig.umiLength ;
+    POOL_SIZE = expConfig.maxValue ;
 
 
     //auto& numOfSampleCells = simOpts.sampleCells ;
@@ -1844,22 +1850,20 @@ void minnowSimulate(SimulateOptions& simOpts){
     bool useDBG = simOpts.useDBG ;
 
     //auto& sampleCells = simOpts.sampleCells ;
-
-     
     //numOfPCRCycles = 10 ;
 
-    // Set up the logger 
+    // Set up the logger
     auto consoleSink = std::make_shared<spdlog::sinks::ansicolor_stderr_sink_mt>() ;
     auto consoleLog = spdlog::create("minnow-Log", {consoleSink});
 
 
     // Collect reference information
-    // this will populate the transcript 
-    // sequences too 
+    // this will populate the transcript
+    // sequences too
 
-    
+
     consoleLog->info("Reading reference sequences ...") ;
-    
+
     Reference refInfo(
         refFileName,
         gene2txpFile
@@ -1868,7 +1872,7 @@ void minnowSimulate(SimulateOptions& simOpts){
 
     // If the velocity mode is on we need to initialize 
     // One additional file with intronic reads from the 
-    // fasta file 
+    // fasta file
     if(simOpts.velocityMode){
         consoleLog->info("RNA velocity mode is on; reading the intronic reads ...") ;
         refInfo.updateIntronSequence(simOpts.intronFile) ;

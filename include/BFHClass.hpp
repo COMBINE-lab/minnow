@@ -20,11 +20,7 @@
 
 class BFHClass{
     public:
-    BFHClass(
-        std::string& bfhFileIn
-    ){
-        bfhFile = bfhFileIn ;
-    }
+    BFHClass(){}
 
     void loadBFH(
         std::string& bfhFile,
@@ -38,7 +34,7 @@ class BFHClass{
 
     void loadProbability(std::string& file, Reference& refInfo, bool geneLevel) ;
     void dumpClusterHistoGram(std::string& file_name) ;
-    
+
     inline uint32_t getGeneLevelProbCount(uint32_t geneId, uint32_t count){
         return geneCountHistogram[geneId][count] ;
     }

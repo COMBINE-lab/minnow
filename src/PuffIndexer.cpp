@@ -140,7 +140,7 @@ int puffIndex(IndexOptions& indexOpts){
     args.push_back("-s");
     args.push_back(rfile);
     args.push_back("-f");
-    args.push_back("binPufferized");
+    args.push_back("pufferized");
     args.push_back(outdir+"/tmp_dbg.bin");
     args.push_back("-p");
     args.push_back(outdir);
