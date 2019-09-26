@@ -49,17 +49,17 @@ namespace protocol{
 
   inline SingleCellProtocolConfig constructProtocol(std::string& protocolStr){
     if(protocolStr == "Chromiumv3"){
-      return SingleCellProtocolConfig(16,12,BarcodeEnd::FIVE,4294967295,ProtocolType::CHROMIUMV3) ;
+      return SingleCellProtocolConfig(16,12,BarcodeEnd::FIVE,std::pow(4,12),ProtocolType::CHROMIUMV3) ;
     }else if(protocolStr == "Chromium"){
-        return SingleCellProtocolConfig(16,10,BarcodeEnd::FIVE,4294967295,ProtocolType::CHROMIUM) ;
+      return SingleCellProtocolConfig(16,10,BarcodeEnd::FIVE,std::pow(4,10),ProtocolType::CHROMIUM) ;
     }else if(protocolStr == "DropSeq"){
-      return SingleCellProtocolConfig(12,8,BarcodeEnd::FIVE,16777216,ProtocolType::DROPSEQ) ;
+      return SingleCellProtocolConfig(12,8,BarcodeEnd::FIVE,std::pow(4,8),ProtocolType::DROPSEQ) ;
     }else if(protocolStr == "CelSeq"){
-      return SingleCellProtocolConfig(8,6,BarcodeEnd::FIVE,16777216,ProtocolType::CELSEQ) ;
+      return SingleCellProtocolConfig(8,6,BarcodeEnd::FIVE,std::pow(4,6),ProtocolType::CELSEQ) ;
     }else if(protocolStr == "CelSeq2"){
-      return SingleCellProtocolConfig(6,6,BarcodeEnd::FIVE,16777216,ProtocolType::CELSEQ2) ;
+      return SingleCellProtocolConfig(6,6,BarcodeEnd::FIVE,std::pow(4,6),ProtocolType::CELSEQ2) ;
     }else{
-      return SingleCellProtocolConfig(16,12,BarcodeEnd::FIVE,4294967295,ProtocolType::CHROMIUMV3) ;
+      return SingleCellProtocolConfig(16,10,BarcodeEnd::FIVE,std::pow(4,10),ProtocolType::CHROMIUM) ;
     }
   }
 

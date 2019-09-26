@@ -70,7 +70,7 @@ int puffIndex(IndexOptions& indexOpts){
     }
     // replacing rfile with the new fixed fasta file
     rfile = outdir+"/ref_k"+std::to_string(k)+"_fixed.fa";
-  }
+   }
 
   // If the filter size isn't set by the user, estimate it with ntCard
   if (indexOpts.filt_size == -1){

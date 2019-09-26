@@ -79,8 +79,8 @@ int main(int argc, char* argv[]) {
 
     // required options  
 
-    (required("-m", "--matdir") & 
-    value("mat_file", simulateOpt.matrixFile)) %
+    (required("-i", "--inputdir") & 
+    value("inputdir", simulateOpt.inputdir)) %
     "directory with matrix file/ if this is a file instead of a dir",
 
     (required("-o", "--outdir") & 

@@ -1,0 +1,20 @@
+[2019-09-25 21:28:58.907] [jointLog] [info] Fragment incompatibility prior below threshold.  Incompatible fragments will be ignored.
+[2019-09-25 21:28:58.907] [jointLog] [info] The --mimicBT2, --mimicStrictBT2 and --hardFilter flags imply mapping validation (--validateMappings). Enabling mapping validation.
+[2019-09-25 21:28:58.907] [jointLog] [info] Usage of --validateMappings implies use of minScoreFraction. Since not explicitly specified, it is being set to 0.65
+[2019-09-25 21:28:58.907] [jointLog] [info] The use of range-factorized equivalence classes does not make sense in conjunction with --hardFilter.  Disabling range-factorized equivalence classes. 
+[2019-09-25 21:28:58.907] [jointLog] [info] Usage of --validateMappings implies a default consensus slack of 0.2. Setting consensusSlack to 0.35.
+[2019-09-25 21:28:58.907] [jointLog] [info] Using default value of 0.87 for minScoreFraction in Alevin
+Using default value of 0.6 for consensusSlack in Alevin
+[2019-09-25 21:29:01.358] [jointLog] [info] There is 1 library.
+[2019-09-25 21:29:01.499] [jointLog] [info] Loading pufferfish index
+[2019-09-25 21:29:01.499] [jointLog] [info] Loading dense pufferfish index.
+[2019-09-25 21:29:14.274] [jointLog] [info] done
+[2019-09-25 21:29:14.274] [jointLog] [info] Index contained 322,667 targets
+[2019-09-25 21:29:14.433] [jointLog] [info] Number of decoys : 0
+[2019-09-25 21:29:14.433] [jointLog] [info] First decoy index : 18,446,744,073,709,551,572 
+[2019-09-25 21:29:27.306] [jointLog] [info] Computed 56,597 rich equivalence classes for further processing
+[2019-09-25 21:29:27.306] [jointLog] [info] Counted 1,119,857 total reads in the equivalence classes 
+[2019-09-25 21:29:27.306] [jointLog] [info] Number of fragments discarded because they are best-mapped to decoys : 0
+[2019-09-25 21:29:27.356] [jointLog] [info] Mapping rate = 15.5586%
+
+[2019-09-25 21:29:27.356] [jointLog] [info] finished quantifyLibrary()

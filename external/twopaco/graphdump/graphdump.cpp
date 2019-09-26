@@ -593,13 +593,15 @@ void GenerateDotOutput(const std::string &inputFileName) {
 }
 
 template<class G>
-void GeneratePufferizedOutput(const std::string &inputFileName, const std::vector<std::string> &genomes, size_t k,
+void GeneratePufferizedOutput(const std::string &inputFileName, const std::string& gfaFileName, const std::vector<std::string> &genomes, size_t k,
                               bool prefix, std::string &prefixDir, G* g) {
     std::vector<uint64_t> chrSegmentLength;
     std::vector<std::string> chrSegmentId;
     std::map<std::string, std::string> chrFileName;
 
-    g->Header(std::cout);
+    std::cout << " ========= " << gfaFileName << "\n" ;
+    std::ofstream gfaStream(gfaFileName) ;
+    g->Header(gfaStream);
 
     ReadInputSequences(genomes, chrSegmentId, chrSegmentLength, chrFileName, !prefix);
 
@@ -710,7 +712,7 @@ void GeneratePufferizedOutput(const std::string &inputFileName, const std::vecto
                 }
                 contigMap[Abs(kmerId)] = contigCntr;
 //                std::cerr << "AddkmerIfComplex: " << contigCntr << " " << k << " " << ss.str() << "\n";
-                g->Segment(contigCntr, k, ss.str(), std::cout);
+                g->Segment(contigCntr, k, ss.str(), gfaStream);
                 contigCntr++;
                 elementCntr+=ss.str().size();
                 kmerInfo[absBegin].setSeen();
@@ -774,7 +776,7 @@ void GeneratePufferizedOutput(const std::string &inputFileName, const std::vecto
                         }
                         contigMap[Abs(segmentId)] = contigCntr;
 //                        std::cerr << contigCntr << " " << segmentSize << " " << ss.str() << "\n";
-                        g->Segment(contigCntr, segmentSize, ss.str(), std::cout);
+                        g->Segment(contigCntr, segmentSize, ss.str(), gfaStream);
                         contigCntr++;
                         elementCntr+=ss.str().size();
                         seen[Abs(segmentId)] = true;
@@ -789,7 +791,7 @@ void GeneratePufferizedOutput(const std::string &inputFileName, const std::vecto
                 }
                 begin = end;
             } else {
-              g->FlushPath(currentPath, chrSegmentId[seqId], k, std::cout);
+              g->FlushPath(currentPath, chrSegmentId[seqId], k, gfaStream);
                 chrReader.NextChr(chr);
                 begin = end;
 
@@ -804,7 +806,7 @@ void GeneratePufferizedOutput(const std::string &inputFileName, const std::vecto
     // Need to take care of the very last junction
     int64_t absBegin = Abs(begin.GetId());
     addKmerIfComplex(absBegin);
-    g->FlushPath(currentPath, chrSegmentId[seqId], k, std::cout);
+    g->FlushPath(currentPath, chrSegmentId[seqId], k, gfaStream);
     std::cerr << "contig count: " << contigCntr << " element count: " << elementCntr << " complex nodes: " << cntr << "\n";
     g->flushSegments(prefixDir);
 }
@@ -896,25 +898,29 @@ int dumpGraphMain(std::vector<std::string>& args){//}int argc, char *argv[]) {
             if (!seqFileName.isSet()) {
                 throw TCLAP::ArgParseException("Required argument missing\n", "seqfilename");
             }
-
+            std::cout << "In pufferized option\n";
             auto * g = new Gfa1Generator();
-            GeneratePufferizedOutput(inputFileName.getValue(), seqFileName.getValue(), kvalue.getValue(),
+            std::string gfaFileName = seqAndRankOutputDir.getValue() + "/dbg.gfa" ;
+            GeneratePufferizedOutput(inputFileName.getValue(), gfaFileName, seqFileName.getValue(), kvalue.getValue(),
                                      prefix.getValue(), seqAndRankOutputDir.getValue(), g);
             delete g;
         } else if (outputFileFormat.getValue() == format[7]) { // binPufferized
-            if (!seqFileName.isSet()) {
-                throw TCLAP::ArgParseException("Required argument missing\n", "seqfilename");
-            }
-            if (!seqAndRankOutputDir.isSet()) {
-                throw TCLAP::ArgParseException("Required argument missing\n", "SeqRankDirPrefix");
-            }
-            auto * g = new Gfa1BinaryGenerator();
-            std::ofstream pfile(seqAndRankOutputDir.getValue()+"/path.bin", std::ofstream::binary);
-            g->setOStream(&pfile);
-           GeneratePufferizedOutput(inputFileName.getValue(), seqFileName.getValue(), kvalue.getValue(),
-                                     prefix.getValue(), seqAndRankOutputDir.getValue(), g);
-           pfile.close();
-           delete g;
+
+          std::cerr << "We don't produce binary file for minnow " << std::endl ;
+          return 1 ;
+          // if (!seqFileName.isSet()) {
+          //     throw TCLAP::ArgParseException("Required argument missing\n", "seqfilename");
+          // }
+          // if (!seqAndRankOutputDir.isSet()) {
+          //     throw TCLAP::ArgParseException("Required argument missing\n", "SeqRankDirPrefix");
+          // }
+          // auto * g = new Gfa1BinaryGenerator();
+          // std::ofstream pfile(seqAndRankOutputDir.getValue()+"/path.bin", std::ofstream::binary);
+          // g->setOStream(&pfile);
+          // GeneratePufferizedOutput(inputFileName.getValue(),seqFileName.getValue(), kvalue.getValue(),
+          //                          prefix.getValue(), seqAndRankOutputDir.getValue(), g);
+          // pfile.close();
+          //delete g;
         }
     }
     catch (TCLAP::ArgException &e) {

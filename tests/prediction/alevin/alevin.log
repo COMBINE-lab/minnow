@@ -1,0 +1,31 @@
+[2019-09-25 21:28:58.907] [alevinLog] [info] Loading Header
+[2019-09-25 21:28:59.523] [alevinLog] [info] Found all transcripts to gene mappings
+[2019-09-25 21:28:59.562] [alevinLog] [info] Processing barcodes files (if Present) 
+
+ 
+[2019-09-25 21:29:01.294] [alevinLog] [info] Done barcode density calculation.
+[2019-09-25 21:29:01.294] [alevinLog] [info] # Barcodes Used: [32m7197662[0m / [31m7197662[0m.
+[2019-09-25 21:29:01.294] [alevinLog] [info] Done importing white-list Barcodes
+[2019-09-25 21:29:01.294] [alevinLog] [warning] Skipping 1 Barcodes as no read was mapped
+[2019-09-25 21:29:01.294] [alevinLog] [info] Total 14 white-listed Barcodes
+[2019-09-25 21:29:01.323] [alevinLog] [warning] Total 80.9854% reads will be thrown away because of noisy Cellular barcodes.
+[2019-09-25 21:29:01.323] [alevinLog] [info] Done populating Z matrix
+[2019-09-25 21:29:01.323] [alevinLog] [warning] 0 Whitelisted Barcodes with 0 frequency
+[2019-09-25 21:29:01.324] [alevinLog] [info] Total 690 CB got sequence corrected
+[2019-09-25 21:29:01.324] [alevinLog] [info] Done indexing Barcodes
+[2019-09-25 21:29:01.324] [alevinLog] [info] Total Unique barcodes found: 192430
+[2019-09-25 21:29:01.324] [alevinLog] [info] Used Barcodes except Whitelist: 690
+[2019-09-25 21:29:01.346] [alevinLog] [info] Done with Barcode Processing; Moving to Quantify
+
+[2019-09-25 21:29:01.358] [alevinLog] [info] parsing read library format
+[2019-09-25 21:29:27.943] [alevinLog] [info] Starting optimizer
+
+
+[2019-09-25 21:29:28.122] [alevinLog] [warning] mrna file not provided; using is 1 less feature for whitelisting
+[2019-09-25 21:29:28.122] [alevinLog] [warning] rrna file not provided; using is 1 less feature for whitelisting
+[2019-09-25 21:29:28.802] [alevinLog] [info] Total 783422.00 UMI after deduplicating.
+[2019-09-25 21:29:28.802] [alevinLog] [info] Total 127670 BiDirected Edges.
+[2019-09-25 21:29:28.802] [alevinLog] [info] Total 1994 UniDirected Edges.
+[2019-09-25 21:29:28.854] [alevinLog] [info] Starting dumping cell v gene counts in mtx format
+[2019-09-25 21:29:29.023] [alevinLog] [info] Finished dumping counts into mtx
+[2019-09-25 21:29:29.028] [alevinLog] [info] Finished optimizer

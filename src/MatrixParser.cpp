@@ -454,7 +454,7 @@ void DataMatrix<T>::loadAlevinData(
 	size_t numOfOriginalGenes{0} ;
 
 
-  consoleLog->info("==========================================") ;
+  std::cout<<"===============================================================\n\n" ;
   consoleLog->info("Start parsing Alevin Directory") ;
 	consoleLog->info("Parsing {}/quants_mat_cols.txt",alevinDir) ;
 	{
@@ -952,7 +952,7 @@ void DataMatrix<T>::loadAlevinData(
 		}
 
 		consoleLog->info("Truncated the matrix ") ;
-    consoleLog->info("==========================================");
+    std::cout<<"===============================================================\n\n" ;
 
     // NOTE: This feature is not tested yet
 		// CREATE Doublets
@@ -1349,10 +1349,10 @@ void DataMatrix<T>::loadAlevinData(
 				nonWhiteLisBarcodesSkipped++ ;
 			}
 
-			if(useDBG){
-        consoleLog->info("NOTE: no gene should be skipped die to continue block, this should not be printed");
-				consoleLog->info("DBG::: total Gene Expression skipped {}", droppedGeneExpression) ;
-			}
+			//if(useDBG){
+      //  consoleLog->info("NOTE: no gene should be skipped die to continue block, this should not be printed");
+			//	consoleLog->info("DBG::: total Gene Expression skipped {}", droppedGeneExpression) ;
+			//}
 
 
 			cellId += 1 ;
@@ -1541,7 +1541,7 @@ void DataMatrix<T>::loadSplatterData(
 ){
 
 	// Load data from the simOpts 
-	auto splatterDir = simOpts.matrixFile ;
+	auto splatterDir = simOpts.inputdir ;
 	size_t sampleCells = simOpts.sampleCells ;
 	std::string outDir = simOpts.outDir ;
 	std::string bfhFile = simOpts.bfhFile ;
