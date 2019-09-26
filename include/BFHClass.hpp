@@ -11,6 +11,13 @@
 #include <string>
 #include <unordered_map>
 #include <sstream>
+
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/ostream_sink.h"
+#include "spdlog/fmt/ostr.h"
+#include "spdlog/fmt/fmt.h"
+
+
 #include "MinnowFS.hpp"
 
 #include "string_view.hpp"
@@ -21,6 +28,9 @@
 class BFHClass{
     public:
     BFHClass(){}
+  BFHClass(std::shared_ptr<spdlog::logger>& consoleLogIn){
+    consoleLog = consoleLogIn ;
+  }
 
     void loadBFH(
         std::string& bfhFile,
@@ -40,6 +50,7 @@ class BFHClass{
     }
 
 
+  std::shared_ptr<spdlog::logger> consoleLog ;
     std::string bfhFile  ;
     std::vector<double> countProbability ;
     std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>> geneCountHistogram ; // Gene id -> (EqClass_Length -> Numebr)

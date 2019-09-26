@@ -67,6 +67,12 @@ void GFAReader::updateEqClass(
     if(it != refInfo.transcriptNameMap.end()){
 
       auto tid = it->second ;
+
+      
+      if(tid == 197369){
+        std::cout << "[DEBUG]-----I'm here" << transcriptName <<"\n";
+      }
+
 	  size_t numOfMultiMapped{0} ;
       uint32_t tStart = 0 ;
       for(auto contigInfo : contigVec){
@@ -206,6 +212,9 @@ void GFAReader::parseFile(
 		}else{
 			distanceFromEndMap[tid] = 0 ;
 		}
+    if(tid == 197369){
+      std::cout << "[DEBUG]-----" << distanceFromEndMap[tid]<<"\n";
+    }
 	}
 
 	std::unordered_set<size_t> removeKeys ;	
@@ -218,7 +227,19 @@ void GFAReader::parseFile(
 		for(auto tinfo : trInfoMap){
 			auto tid = tinfo.first ;
 			auto tidVec = tinfo.second ;
+      if(tid == 197369){
+        std::cout << "[DEBUG]-----" << tidVec.size()<<"\n";
+      }
 			for(auto info : tidVec){
+        // [DEBUG]
+        if(tid == 197369){
+          std::cout << "[DEBUG]-----" << "\t"
+                    <<info.sposInContig << "\t"
+                    <<info.eposInContig
+                    << "\t" << distanceFromEndMap[tid] << "\n" ;
+        }
+
+
 				if(info.eposInContig >= distanceFromEndMap[tid]){
 					keepIt = true ;
 					break ;

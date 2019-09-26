@@ -1,4 +1,5 @@
 #include <unordered_map>
+#include <set>
 #include <memory>
 
 #include "spdlog/spdlog.h"
@@ -957,7 +958,7 @@ void DataMatrix<T>::loadAlevinData(
     // NOTE: This feature is not tested yet
 		// CREATE Doublets
 		if(createDoublet){
-			// Treat doublets as normal cells and put them in the list of all cells 
+			// Treat doublets as normal cells and put them in the list of all cells
 			auto CB10XList = util::generate10XCBList(numOfDoublets) ;
 			for(size_t i = 0; i < numOfDoublets; ++i){
 				allCellNames.push_back(CB10XList[i]) ;
@@ -1380,17 +1381,17 @@ void DataMatrix<T>::loadAlevinData(
 // NOTE: Main module for reading splatter
 template <typename T>
 void readSplatterMatrix(
-	std::string& countFile, 
+	std::string& countFile,
 	std::vector<std::vector<T>>& geneCount,
-	size_t numCells, 
+	size_t numCells,
 	size_t numOfGenes
 ){
 	if(! util::fs::FileExists(countFile.c_str())){
 		std::cerr << "quants_mat.csv file does not exist\n" ;
-		std::exit(1) ; 
+		std::exit(1) ;
 	}
 	std::ifstream dataStream(countFile.c_str()) ;
-	std::string line ; 
+	std::string line ;
 
 	size_t geneId{0} ;
 	while(std::getline(dataStream, line)){
@@ -1413,10 +1414,9 @@ void readSplatterMatrix(
 
 void readUniqueness(
      std::vector<std::pair<std::string, double>>& uniquenessInfo,
-	 std::unordered_map<std::string, uint32_t>& geneMap, 
-	 std::string& uniquenessListFile,
+	   std::unordered_map<std::string, uint32_t>& geneMap,
+	   std::string& uniquenessListFile,
      bool useReverse
-  
 ){
 
 	//std::string uniquenessListFile{"../data/hg/hg_stranded_gene_uniqueness.txt"} ;
@@ -1540,13 +1540,13 @@ void DataMatrix<T>::loadSplatterData(
     Reference& refInfo
 ){
 
-	// Load data from the simOpts 
+	// Load data from the simOpts
 	auto splatterDir = simOpts.inputdir ;
 	size_t sampleCells = simOpts.sampleCells ;
 	std::string outDir = simOpts.outDir ;
 	std::string bfhFile = simOpts.bfhFile ;
 	std::string gfaFile = simOpts.gfaFile ;
-	std::string uniquenessListFile = simOpts.uniquenessFile ; 
+	std::string uniquenessListFile = simOpts.uniquenessFile ;
 	//bool useEqClass = simOpts.useEqClass ;
 	bool useWeibull = simOpts.useWeibull ;
 	bool useDBG = simOpts.useDBG ;
@@ -1555,34 +1555,37 @@ void DataMatrix<T>::loadSplatterData(
 	std::string geneListFile = splatterDir + "/quants_mat_rows.txt" ;
 	std::string cellListFile = splatterDir + "/quants_mat_cols.txt" ;
 
-	// this is gene to cell matrix 
+	// this is gene to cell matrix
 	std::string countFile = splatterDir + "/quants_mat.csv" ;
 
 	if(! util::fs::FileExists(geneListFile.c_str())){
-		std::cerr << geneListFile <<" file does not exist\n" ;
-		std::exit(1) ; 
-	} 
+		consoleLog->error("{} file does not exist", geneListFile) ;
+		std::exit(1) ;
+	}
 	if(! util::fs::FileExists(cellListFile.c_str())){
-		std::cerr << cellListFile <<" file does not exist\n" ;
-		std::exit(1) ; 
-	} 
-
+		consoleLog->error("{} file  not exist",cellListFile) ;
+		std::exit(1) ;
+	}
 
 	if(! util::fs::FileExists(countFile.c_str())){
-		std::cerr << countFile <<" file does not exist\n" ;
-		std::exit(1) ; 
-	} 
-	
-	// Splatter does not specify gene names 
-	// We would randomly sample genes from from 
-	// the reference provided. Everything will be treated 
-	// as whitelisted cells. 
+		consoleLog->error("{} file does not exist",countFile) ;
+		std::exit(1) ;
+	}
 
+  // Check command combinations first, since all combinations
+  // are not allowed in splatter
+
+
+	// Splatter does not specify gene names
+	// We would randomly sample genes from from
+	// the reference provided. Everything will be treated
+	// as whitelisted cells.
 	// update txp to gene
+
+
 	refInfo.updateGene2TxpMap(refInfo.gene2txpFile) ;
 
 	auto& geneMap = refInfo.geneMap ;
-	
 
 
 	consoleLog->info("Number of genes in the txp2gene file: {}", geneMap.size()) ;
@@ -1605,6 +1608,7 @@ void DataMatrix<T>::loadSplatterData(
 		} 
 	}
 	// In splatter there is no whitelist but there can be clusters 
+  std::cout<<"=======================Reading Splatter Matrix=====================\n" ;
 	consoleLog->info("{} cells are present ", allCellNames.size()) ;
 	consoleLog->info("Start parsing Splatter output") ;
 	consoleLog->info(
@@ -1621,40 +1625,46 @@ void DataMatrix<T>::loadSplatterData(
 			// strip new line
 			line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
 			splatterGeneNames.push_back(line) ;
-		} 
+		}
 	}
 
 
 	if(simOpts.numMolFile != ""){
 		if(! util::fs::FileExists(simOpts.numMolFile.c_str())){
-			std::cerr << simOpts.numMolFile << " does not exist\n" ;
+			consoleLog->warn("--numMolFile {} does not exist",simOpts.numMolFile) ;
 		}else{
 			std::ifstream dupCountStream(simOpts.numMolFile) ;
-			std::string line ; 
+			std::string line ;
+      size_t line_counter{0};
 			while(std::getline(dupCountStream, line)){
 				line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
-				std::vector<std::string> tokens ; 
+				std::vector<std::string> tokens ;
 				util::split(line, tokens, "\t") ;
 				if (tokens.size() == 2){
 					cellNamesDupCount[tokens[0]] = std::stoul(tokens[1]) ;
-				}
+				}else{
+          consoleLog->warn("{} of {} has more than 2 entries skipping", line_counter, simOpts.numMolFile) ;
+          cellNamesDupCount.clear() ;
+          break ;
+        }
+        line_counter += 1 ;
 			}
 
 		}
 	}
 
 	size_t numOfGenes = splatterGeneNames.size() ;
-	size_t numOfOriginalGenes = numOfGenes ; 
+	size_t numOfOriginalGenes = numOfGenes ;
 
 
-	// Let's assume no whitelist 
+	// Let's assume no whitelist
 	{
 		cellNames = allCellNames ;
 		cellWhiteListMap = allCellListMap ;
 	}
 
 	if ((sampleCells > 0) and (sampleCells < cellNames.size())){
-		std::cerr << "\n We will sample "<< sampleCells  << " from " << cellNames.size() << "\n" ;
+		consoleLog->info("According to spefication We will sample {} from {} cells",sampleCells,cellNames.size());
 	}else{
 		sampleCells = cellNames.size() ;
 	}
@@ -1663,7 +1673,7 @@ void DataMatrix<T>::loadSplatterData(
 
 	std::vector<std::vector<T>> originalGeneCountMatrix ;
 
-	
+
 	originalGeneCountMatrix.resize(sampleCells, std::vector<T>(numOfGenes)) ;
 
 	//geneCounts.resize(sampleCells, std::vector<T>(numOfGenes)) ;
@@ -1675,16 +1685,18 @@ void DataMatrix<T>::loadSplatterData(
 	for(auto& v : originalGeneCountMatrix)
     	std::memset(&v[0], 0, sizeof(v[0]) * v.size());
 
-	
+
 	readSplatterMatrix(
 		countFile,
-		originalGeneCountMatrix, 
+		originalGeneCountMatrix,
 		allCellNames.size(),
-		splatterGeneNames.size() 
+		splatterGeneNames.size()
 	) ;
 
 
-	std::cout << "\n" ;
+
+  std::cout<<"==================Done Parsing Splatter Matrix==================\n" ;
+
 	consoleLog->info(
 						"Splatter matrix is read, with dimension {} x {}", 
 						originalGeneCountMatrix.size(), 
@@ -1692,14 +1704,15 @@ void DataMatrix<T>::loadSplatterData(
 					) ;
 	std::unordered_map<uint32_t, std::string> alevinGeneIndex2NameMap ;
 	size_t numOfSkippedGenes{0} ;
+  std::set<size_t> validGeneIds;
 
 	{
-		// go over gene to transcript map, include a 
-		// gene if contains a transcript that is present 
+		// go over gene to transcript map, include a
+		// gene if contains a transcript that is present
 		// in the reference fasta file
 
 		bool testUniqueness{simOpts.testUniqness} ;
-    	bool revUniqness{simOpts.reverseUniqness} ;
+    bool revUniqness{simOpts.reverseUniqness} ;
 
 		if(testUniqueness || revUniqness){
 			// read uniqueness file
@@ -1788,11 +1801,61 @@ void DataMatrix<T>::loadSplatterData(
 			}
 
 		}
-		else{
+		else if(useDBG){
 
       std::cout << "\n !!!!!!!!!!!!!!!!!! IN DBG MODE !!!!!!!!!!!!!!!!!!!!!!!\n" ;
 
-			size_t splatterGeneId{0} ;
+      if(!util::fs::FileExists(gfaFile.c_str())){
+        consoleLog->error("--dbg is invoked but is not passed with --gfa, exiting");
+        std::exit(2) ;
+      }
+
+      // Load transcripts that are present in the gfa file 
+      dbgPtr = new GFAReader(gfaFile) ;
+      dbgPtr->parseFile(refInfo) ;
+
+
+      // Take only genes that are present in trSegmentMap ;
+      // std::set<size_t> validGeneIds ;
+      for(auto& segObj : dbgPtr->trSegmentMap){
+        auto& validTid = segObj.first ;
+        auto geneId = refInfo.transcript2geneMap[validTid] ;
+        validGeneIds.insert(geneId) ;
+        // get corresponding gene id
+      }
+      consoleLog->info("The size of the gene id pool {}", validGeneIds.size()) ;
+
+      // construct a reverse gene map
+      std::unordered_map<uint32_t, std::string> reverseGeneMap ;
+      for(auto geneMapIt: geneMap){
+        reverseGeneMap[geneMapIt.second] = geneMapIt.first ;
+      }
+
+      size_t splatterGeneId{0} ;
+      auto geneIdIt = validGeneIds.begin() ;
+      while(splatterGeneId < splatterGeneNames.size()){
+        if(geneIdIt != validGeneIds.end()){
+          auto selectedGeneId = *geneIdIt ;
+          auto selectedGeneName = reverseGeneMap[selectedGeneId] ;
+          auto spgName = splatterGeneNames[splatterGeneId] ;
+          splatterGeneMap[selectedGeneName] = spgName ;
+          alevin2refMap[splatterGeneId] = selectedGeneId ;
+          alevinGeneIndex2NameMap[splatterGeneId] = selectedGeneName ;
+          ++geneIdIt ;
+        }else{
+          skippedGenes.insert(splatterGeneId) ;
+					numOfSkippedGenes++ ;
+        }
+
+				splatterGeneId++ ;	
+
+				_verbose("\rIn Splatter: Number of genes processed : %lu", splatterGeneId);
+      }
+
+
+		}else{
+
+      size_t splatterGeneId{0} ;
 			// Assign a random gene to the columns of the matrix  
 			// Go over geneMap assign a gene that exists
 			// and has at least one transcript that has more than 
@@ -1812,8 +1875,8 @@ void DataMatrix<T>::loadSplatterData(
 				totalGenes +=uniqHist[i] ; 
 			}
 
-			//std::cout << "Total genes " << totalGenes << "\t" << geneMap.size() << "\n"; 
-					
+			//std::cout << "Total genes " << totalGenes << "\t" << geneMap.size() << "\n";
+
 			while(splatterGeneId < splatterGeneNames.size()){
 				std::random_device rd;
     			std::mt19937 gen(rd());	
@@ -1846,7 +1909,7 @@ void DataMatrix<T>::loadSplatterData(
 				_verbose("\rIn Splatter: Number of genes processed : %lu", splatterGeneId);
 			}
 
-		}
+    }
 		if(splatterGeneMap.size() > splatterGeneNames.size()){
 			consoleLog->error("The splatter matrix contains more genes than provided in reference, truncating") ;
 			consoleLog->error("splatterGeneMap.size() {} splatterGeneNames.size() {} geneMap.size() {}", 
@@ -1867,9 +1930,15 @@ void DataMatrix<T>::loadSplatterData(
 
 	for(auto& v : trueGeneCounts)
     	std::memset(&v[0], 0, sizeof(v[0]) * v.size());
-	
+
+
 	if(numOfSkippedGenes > 0){
-		consoleLog->warn("Skipping {} many genes, either they are short or absent in reference",numOfSkippedGenes) ;
+    if(!useDBG){
+      consoleLog->warn("Skipping {} many genes, either they are short or absent in reference",numOfSkippedGenes) ;
+    }else{
+      consoleLog->warn("Skipping {} many genes, gene pool size of de-Bruijn graph {}",
+                       numOfSkippedGenes, validGeneIds.size()) ;
+    }
 
 		for(size_t cell_id = 0 ; cell_id < originalGeneCountMatrix.size(); ++cell_id){
 			size_t geneCountsGeneIdx{0} ;
@@ -1879,14 +1948,14 @@ void DataMatrix<T>::loadSplatterData(
 					geneCountsGeneIdx++ ;
 				}
 			}
-		}	
+		}
 		consoleLog->info("Truncated the matrix ") ;
 	}else{
 		geneCounts = originalGeneCountMatrix ;
 	}
 
 	numOfGenes = geneCounts[geneCounts.size()-1].size() ;
-	
+
 	auto& gene2transcriptMap = refInfo.gene2transcriptMap ;
 	std::map<uint32_t, uint32_t> alevinReverseMap ;
 	{
@@ -1907,7 +1976,6 @@ void DataMatrix<T>::loadSplatterData(
 				consoleLog->error("This should not happen: gene {} not found",gIt->first) ;
 			}
 		}
-		 
 	}
 
 
@@ -1915,15 +1983,10 @@ void DataMatrix<T>::loadSplatterData(
 	data.resize(sampleCells, std::vector<T>(numOfTranscripts)) ;
 	for(auto& v : data)
     	std::memset(&v[0], 0, sizeof(v[0]) * v.size());
-	
+
 
 	// If we use dbg then the transcripts used above won't be needed  
 	if(useDBG){
-
-		if(!util::fs::FileExists(gfaFile.c_str())){
-			std::cerr << gfaFile << " does not exist, should exist EXITING !!"; 
-			std::exit(2) ;
-		}
 
 		auto rspdFile = simOpts.rspdFile ;
 		if(rspdFile != ""){
@@ -1948,62 +2011,46 @@ void DataMatrix<T>::loadSplatterData(
 			}
 		}else{
 			std::cerr << "RSPD ::: \n" ;
-		} 
-
-		dbgPtr = new GFAReader(gfaFile) ;
-		dbgPtr->parseFile(refInfo) ;
-
-		// stand alone call to bfh
-		// ignore other eqclass stuff
-    // FIXME we don't call equivalence
-    // class folder any more
-		std::string eqFileDir = "/mnt/scratch1/hirak/minnow/metadata/hg/" ;
-		eqClassPtr = new BFHClass() ;
-		if((simOpts.countProbFile != "") || (simOpts.geneProbFile != "")){
-			if(simOpts.countProbFile != ""){
-				eqClassPtr->loadProbability(
-					simOpts.countProbFile,
-					refInfo,
-					false
-				) ;
-			}else{
-				eqClassPtr->loadProbability(
-					simOpts.geneProbFile,
-					refInfo,
-					true
-				) ;
-			}
-		}else if(bfhFile != ""){
-			eqClassPtr->loadBFH(
-				bfhFile, 
-				simOpts.clusterFile, 
-				refInfo, 
-				cellWhiteListMap, 
-				false, 
-				cellNoisyMap,
-				simOpts.outDir
-			) ;
-		}else{
-			//load default file 
-			std::string countProbFile = "../data/hg/countProb_pbmc_4k.txt" ;
-			eqClassPtr->loadProbability(
-					countProbFile,
-					refInfo,
-					false
-			) ; 
 		}
 
-		consoleLog->info("Loaded the bfh.txt file") ;
-		consoleLog->info("The size of probability Vector {}",eqClassPtr->countProbability.size()) ;
 
 		
+      // stand alone call to bfh
+      // ignore other eqclass stuff
+      // FIXME we don't call equivalence
+      // class folder any more
+      //std::string eqFileDir = "/mnt/scratch1/hirak/minnow/metadata/hg/" ;
+      eqClassPtr = new BFHClass() ;
+      if(bfhFile != ""){
+        eqClassPtr->loadBFH(
+                            bfhFile, 
+                            simOpts.clusterFile, 
+                            refInfo, 
+                            cellWhiteListMap, 
+                            false, 
+                            cellNoisyMap,
+                            simOpts.outDir
+                            ) ;
+      }else if(useDBG){
+        //load default file 
+        std::string countProbFile = "../data/hg/countProb_pbmc_4k.txt" ;
+        eqClassPtr->loadProbability(
+                                    countProbFile,
+                                    refInfo,
+                                    false
+                                    ) ; 
+      }
+
+
+      consoleLog->info("Loaded the bfh.txt file") ;
+      consoleLog->info("The size of probability Vector {}",eqClassPtr->countProbability.size()) ;
 
 		preCalculatedSegProb.resize(numOfGenes) ; // per gene
 		preSegOreMapVector.resize(numOfGenes) ;
 		geneSpecificTrVector.resize(numOfGenes) ;
 
 		// fill segment based probability
-		// gene to tr to prob mapping 
+		// gene to tr to prob mapping
 
 		for(uint32_t i = 0; i < numOfGenes; ++i){
 			auto it = alevin2refMap.find(i) ;
@@ -2018,7 +2065,9 @@ void DataMatrix<T>::loadSplatterData(
 				std::unordered_map<size_t, std::vector<trInfo>> localTrVector ;
 
 				//std::cerr << "tr size " << transcriptIds.size() << "\n" ;
-
+        bool shortLength{false} ;
+        bool tqVecZero{false} ;
+        size_t numTids = transcriptIds.size() ;
 				for(auto tid : transcriptIds){
 					if(dbgPtr->trSegmentMap.find(tid) != dbgPtr->trSegmentMap.end()){
 						auto segVec = dbgPtr->trSegmentMap[tid] ;
@@ -2038,6 +2087,7 @@ void DataMatrix<T>::loadSplatterData(
 								// localTrVector[seg].emplace_back(tid) ;
 
 								auto tcInfoVec = dbgPtr->eqClassMap[seg][tid] ;
+                tqVecZero = (tcInfoVec.size() == 0) ;
 								for(auto tInfo : tcInfoVec){
 									if(refInfo.transcripts[tid].RefLength - tInfo.eposInContig <= MAX_FRAGLENGTH){
 										localGeneProb[seg] = bfhCount ;
@@ -2046,7 +2096,9 @@ void DataMatrix<T>::loadSplatterData(
 											tInfo.sposInContig,
 											tInfo.eposInContig
 										) ;
-									}
+									}else{
+                    shortLength = true ;
+                  }
 
 									if(!tInfo.ore && !everRC){
 										everRC = true ;
@@ -2059,24 +2111,30 @@ void DataMatrix<T>::loadSplatterData(
 								}
 							//}
 						}
-					}
+					}else{
+            if(numTids == 1){
+              consoleLog->error("There is one transcript {} for this gene, length: {}, name: {}",
+                                tid, refInfo.transcripts[tid].RefLength,
+                                refInfo.transcripts[tid].RefName);
+            }
+          }
 				}
 
+        if(localGeneProb.size() == 0){
+          consoleLog->error("The gene got skipped, it should not") ;
+          consoleLog->error("shortLength {} tqVecZero {} numTids {}", shortLength,tqVecZero,numTids) ;
+          std::exit(3) ;
+        }
 				preCalculatedSegProb[i] = localGeneProb ;
 				preSegOreMapVector[i] = localSegOreMap ;
 				geneSpecificTrVector[i] = localTrVector ;
-				
+
 			}
-		} 
+		}
 
 		std::cerr << "SPLATTER MODE: After loading bfh prob size " << preCalculatedSegProb.size() << "\n" ;
-
 		cellSegCount.resize(numCells + numOfDoublets) ;
-
-
-
-	}	
-
+	}
 
 
 	size_t numOfDroppedGenes{0} ;
@@ -2356,16 +2414,15 @@ DataMatrix<T>::DataMatrix(
 	std::shared_ptr<spdlog::logger>& consoleLogIn
 ){
 
-	consoleLog = consoleLogIn ; 
-	
+	consoleLog = consoleLogIn ;
+
     if (simOpts.alevinMode){
         loadAlevinData(simOpts, refInfo) ;
     }else if(simOpts.splatterMode || simOpts.normalMode){
         loadSplatterData(simOpts, refInfo) ;
     }else{
-		consoleLog->info("Please specify either of --splatter-mode or --alevin-mode or --normal-mode") ;
+		consoleLog->info("Please specify either of --splatter-mode or --alevin-mode ") ;
 	}
-    //std::cerr << "Parsed the matrix\n" ; 
 }
 
 template class DataMatrix<int> ;
