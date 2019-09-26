@@ -29,7 +29,7 @@
 #include "concurrentqueue.h"
 #include "PCR.hpp"
 #include "GFAReader.hpp"
-
+#include "ghc/filesystem.hpp"
 #include "LibraryConfig.hpp"
 
 #include "zstr.hpp"
@@ -1892,18 +1892,27 @@ void minnowSimulate(SimulateOptions& simOpts){
         outDir.pop_back();
     }
 
-    // needed for vpolo
-    std::string alevinLikeDir = outDir + "/alevin" ;
-    util::fs::MakeDir(outDir.c_str()) ;
-    if(!util::fs::DirExists(outDir.c_str())){
-      consoleLog->error("we can not create nested direcory {} if that is what is intended", outDir) ;
-      std::exit(2) ;
+    if (ghc::filesystem::exists(outDir.c_str())) {
+      if (!ghc::filesystem::is_directory(outDir.c_str())) {
+        consoleLog->error("{} exists as a file. Cannot create a directory of the same name.", outDir.c_str());
+        std::exit(1);
+      }
+    } else {
+      ghc::filesystem::create_directories(outDir.c_str());
     }
+    std::string alevinLikeDir = outDir + "/alevin" ;
+    ghc::filesystem::create_directories(alevinLikeDir.c_str());
+
+    // needed for vpolo
+    //util::fs::MakeDir(outDir.c_str()) ;
+    //if(!util::fs::DirExists(outDir.c_str())){
+    //  consoleLog->error("we can not create nested direcory {} if that is what is intended", outDir) ;
+    //  std::exit(2) ;
+    //}
 
 
-    util::fs::MakeDir(alevinLikeDir.c_str()) ;
+    //util::fs::MakeDir(alevinLikeDir.c_str()) ;
 
-    
     DataMatrix<double> dataMatrixObj(
         simOpts,
         refInfo,
