@@ -1981,7 +1981,10 @@ void minnowSimulate(SimulateOptions& simOpts){
 
 
 
-    std::vector<std::string> CBList = util::generate10XCBList(numOfCells, simOpts.whitelistFile) ;
+    std::vector<std::string> CBList = util::generate10XCBList(
+                                                              numOfCells,
+                                                              simOpts.whitelistFile,
+                                                              consoleLog) ;
 
     
     consoleLog->info("CBList.size(): {}",CBList.size()) ;

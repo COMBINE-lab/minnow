@@ -13,6 +13,10 @@
 
 #include <unistd.h>
 #include "MinnowFS.hpp"
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/ostream_sink.h"
+#include "spdlog/fmt/ostr.h"
+#include "spdlog/fmt/fmt.h"
 
 #include "string_view.hpp"
 #include "macros.hpp"
@@ -196,7 +200,8 @@ namespace util{
 
   inline std::vector<std::string> generate10XCBList(
      int numCells,
-     std::string& whitelist_filename
+     std::string& whitelist_filename,
+     std::shared_ptr<spdlog::logger>& consoleLog
   ){
 
 
@@ -222,13 +227,13 @@ namespace util{
     std::string dir_path_root = dir_path.substr(0, dir_path.rfind("/"));
     //std::string whitelist_filename = dir_path_root + "/data/737K-august-2016.txt" ;
 
-    std::cerr << "10X whitelist file " << whitelist_filename << "\n";
+    consoleLog->info("10X whitelist file {}", whitelist_filename);
     
     //std::string whitelist_filename("/mnt/scratch1/hirak/minnow/data/737K-august-2016.txt") ;
 
     std::string line;
     if(! util::fs::FileExists(whitelist_filename.c_str())){
-			std::cerr << "10X whitelist file does not exist\n" ;
+			consoleLog->error("10X whitelist file does not exist") ;
 			std::exit(1) ;
 		}
 
