@@ -959,7 +959,7 @@ void DataMatrix<T>::loadAlevinData(
 		// CREATE Doublets
 		if(createDoublet){
 			// Treat doublets as normal cells and put them in the list of all cells
-			auto CB10XList = util::generate10XCBList(numOfDoublets) ;
+			auto CB10XList = util::generate10XCBList(numOfDoublets, simOpts.whitelistFile) ;
 			for(size_t i = 0; i < numOfDoublets; ++i){
 				allCellNames.push_back(CB10XList[i]) ;
 				allCellListMap[CB10XList[i]] = allCellNames.size() - 1 ;

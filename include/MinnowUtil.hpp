@@ -194,7 +194,10 @@ namespace util{
   }
 
 
-  inline std::vector<std::string> generate10XCBList(int numCells){
+  inline std::vector<std::string> generate10XCBList(
+     int numCells,
+     std::string& whitelist_filename
+  ){
 
 
     //std::cout << "reading 10X specific list\n" ;
@@ -217,7 +220,7 @@ namespace util{
     std::string file_path = __FILE__;
     std::string dir_path = file_path.substr(0, file_path.rfind("/"));
     std::string dir_path_root = dir_path.substr(0, dir_path.rfind("/"));
-    std::string whitelist_filename = dir_path_root + "/data/737K-august-2016.txt" ;
+    //std::string whitelist_filename = dir_path_root + "/data/737K-august-2016.txt" ;
 
     std::cerr << "10X whitelist file " << whitelist_filename << "\n";
     

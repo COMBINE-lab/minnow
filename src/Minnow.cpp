@@ -91,6 +91,10 @@ int main(int argc, char* argv[]) {
     value("ref_file", simulateOpt.refFile)) %
     "transcriptome reference file (assumed from fasta file)",
 
+    (required("-w", "--whitelistFile") &
+     value("whitelist_file", simulateOpt.whitelistFile)) %
+    "transcriptome reference file (assumed from fasta file)",
+
 
     
     (option("--numMolFile") & 

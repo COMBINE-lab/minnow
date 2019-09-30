@@ -43,6 +43,7 @@ public:
   std::string inputdir ;
   std::string outDir ;
   std::string protocol{""} ;
+  std::string whitelistFile ;
   uint32_t numOfPCRCycles{5};
   double errorRate{0.01};
   double mutationProb{0.01};
