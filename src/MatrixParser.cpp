@@ -2031,18 +2031,28 @@ void DataMatrix<T>::loadSplatterData(
                             cellNoisyMap,
                             simOpts.outDir
                             ) ;
+        consoleLog->info("Loaded the bfh.txt file") ;
       }else if(useDBG){
-        //load default file 
-        std::string countProbFile = "../data/hg/countProb_pbmc_4k.txt" ;
-        eqClassPtr->loadProbability(
-                                    countProbFile,
-                                    refInfo,
-                                    false
-                                    ) ; 
+        //load default file
+
+        std::string countProbFile{simOpts.countProbFile} ;
+        if(countProbFile == ""){
+          countProbFile = "../data/hg/countProb_pbmc_4k.txt" ;
+        }
+        if(util::fs::FileExists(countProbFile.c_str())){
+            eqClassPtr->loadProbability(
+                                        countProbFile,
+                                        refInfo,
+                                        false
+                                        ) ;
+          }else{
+            consoleLog->error("Invoked with DBG mode but --countProb file is not present") ;
+            consoleLog->error("Add --countProb option with the file countProb_pbmc_4k.txt") ;
+            std::exit(10) ;
+          }
       }
 
 
-      consoleLog->info("Loaded the bfh.txt file") ;
       consoleLog->info("The size of probability Vector {}",eqClassPtr->countProbability.size()) ;
 
 		preCalculatedSegProb.resize(numOfGenes) ; // per gene

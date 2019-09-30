@@ -1779,8 +1779,7 @@ bool spawnCellThreads(
     );
 
     string_pair str_pair ;
-    
-    
+     
 
     for(auto& t : workerThreads){
         t.join() ;

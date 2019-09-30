@@ -342,6 +342,37 @@ namespace util{
     }
   }
 
+
+  inline bool validateSimulateOptions(SimulateOptions& simOpts){
+    // validate options for simulate
+  }
+
+  inline bool validateIndexOptions(IndexOptions& indOpts){
+    // validate options for indexing
+  }
+
+  //bool writeCmdInfo(SalmonOpts& sopt,
+  //                  std::shared_ptr<spdlog::logger>& consoleLog
+  //                  )
+  //{
+  //  namespace bfs = boost::filesystem;
+  //  bfs::path cmdInfoPath = sopt.outputDirectory / "cmd_info.json";
+  //  std::ofstream os(cmdInfoPath.string());
+  //  cereal::JSONOutputArchive oa(os);
+  //  oa(cereal::make_nvp("salmon_version", std::string(salmon::version)));
+  //  for (auto& opt : orderedOptions.options) {
+  //    if (opt.value.size() == 1) {
+  //      oa(cereal::make_nvp(opt.string_key, opt.value.front()));
+  //    } else {
+  //      oa(cereal::make_nvp(opt.string_key, opt.value));
+  //    }
+  //  }
+  //  // explicitly ouput the aux directory as well
+  //  oa(cereal::make_nvp("auxDir", sopt.auxDir));
+  //  return true;
+  //}
+
+
 }
 
 
