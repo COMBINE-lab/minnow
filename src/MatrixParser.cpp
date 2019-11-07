@@ -2036,9 +2036,9 @@ void DataMatrix<T>::loadSplatterData(
         consoleLog->info("Loaded the bfh.txt file") ;
       }else if(useDBG){
         //load default file
-
         std::string countProbFile{simOpts.countProbFile} ;
         if(countProbFile == ""){
+          consoleLog->warn("counting hard coded count prob file") ;
           countProbFile = "../data/hg/countProb_pbmc_4k.txt" ;
         }
         if(util::fs::FileExists(countProbFile.c_str())){

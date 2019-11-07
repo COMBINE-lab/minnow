@@ -95,6 +95,9 @@ int main(int argc, char* argv[]) {
      value("whitelist_file", simulateOpt.whitelistFile)) %
     "transcriptome reference file (assumed from fasta file)",
 
+     (option("--metadataDir") & 
+      value("num mol file", simulateOpt.metadataDir)) %
+     "A directory containing metadata files in case the user defined files don't exit",
 
     
     (option("--numMolFile") & 

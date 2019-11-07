@@ -88,6 +88,7 @@ public:
   std::string geneProbFile{""} ;
   std::string countProbFile{""} ;
   std::string numMolFile{""} ;
+  std::string metadataDir{""} ;
 
   // ================================================
   // currently not used in main branch
