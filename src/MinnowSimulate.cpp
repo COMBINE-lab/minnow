@@ -1825,6 +1825,17 @@ void minnowSimulate(SimulateOptions& simOpts){
     //auto& matrixFileName = simOpts.matrixFile ;
 
     // Load the library configuration file
+    // Set up the logger
+    auto consoleSink = std::make_shared<spdlog::sinks::ansicolor_stderr_sink_mt>() ;
+    auto consoleLog = spdlog::create("minnow-Log", {consoleSink});
+
+    auto& numThreads = simOpts.numThreads ;
+    if(numThreads == 1){
+      consoleLog->error("Please provide at least 2 threads to run minnow") ;
+      std::exit(1) ;
+    }
+
+
     protocol::SingleCellProtocolConfig expConfig = protocol::constructProtocol(simOpts.protocol);
 
     auto& refFileName = simOpts.refFile ;
@@ -1841,7 +1852,6 @@ void minnowSimulate(SimulateOptions& simOpts){
     //auto& numOfSampleCells = simOpts.sampleCells ;
     //auto& numOfPCRCycles = simOpts.numOfPCRCycles ;
     //auto& errorRate = simOpts.errorRate ;
-    auto& numThreads = simOpts.numThreads ;
 
     std::string outDir = simOpts.outDir ;
     std::string intronFile = simOpts.intronFile ;
@@ -1851,9 +1861,6 @@ void minnowSimulate(SimulateOptions& simOpts){
     //auto& sampleCells = simOpts.sampleCells ;
     //numOfPCRCycles = 10 ;
 
-    // Set up the logger
-    auto consoleSink = std::make_shared<spdlog::sinks::ansicolor_stderr_sink_mt>() ;
-    auto consoleLog = spdlog::create("minnow-Log", {consoleSink});
 
 
     // Collect reference information
