@@ -79,6 +79,7 @@ public:
   // ===============================================
   // options for running from splatterMode
   // ===============================================
+  bool customNames{false} ;
   bool splatterMode{false} ;
   bool normalMode{false} ;
   bool testUniqness{false} ;

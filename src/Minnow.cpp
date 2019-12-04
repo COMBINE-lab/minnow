@@ -122,6 +122,9 @@ int main(int argc, char* argv[]) {
     (option("--splatter-mode").set(simulateOpt.splatterMode, true)) %
     "matrix file is obtained from running splatter",
 
+    (option("--custom").set(simulateOpt.customNames, true)) %
+    "Read custom gene names instead of assigning genes creatively",
+
 
     (option("--normal-mode").set(simulateOpt.normalMode, true)) %
     "user provided matrix",

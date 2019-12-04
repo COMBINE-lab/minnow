@@ -1843,7 +1843,7 @@ void DataMatrix<T>::loadSplatterData(
 
       size_t splatterGeneId{0} ;
       size_t truncatedGeneId{0} ;
-      bool customNames = true ;
+      bool customNames = simOpts.customNames ;
       if(customNames){
         // gene names are already provided
         while(splatterGeneId < splatterGeneNames.size()){
