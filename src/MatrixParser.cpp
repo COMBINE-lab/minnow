@@ -208,7 +208,7 @@ void populateGeneCountMatrix(
             geneCount[cellId][indices[i]] = alphasSparse[i] ;
           }
 
-          _verbose("\rNumber of cells read noisy  : %lu", cellCount);
+          _verbose("\rNumber of cells read  : %lu", cellCount);
           if (cellCount == numCells){
             break ;
           }
@@ -1589,6 +1589,14 @@ void DataMatrix<T>::loadSplatterData(
 
 	auto& geneMap = refInfo.geneMap ;
 
+  //if (geneMap.find("ENSG00000207552.1") != geneMap.end()){
+  //  std::cout << "We have it !!!!!" ;
+  //  std::exit(1) ;
+  //}else{
+  //  std::cout << "FUCK\n" ;
+  //  std::exit(1) ;
+  //}
+
 
 	consoleLog->info("Number of genes in the txp2gene file: {}", geneMap.size()) ;
 	
@@ -1834,24 +1842,52 @@ void DataMatrix<T>::loadSplatterData(
       }
 
       size_t splatterGeneId{0} ;
-      auto geneIdIt = validGeneIds.begin() ;
-      while(splatterGeneId < splatterGeneNames.size()){
-        if(geneIdIt != validGeneIds.end()){
-          auto selectedGeneId = *geneIdIt ;
-          auto selectedGeneName = reverseGeneMap[selectedGeneId] ;
+      bool customNames = true ;
+      if(customNames){
+        // gene names are already provided
+        while(splatterGeneId < splatterGeneNames.size()){
           auto spgName = splatterGeneNames[splatterGeneId] ;
-          splatterGeneMap[selectedGeneName] = spgName ;
-          alevin2refMap[splatterGeneId] = selectedGeneId ;
-          alevinGeneIndex2NameMap[splatterGeneId] = selectedGeneName ;
-          ++geneIdIt ;
-        }else{
-          skippedGenes.insert(splatterGeneId) ;
-					numOfSkippedGenes++ ;
+          if(geneMap.find(spgName) != geneMap.end()){
+            auto geneId = geneMap[spgName] ;
+            if(validGeneIds.find(geneId) != validGeneIds.end()){
+              splatterGeneMap[spgName] = spgName ;
+              alevin2refMap[splatterGeneId] = geneId ;
+              alevinGeneIndex2NameMap[splatterGeneId] = spgName ;
+            }else{
+              consoleLog->warn("the gene name {} is not present in de-Bruijn graph",spgName) ;
+              skippedGenes.insert(splatterGeneId) ;
+              numOfSkippedGenes++ ;
+            }
+          }else{
+            consoleLog->warn("the gene name {} is not present in reference",spgName) ;
+            skippedGenes.insert(splatterGeneId) ;
+            numOfSkippedGenes++ ;
+          }
+
+          splatterGeneId++ ;
+          _verbose("\rIn Splatter: Number of genes processed : %lu", splatterGeneId);
+
         }
+      }else{
+        auto geneIdIt = validGeneIds.begin() ;
+        while(splatterGeneId < splatterGeneNames.size()){
+          if(geneIdIt != validGeneIds.end()){
+            auto selectedGeneId = *geneIdIt ;
+            auto selectedGeneName = reverseGeneMap[selectedGeneId] ;
+            auto spgName = splatterGeneNames[splatterGeneId] ;
+            splatterGeneMap[selectedGeneName] = spgName ;
+            alevin2refMap[splatterGeneId] = selectedGeneId ;
+            alevinGeneIndex2NameMap[splatterGeneId] = selectedGeneName ;
+            ++geneIdIt ;
+          }else{
+            skippedGenes.insert(splatterGeneId) ;
+            numOfSkippedGenes++ ;
+          }
 
-				splatterGeneId++ ;	
+          splatterGeneId++ ;
 
-				_verbose("\rIn Splatter: Number of genes processed : %lu", splatterGeneId);
+          _verbose("\rIn Splatter: Number of genes processed : %lu", splatterGeneId);
+        }
       }
 
 

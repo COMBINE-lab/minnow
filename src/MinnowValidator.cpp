@@ -60,9 +60,9 @@ void split2(const std::string& str, std::vector<std::string>& tokens, const std:
 
 stx::string_view sampleSequence(
     Transcript& tr,
-    size_t start_pos 
+    size_t start_pos
 ){
-    
+
     return stx::string_view(
             tr.Sequence() + start_pos,
             READ_LEN

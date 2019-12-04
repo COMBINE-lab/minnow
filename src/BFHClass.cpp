@@ -39,12 +39,12 @@ void BFHClass::loadBFH(
     std::unordered_map<std::string, uint32_t>& cellNoisyMap,
     std::string& outDir
 ){
-    
+
 
 
     if(! util::fs::FileExists(bfhFile.c_str())){
       std::cerr << bfhFile << " does not exists \n" ;
-      std::exit(1) ; 
+      std::exit(1) ;
 	  }
 
     bool createClusterLevelHist{false} ;
@@ -57,7 +57,7 @@ void BFHClass::loadBFH(
         }
         createClusterLevelHist = true ;
     }
-    
+
     if(createClusterLevelHist){
         std::ifstream clusterStream(cellClusterFile.c_str()) ;
         std::string line ;
