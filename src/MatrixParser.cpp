@@ -1842,6 +1842,7 @@ void DataMatrix<T>::loadSplatterData(
       }
 
       size_t splatterGeneId{0} ;
+      size_t truncatedGeneId{0} ;
       bool customNames = true ;
       if(customNames){
         // gene names are already provided
@@ -1851,8 +1852,9 @@ void DataMatrix<T>::loadSplatterData(
             auto geneId = geneMap[spgName] ;
             if(validGeneIds.find(geneId) != validGeneIds.end()){
               splatterGeneMap[spgName] = spgName ;
-              alevin2refMap[splatterGeneId] = geneId ;
-              alevinGeneIndex2NameMap[splatterGeneId] = spgName ;
+              alevin2refMap[truncatedGeneId] = geneId ;
+              alevinGeneIndex2NameMap[truncatedGeneId] = spgName ;
+              truncatedGeneId++ ;
             }else{
               consoleLog->warn("the gene name {} is not present in de-Bruijn graph",spgName) ;
               skippedGenes.insert(splatterGeneId) ;
@@ -1876,8 +1878,9 @@ void DataMatrix<T>::loadSplatterData(
             auto selectedGeneName = reverseGeneMap[selectedGeneId] ;
             auto spgName = splatterGeneNames[splatterGeneId] ;
             splatterGeneMap[selectedGeneName] = spgName ;
-            alevin2refMap[splatterGeneId] = selectedGeneId ;
-            alevinGeneIndex2NameMap[splatterGeneId] = selectedGeneName ;
+            alevin2refMap[truncatedGeneId] = selectedGeneId ;
+            alevinGeneIndex2NameMap[truncatedGeneId] = selectedGeneName ;
+            truncatedGeneId++ ;
             ++geneIdIt ;
           }else{
             skippedGenes.insert(splatterGeneId) ;
@@ -1972,9 +1975,9 @@ void DataMatrix<T>::loadSplatterData(
 
 	if(numOfSkippedGenes > 0){
     if(!useDBG){
-      consoleLog->warn("Skipping {} many genes, either they are short or absent in reference",numOfSkippedGenes) ;
+      consoleLog->warn("Skipping {} genes, either they are short or absent in reference",numOfSkippedGenes) ;
     }else{
-      consoleLog->warn("Skipping {} many genes, gene pool size of de-Bruijn graph {}",
+      consoleLog->warn("Skipping {} genes, gene pool size of de-Bruijn graph {}",
                        numOfSkippedGenes, validGeneIds.size()) ;
     }
 
@@ -1987,7 +1990,7 @@ void DataMatrix<T>::loadSplatterData(
 				}
 			}
 		}
-		consoleLog->info("Truncated the matrix ") ;
+		consoleLog->info("Truncated the matrix to dimension {} x {}",geneCounts.size(), geneCounts[0].size()) ;
 	}else{
 		geneCounts = originalGeneCountMatrix ;
 	}
@@ -2253,8 +2256,9 @@ void DataMatrix<T>::loadSplatterData(
 						//}	
 
 						if(segCountHist.size() == 0){
-							//std::cerr << "No seg hist for this gene " << i << "\n" ; 
-							droppedGeneExpression += geneCount ;
+							std::cerr << "No seg hist for this gene " << i << "\n" ; 
+              std::exit(1) ;
+              droppedGeneExpression += geneCount ;
 							dropThisGene = true ;
 							geneCount = 0 ;
 						}
