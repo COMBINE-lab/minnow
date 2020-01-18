@@ -23,7 +23,8 @@ class GFAReader{
     void updateEqClass(
       std::string& transcriptName, 
       std::vector<std::pair<size_t, bool>>& contigVec,
-      Reference& refInfo 
+      Reference& refInfo,
+      size_t overlap
     );
     
     struct posInConfig{

@@ -2116,7 +2116,9 @@ void DataMatrix<T>::loadSplatterData(
 				std::unordered_map<size_t, std::vector<trInfo>> localTrVector ;
 
 				//std::cerr << "tr size " << transcriptIds.size() << "\n" ;
+        size_t shortTranscriptLength{0};
         bool shortLength{false} ;
+        uint32_t shortTid{0};
         bool tqVecZero{false} ;
         size_t numTids = transcriptIds.size() ;
 				for(auto tid : transcriptIds){
@@ -2148,7 +2150,9 @@ void DataMatrix<T>::loadSplatterData(
 											tInfo.eposInContig
 										) ;
 									}else{
+                    shortTid = tid ;
                     shortLength = true ;
+                    shortTranscriptLength = refInfo.transcripts[tid].RefLength - tInfo.eposInContig;
                   }
 
 									if(!tInfo.ore && !everRC){
@@ -2173,7 +2177,9 @@ void DataMatrix<T>::loadSplatterData(
 
         if(localGeneProb.size() == 0){
           consoleLog->error("The gene got skipped, it should not") ;
-          consoleLog->error("shortLength {} tqVecZero {} numTids {}", shortLength,tqVecZero,numTids) ;
+          consoleLog->error("shortLength {}, length {}, tqVecZero {} numTids {} transcript name {} transcript id {}",
+                            shortLength,shortTranscriptLength,tqVecZero,numTids, refInfo.transcripts[shortTid].RefName,
+                            shortTid) ;
           std::exit(3) ;
         }
 				preCalculatedSegProb[i] = localGeneProb ;
@@ -2200,7 +2206,6 @@ void DataMatrix<T>::loadSplatterData(
       size_t cellSumCheck{0} ;
 			auto barcode = cellNames[cellId] ;
 			for(size_t i = 0 ; i < cellGeneCounts.size() ; ++i){
-				
 				std::string geneName = aleviGeneIndex2NameMap[i] ;
 
 				int geneCount = cellGeneCounts[i] ;

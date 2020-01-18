@@ -59,41 +59,47 @@ std::vector<std::pair<size_t, bool>> explode(const std::string str, const char& 
 void GFAReader::updateEqClass(
   std::string& transcriptName, 
   std::vector<std::pair<size_t, bool>>& contigVec,
-  Reference& refInfo 
+  Reference& refInfo,
+  size_t overlap
   ){
 
-	uint32_t overlap{READ_LEN + 1} ;
     auto it = refInfo.transcriptNameMap.find(transcriptName) ; 
     if(it != refInfo.transcriptNameMap.end()){
 
       auto tid = it->second ;
 
       
-      if(tid == 197369){
-        std::cout << "[DEBUG]-----I'm here" << transcriptName <<"\n";
+      if(tid == 11393){
+        //std::cout << "[DEBUG]-----I'm here" << transcriptName <<"\n";
       }
 
 	  size_t numOfMultiMapped{0} ;
       uint32_t tStart = 0 ;
       for(auto contigInfo : contigVec){
-		auto contigId = contigInfo.first ;
-		auto ore = contigInfo.second ;
-        if(unitigMap.find(contigId) != unitigMap.end()){
-          auto sizeOfUnitig = unitigMap[contigInfo.first].size() ;
-          
-          if(sizeOfUnitig < READ_LEN){
-            std::cerr << sizeOfUnitig <<  " --- possible twopaco bug !!!!\n" ;
-            std::exit(1) ;
-          }
+          auto contigId = contigInfo.first ;
+          auto ore = contigInfo.second ;
+          if(unitigMap.find(contigId) != unitigMap.end()){
+            auto sizeOfUnitig = unitigMap[contigInfo.first].size() ;
 
-          auto tEnd = tStart + sizeOfUnitig - 1 ;
-          eqClassMap[contigId][tid].emplace_back(tStart, tEnd, ore) ;
-          if(eqClassMap[contigId][tid].size() > 1){
-            numOfMultiMapped++ ;
-          }
+            if(sizeOfUnitig < READ_LEN){
+              std::cerr << sizeOfUnitig <<  " --- possible twopaco bug !!!!\n" ;
+              std::exit(1) ;
+            }
 
-          //trSegmentMap[tid].push_back(contigId) ;
-          tStart += (sizeOfUnitig - overlap) ;
+            auto tEnd = tStart + sizeOfUnitig - 1 ;
+            eqClassMap[contigId][tid].emplace_back(tStart, tEnd, ore) ;
+            if(eqClassMap[contigId][tid].size() > 1){
+              numOfMultiMapped++ ;
+            }
+
+            //if(transcriptName == "ENST00000621744.4"){
+            //  std::cout << "\n[DEBUG] tr: " << transcriptName << "\t"
+            //            << "tid " << tid << "\t" << tStart << "\t"
+            //            << tEnd << " contigId " << contigId;
+            //}
+
+            //trSegmentMap[tid].push_back(contigId) ;
+            tStart += (sizeOfUnitig - overlap) ;
           }
       }
   
@@ -137,6 +143,11 @@ void GFAReader::parseFile(
     size_t contigCt{0} ;
     std::string ln, tag, id, value ;
 
+
+    // calculate overlap size on the fly
+    bool foundOverlapSize{false};
+    size_t overlapsize = READ_LEN-1;
+
 	file.reset(new std::ifstream(gfaFileName_)) ;
 
 	size_t maxContigId{0} ;
@@ -152,8 +163,8 @@ void GFAReader::parseFile(
         value = tokens[2] ;
         if(is_number(id)){
             size_t contigId = std::stoll(id) ;
-			if(contigId > maxContigId)
-				maxContigId = contigId ;
+            if(contigId > maxContigId)
+              maxContigId = contigId ;
 
             unitigMap[contigId] = value ;
         }
@@ -166,29 +177,82 @@ void GFAReader::parseFile(
 
     file.reset(new std::ifstream(gfaFileName_)) ;
 
+    // find overlap size
     while(std::getline(*file, ln)){
         char fastC = ln[0] ;
         if(fastC != 'P')
             continue ;
-        std::vector<std::string> tokens ;  
+        std::vector<std::string> tokens ;
         util::split(ln, tokens, "\t") ;
         if(tokens.size() != 4){
             continue ;
         }
-        // sparse this to get the transcript name 
-        id = getGencodeTranscript(tokens[1]) ; 
-        
+        // sparse this to get the transcript name
+        id = getGencodeTranscript(tokens[1]) ;
+        if(id == ""){
+            continue ;
+        }
+
+        // A valid line
+        auto pvalue = tokens[2] ;
+        std::vector<std::pair<size_t, bool>> contigVec = explode(pvalue, ',') ;
+        // calculate overlap size
+        if(!foundOverlapSize and contigVec.size() > 2){
+          auto selem1 = contigVec[0];
+          auto selem2 = contigVec[1];
+          std::string elem1, elem2;
+          if (!selem1.second){
+            elem1 = util::revcomp(unitigMap[selem1.first]);
+          }else{
+            elem1 = unitigMap[selem1.first];
+          }
+          if (!selem2.second){
+            elem2 = util::revcomp(unitigMap[selem2.first]);
+          }else{
+            elem2 = unitigMap[selem2.first];
+          }
+          while(elem2.substr(0,overlapsize) != elem1.substr(elem1.size()-overlapsize)){
+            overlapsize++;
+            if(overlapsize == elem1.size() || overlapsize == elem2.size()){
+              std::cout << "GFA is ill-constructed\n" ;
+              std::cout << elem1 << "\t" << elem2 << "\t" << overlapsize << "\n";
+              std::exit(1);
+            }
+          }
+          std::cout << "Overlap size " << overlapsize << "\n";
+
+          foundOverlapSize = true;
+        }
+        if (foundOverlapSize){
+            break;
+        }
+    }
+
+    // now update the eqclasses
+    file.reset(new std::ifstream(gfaFileName_)) ;
+
+    while(std::getline(*file, ln)){
+        char fastC = ln[0] ;
+        if(fastC != 'P')
+            continue ;
+        std::vector<std::string> tokens ;
+        util::split(ln, tokens, "\t") ;
+        if(tokens.size() != 4){
+            continue ;
+        }
+        // sparse this to get the transcript name
+        id = getGencodeTranscript(tokens[1]) ;
 
         if(id == ""){
             continue ;
         }
 
-        // A valid line 
+        // A valid line
         auto pvalue = tokens[2] ;
         std::vector<std::pair<size_t, bool>> contigVec = explode(pvalue, ',') ;
-        updateEqClass(id, contigVec, refInfo) ;
 
-        
+        updateEqClass(id, contigVec, refInfo, overlapsize) ;
+
     }
 
 
@@ -212,13 +276,15 @@ void GFAReader::parseFile(
 		}else{
 			distanceFromEndMap[tid] = 0 ;
 		}
-    if(tid == 197369){
+    if(tid == 11393){
       std::cout << "[DEBUG]-----" << distanceFromEndMap[tid]<<"\n";
     }
 	}
 
 	std::unordered_set<size_t> removeKeys ;	
 
+  // debug
+  //size_t unitig_id_to_track{0};
 	for(auto unitig : eqClassMap){
 		auto id = unitig.first ;
 		auto trInfoMap = unitig.second ;
@@ -227,19 +293,15 @@ void GFAReader::parseFile(
 		for(auto tinfo : trInfoMap){
 			auto tid = tinfo.first ;
 			auto tidVec = tinfo.second ;
-      if(tid == 197369){
-        std::cout << "[DEBUG]-----" << tidVec.size()<<"\n";
-      }
 			for(auto info : tidVec){
         // [DEBUG]
-        if(tid == 197369){
-          std::cout << "[DEBUG]-----" << "\t"
-                    <<info.sposInContig << "\t"
-                    <<info.eposInContig
-                    << "\t" << distanceFromEndMap[tid] << "\n" ;
-        }
-
-
+        //if(id == 38557 and tid == 11393){
+        //   std::cout << "[DEBUG]-----" << "\t"
+        //             <<info.sposInContig << "\t"
+        //             <<info.eposInContig
+        //             << "\t" << distanceFromEndMap[tid] << "\t"
+        //             << refInfo.transcripts[tid].RefLength <<  "\n" ;
+        //}
 				if(info.eposInContig >= distanceFromEndMap[tid]){
 					keepIt = true ;
 					break ;
@@ -272,7 +334,7 @@ void GFAReader::parseFile(
 			trSegmentMap[tid].push_back(id) ;
 		}
 	}
-   
+
     std::cerr << "Done Filtering \n" 
               << "Equivalece class size " << eqClassMap.size() 
 			  << "\ttrSegmentMap size " << trSegmentMap.size() 
