@@ -126,7 +126,7 @@ set(TBB_CXXFLAGS "${TBB_CXXFLAGS} ${CXXSTDFLAG}")
 externalproject_add(libtbb
   DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external
   DOWNLOAD_COMMAND curl -k -L https://github.com/intel/tbb/archive/2019_U8.tar.gz -o tbb-2019_U8.tgz &&
-    ${SHASUM} 7b1fd8caea14be72ae4175896510bf99c809cd7031306a1917565e6de7382fba tbb-2019_U8.tgz &&
+    ${SHASUM} 6b540118cbc79f9cbc06a35033c18156c21b84ab7b6cf56d773b168ad2b68566 tbb-2019_U8.tgz &&
     tar -xzvf tbb-2019_U8.tgz
   SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/tbb-2019_U8
   INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/install
