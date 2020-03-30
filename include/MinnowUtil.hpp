@@ -243,7 +243,7 @@ namespace util{
     int line_number = 0;
     int list_number = 0;
 
-    while (std::getline(file, line)) {
+    while ((std::getline(file, line)) && (list_number < numCells)) {
         if (line_number == lines_to_select[list_number]) {
           CBList[list_number] = line ;
           ++list_number ;

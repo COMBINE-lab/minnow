@@ -71,12 +71,10 @@ stx::string_view sampleSequence(
 
 
 void parset2gFile(std::map<std::string, std::string>& t2gMap){
-  std::string t2gFile = "/mnt/scratch1/hirak/minnow/data/hg/human_t2g.tsv" ;
+  // std::string t2gFile = "/mnt/scratch1/hirak/minnow/data/hg/human_t2g.tsv" ;
+  std::string t2gFile = "/mnt/scratch6/hirak/minnow/data_gencode_32/human_t2g.tsv" ;
   std::ifstream t2gStream(t2gFile.c_str()) ;
   std::string line ;
-
-
-
   while(std::getline(t2gStream, line)){
     std::vector<std::string> valueOfCells ; 
     line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
@@ -211,6 +209,15 @@ void validateGeneCount(
 
         auto geneName = t2gMap[transcriptName] ;
 
+        if(geneName == ""){
+          std::cout << header << "\n" ;
+          for(auto h : headerVec){
+            std::cout << h << "\n" ;
+          }
+          std::cout << "gene name is empty while reading the file\n" ;
+          std::exit(2);
+        }
+
         auto it1 = cellGeneCountMap.find(cellName) ;
         if(it1 != cellGeneCountMap.end()){
           auto it = cellGeneCountMap[cellName].find(geneName) ;
@@ -237,8 +244,18 @@ void validateGeneCount(
     auto geneCount = it.second ;
     dictFile << it.first << "\n" ;
     dictFile << geneCount.size() << "\n" ;
+    size_t check_number_of_lines = 0;
     for(auto it2 : geneCount){
-      dictFile << it2.first << "\t" << it2.second << "\n" ; 
+      if(it2.first == ""){
+        std::cout << "gene name is empty \n" ;
+        std::exit(2);
+      }
+      dictFile << it2.first << "\t" << it2.second << "\n" ;
+      check_number_of_lines++ ; 
+    }
+    if (check_number_of_lines != geneCount.size()){
+      std::cout << "gene count does not match number of lines" ;
+      std::exit(1);
     }
 	}
 	// dictFile.close() ;

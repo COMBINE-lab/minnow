@@ -195,6 +195,11 @@ int main(int argc, char* argv[]) {
     (option("--dupCounts").set(simulateOpt.dupCounts, true)) %
     "Flag for making minnow read the dup counts TSV filtered_cb_frequency.txt in the same folder",
     
+    //librarySize provided 
+    (option("--librarySize") & 
+    value("error rate for sequences", simulateOpt.librarySize))  % 
+    "Library sizes to be replicated from ",
+    
     //Use white list  
     (option("--useWhiteList").set(simulateOpt.useWhiteList, true)) %
     "Flag for making minnow read the dup counts TSV filtered_cb_frequency.txt in the same folder",

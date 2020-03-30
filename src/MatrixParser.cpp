@@ -1626,7 +1626,7 @@ void DataMatrix<T>::loadSplatterData(
 	
 	std::unordered_map<std::string, std::string> splatterGeneMap ; //splatter gene name -> real gene name
 	std::vector<std::string> splatterGeneNames ;
-	std::unordered_map<uint32_t, std::string> aleviGeneIndex2NameMap ;
+	//std::unordered_map<uint32_t, std::string> aleviGeneIndex2NameMap ;
 
 	{
 		std::ifstream geneNameStream(geneListFile) ;
@@ -1706,6 +1706,9 @@ void DataMatrix<T>::loadSplatterData(
 
 
   std::cout<<"==================Done Parsing Splatter Matrix==================\n" ;
+
+  std::string gene_name_to_track = "ENSG00000001084.13";
+  size_t geneIdToTrack ;
 
 	consoleLog->info(
 						"Splatter matrix is read, with dimension {} x {}", 
@@ -1854,14 +1857,18 @@ void DataMatrix<T>::loadSplatterData(
               splatterGeneMap[spgName] = spgName ;
               alevin2refMap[truncatedGeneId] = geneId ;
               alevinGeneIndex2NameMap[truncatedGeneId] = spgName ;
+            //   if (spgName == gene_name_to_track){
+			// 	  std::cout << "===========================================================gene id missed " << geneId << "\n"; 
+			// 	  geneIdToTrack = truncatedGeneId ;
+			//   }
               truncatedGeneId++ ;
             }else{
-              consoleLog->warn("the gene name {} is not present in de-Bruijn graph",spgName) ;
+              //consoleLog->warn("the gene name {} is not present in de-Bruijn graph",spgName) ;
               skippedGenes.insert(splatterGeneId) ;
               numOfSkippedGenes++ ;
             }
           }else{
-            consoleLog->warn("the gene name {} is not present in reference",spgName) ;
+            //consoleLog->warn("the gene name {} is not present in reference",spgName) ;
             skippedGenes.insert(splatterGeneId) ;
             numOfSkippedGenes++ ;
           }
@@ -2107,6 +2114,8 @@ void DataMatrix<T>::loadSplatterData(
 			auto it = alevin2refMap.find(i) ;
 			if(it != alevin2refMap.end()){
 				auto originalGeneId = it->second ;
+				// if (i == geneIdToTrack)
+				// 	std::cerr << "Tracking gene id " << i << " original gene id " << originalGeneId << "\n" ; 
 				//std::cerr << "original gene id "  << originalGeneId << "\n" ;
 
 				auto transcriptIds = refInfo.gene2transcriptMap[originalGeneId] ;
@@ -2185,6 +2194,12 @@ void DataMatrix<T>::loadSplatterData(
 				preCalculatedSegProb[i] = localGeneProb ;
 				preSegOreMapVector[i] = localSegOreMap ;
 				geneSpecificTrVector[i] = localTrVector ;
+				// if(i == geneIdToTrack){
+				// 	std::cerr << " Corresponding probability sizes for gene id " << geneIdToTrack 
+				//               << " " << localGeneProb.size() << "\t"
+				// 			  << localSegOreMap.size() << "\t"
+				// 			  << localTrVector.size() << "\n" ;
+				// }
 
 			}
 		}
@@ -2206,9 +2221,14 @@ void DataMatrix<T>::loadSplatterData(
       size_t cellSumCheck{0} ;
 			auto barcode = cellNames[cellId] ;
 			for(size_t i = 0 ; i < cellGeneCounts.size() ; ++i){
-				std::string geneName = aleviGeneIndex2NameMap[i] ;
+				std::string geneName = alevinGeneIndex2NameMap[i] ;
 
 				int geneCount = cellGeneCounts[i] ;
+				// if(geneName == gene_name_to_track && barcode == "Cell1"){
+				// 	std::cerr << "gene id " << i << "\t"
+				// 			  << "barcode " << barcode << "\t"
+				//               << "gene count " << geneCount << "\n";
+				// }
 
         // std::cerr << "\n new gcount " << geneCount << "\n" ;
 				//int geneLevelTrCount{0} ;
@@ -2256,14 +2276,15 @@ void DataMatrix<T>::loadSplatterData(
 
 						auto segCountHist = preCalculatedSegProb[i] ;
 
-						//if(i == 53593){
-					    //std::cerr << "segCountHist Size " << segCountHist.size() << "\n" ;
-						//}	
+						// if(i == geneIdToTrack  && barcode == "Cell1"){
+					    // 	std::cerr << "segCountHist Size " << segCountHist.size() << "\t"
+						// 			  << "id to track " << geneIdToTrack << "\n" ;
+						// }	
 
 						if(segCountHist.size() == 0){
 							std::cerr << "No seg hist for this gene " << i << "\n" ; 
-              std::exit(1) ;
-              droppedGeneExpression += geneCount ;
+              				std::exit(1) ;
+              				droppedGeneExpression += geneCount ;
 							dropThisGene = true ;
 							geneCount = 0 ;
 						}
@@ -2291,6 +2312,19 @@ void DataMatrix<T>::loadSplatterData(
 							}
 							for(size_t j = 0 ; j < segCounts.size() ; ++j){
 								segCountMap[segIndex[j]] = segCounts[j] ;
+							}
+							// make sure the count is allocated
+							if((i == geneIdToTrack) && (barcode == "Cell1")){
+								std::cerr << "Tracking for gene id " << geneName << "\n"; 
+								int totNum = 0; 
+								for(auto& s : segCountMap){
+									if(s.second != 0){
+										totNum += s.second;
+									}
+								}
+								if(totNum == geneCount){
+									std::cerr << "We are good\n" ;
+								}
 							}
 
 							cellSegCount[cellId][i] = segCountMap ;

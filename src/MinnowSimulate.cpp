@@ -546,6 +546,7 @@ void doPCRBulkDBG(
     double& errorRate,
     bool switchOnEffModel,
     ErrorMatrix& errorModel,
+    size_t librarySize,
     fmt::MemoryWriter& sstream_left,
     fmt::MemoryWriter& sstream_right
 ){
@@ -722,7 +723,11 @@ void doPCRBulkDBG(
     size_t numOfWritten{0} ;
 
     if(dupCount == 0){
-      dupCount = MAXNUM ;
+      if(uniqueMolecules.size() > librarySize){
+        dupCount = uniqueMolecules.size();
+      }else{
+        dupCount = librarySize ;
+      }
     }
     if (dupCount > totNum){
       dupCount = totNum ;
@@ -894,6 +899,7 @@ void doPCRBulk(
     bool& isNoisyCell,
     bool& isDoublet,
     ErrorMatrix errorModel,
+    size_t librarySize,
     fmt::MemoryWriter& sstream_left ,
     fmt::MemoryWriter& sstream_right,
     bool debug = false 
@@ -1095,7 +1101,12 @@ void doPCRBulk(
 
     
     if(dupCount == 0){
-      dupCount = MAXNUM ;
+      if (uniqueMolecules.size() > librarySize){
+        dupCount = uniqueMolecules.size();
+      }
+      else{
+        dupCount = librarySize ;
+      }
     }
     if (dupCount > totNum){
       dupCount = totNum ;
@@ -1250,6 +1261,7 @@ void generateSequencesForCellDBG(
     Reference& refInfo,
     std::vector<Transcript>& transcripts,
     ErrorMatrix& errorModel,
+    size_t& librarySize,
     moodycamel::ConcurrentQueue<stream_pair_ptr, MyTraits>& conQueue,
     MutexT* iomutex
 ){
@@ -1291,6 +1303,14 @@ void generateSequencesForCellDBG(
         //size_t missedSegments{0} ;
         for(auto git : segMap){
             auto segIdMap = git.second ;
+            // if(git.first == 45893){
+            //     std::cerr << " segIdMap size " << segIdMap.size()  << "\n" ;
+            //     for(auto sit : segIdMap){
+            //         if(sit.second > 0)
+            //             std::cerr << sit.first << "\t" << sit.second << "\n";
+            //     }
+            //     std::cerr << "--\n";
+            // }
             for(auto sit: segIdMap){
                 bool ore{false} ;
                 auto success = dataMatrixObj.getSegOreMapVectorInfo(git.first, sit.first, ore) ;
@@ -1300,6 +1320,8 @@ void generateSequencesForCellDBG(
                               << " post an issue with the gfa file in https://github.com/COMBINE-lab/minnow/issues \n" ;
                               std::exit(1) ; 
                 }
+                // for debugging
+
                 for(int j = 0 ; j < sit.second ; ++j){
                     // choose a random transcript 
                     // that contains this segment
@@ -1313,7 +1335,17 @@ void generateSequencesForCellDBG(
                     if((fixTidInfo.end - fixTidInfo.start) < READ_LEN){
                         std::cerr << " In minnow simulate length of contig is smaller than read length \n"
                                   << fixTidInfo.start << "\t" << fixTidInfo.end << "\n" ;
+                        std::exit(2);
                     }
+                    
+                    // if(git.first == 45893){
+                    //     std::cerr << fixTidInfo.tid << "\t"
+                    //               << transcripts.size() << "\t"
+                    //               << transcripts[fixTidInfo.tid].RefName << "\t"
+                    //               << " index in uniqueMol " << uniqueMolecules.size()
+                    //               << "\n";
+                    // }
+
 
                     uniqueMolecules.emplace_back(
                         fixTidInfo.tid,
@@ -1348,6 +1380,7 @@ void generateSequencesForCellDBG(
             errorRate,
             switchOnEffModel,
             errorModel,
+            librarySize,
             sstream_left,
             sstream_right
         ) ;
@@ -1409,6 +1442,7 @@ void generateSequencesForCell(
     std::unordered_set<uint32_t>& emptyCellVector,
     std::vector<Transcript>& transcripts,
     ErrorMatrix& errorModel,
+    size_t& librarySize,
     moodycamel::ConcurrentQueue<stream_pair_ptr, MyTraits>& conQueue,
     MutexT* iomutex
 )
@@ -1582,6 +1616,7 @@ void generateSequencesForCell(
             isNoisyCell,
             isDoublet,
             errorModel,
+            librarySize,
             sstream_left, 
             sstream_right
            // sstream_matrix
@@ -1687,10 +1722,12 @@ bool spawnCellThreads(
     uint32_t numOfCells{dataMatrixObj.numCells} ;
     bool simulateFromIntrons = simOpts.velocityMode ;
     bool switchOnEffModel = simOpts.switchOnEffModel ;
+    size_t librarySize = simOpts.librarySize ;
 
     bool useDBG = simOpts.useDBG ;
 
     std::string illuminaModelFile = simOpts.illuminaModelFile ;
+
 
     ErrorMatrix errorModel ;
 
@@ -1743,6 +1780,7 @@ bool spawnCellThreads(
                 std::ref(emptyCellVector),
                 std::ref(transcripts),
                 std::ref(errorModel),
+                std::ref(librarySize),
                 std::ref(conQueue),
                 &iomutex
             );
@@ -1762,6 +1800,7 @@ bool spawnCellThreads(
                 std::ref(refInfo),
                 std::ref(transcripts),
                 std::ref(errorModel),
+                std::ref(librarySize),
                 std::ref(conQueue),
                 &iomutex
             );

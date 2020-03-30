@@ -46,6 +46,7 @@ public:
   std::string whitelistFile ;
   uint32_t numOfPCRCycles{5};
   double errorRate{0.01};
+  size_t librarySize{100000};
   double mutationProb{0.01};
   std::string refFile ;
   uint32_t sampleCells{0} ;
