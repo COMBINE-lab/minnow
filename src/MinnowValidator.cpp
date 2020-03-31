@@ -35,6 +35,13 @@ struct ValidateOpt{
 
 } ;
 
+struct DumpOpt{
+  std::string fastqFile{""} ;
+  std::string t2gFile{""} ;
+  std::string outFile{""} ;
+
+} ;
+
 struct ExtractOpt{
   std::string leftFastqFile{""} ;
   std::string rightFastqFile{""} ;
@@ -70,9 +77,11 @@ stx::string_view sampleSequence(
 }
 
 
-void parset2gFile(std::map<std::string, std::string>& t2gMap){
+void parset2gFile(std::map<std::string, std::string>& t2gMap, 
+                  std::string t2gFile="/mnt/scratch6/hirak/minnow/data_gencode_32/human_t2g.tsv"
+){
   // std::string t2gFile = "/mnt/scratch1/hirak/minnow/data/hg/human_t2g.tsv" ;
-  std::string t2gFile = "/mnt/scratch6/hirak/minnow/data_gencode_32/human_t2g.tsv" ;
+  //std::string t2gFile = "/mnt/scratch6/hirak/minnow/data_gencode_32/human_t2g.tsv" ;
   std::ifstream t2gStream(t2gFile.c_str()) ;
   std::string line ;
   while(std::getline(t2gStream, line)){
@@ -171,12 +180,15 @@ void queryCellName(
   queryStream.close() ;
 }
 
-void validateGeneCount(
-    std::string& fastqFile,
-    std::string& outFile
+void dumpGeneCount(
+    DumpOpt& dumpOpt
 ){
+
+  auto fastqFile = dumpOpt.fastqFile;
+  auto t2gFile = dumpOpt.t2gFile ;
+  auto outFile = dumpOpt.outFile;
   std::map<std::string, std::string> t2gMap ;
-  parset2gFile(t2gMap) ;
+  parset2gFile(t2gMap, t2gFile) ;
 
   std::map<std::string, std::map<std::string, uint32_t>> cellGeneCountMap ;
 
@@ -459,13 +471,6 @@ void gfaValidate(
 
 void validate(ValidateOpt& valOpts){
   if(valOpts.gfaFile == ""){
-    if(valOpts.referenceFile == ""){
-      validateGeneCount(
-                        valOpts.fastqFile,
-                        valOpts.outFile
-                        ) ;
-
-    }else{
       std::cerr << "\n Running ref validate \n" ;
 
       refValidate(
@@ -474,7 +479,6 @@ void validate(ValidateOpt& valOpts){
                   valOpts.edit_max_lim,
                   valOpts.outFile
                   ) ;
-    }
   }else{
     gfaValidate(
       valOpts.gfaFile,
@@ -499,14 +503,14 @@ void extract(ExtractOpt& valOpts){
 int main(int argc, char* argv[]) {
   using namespace clipp ;
   using std::cout ;
-  enum class mode {help, validate, extract} ;
+  enum class mode {help, validate, extract, dump} ;
 
   mode selected = mode::help ;
 
   ValidateOpt valOpts ;
   ExtractOpt extOpt ;
+  DumpOpt dumpOpt ;
 
-  std::cout << "here" ;
 
   auto extractMode = (
      command("extract").set(selected, mode::extract),
@@ -530,7 +534,23 @@ int main(int argc, char* argv[]) {
                       );
 
 
-  auto simulateMode = (
+  auto dumpMode = (
+    command("dump").set(selected, mode::dump),
+    
+    (option("-f", "--fastq-file") &
+    value("alevin-dir", dumpOpt.fastqFile)) %
+    "fastq file",
+    
+    (option("-t", "--reference") &
+    value("transcript", dumpOpt.t2gFile)) %
+    "tsv file with transcript to gene mapping",
+    
+    (option("-o", "--output") &
+    value("output", dumpOpt.outFile)) %
+    "output file to dump the results"
+  );
+
+   auto validateMode = (
     command("validate").set(selected, mode::validate),
 
     
@@ -560,8 +580,9 @@ int main(int argc, char* argv[]) {
   );
 
   auto cli = (
-    (simulateMode |
+    (validateMode |
      extractMode | 
+     dumpMode |
      command("--help").set(selected,mode::help) |
      command("-h").set(selected,mode::help) |
      command("help").set(selected,mode::help)
@@ -572,7 +593,6 @@ int main(int argc, char* argv[]) {
 
   decltype(parse(argc, argv, cli)) res;
   try {
-    std::cout << "here\n" ;
     res = parse(argc, argv, cli);
   } catch (std::exception& e) {
     std::cout << "\n\nParsing command line failed with exception: " << e.what() << "\n";
@@ -585,7 +605,10 @@ int main(int argc, char* argv[]) {
     switch(selected){
       case mode::validate: validate(valOpts) ; break ; 
       case mode::extract: extract(extOpt) ; break ; 
-    case mode::help: std::cout << make_man_page(cli, "validate") << make_man_page(cli, "extract") ; 
+      case mode::dump: dumpGeneCount(dumpOpt) ; break ; 
+    case mode::help: std::cout << make_man_page(cli, "validate") 
+                               << make_man_page(cli, "extract") 
+                               << make_man_page(cli, "dump"); 
     }
   }else{
     cout << usage_lines(cli, "validate") << '\n';
