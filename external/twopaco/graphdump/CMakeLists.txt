@@ -2,6 +2,9 @@ project(graphdump CXX)
 cmake_minimum_required(VERSION 3.9)
 
 set(CMAKE_PROJECT_NAME graphdump)
+#if(CMAKE_COMPILER_IS_GNUCXX)
+#	list(APPEND "CMAKE_CXX_FLAGS" "-std=c++0x")
+#endif()
 
 include_directories(${twopaco_SOURCE_DIR} ${TBB_INCLUDE_DIRS} "../common" "./" )
 link_directories(${TBB_LIB_DIR})
@@ -12,7 +15,6 @@ add_library(graphdump STATIC graphdump.cpp ../common/dnachar.cpp ../common/strea
 #target_link_libraries(graphdump  "tbb")
 install(TARGETS graphdump DESTINATION lib EXPORT graphdump-targets)
 install(EXPORT graphdump-targets DESTINATION lib/graphdump)
-
 
 
 set(CPACK_PACKAGE_VERSION_MAJOR "0")

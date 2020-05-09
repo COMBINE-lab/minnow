@@ -1,5 +1,6 @@
 #include <unordered_map>
 #include <memory>
+#include <iostream>
 
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/ostream_sink.h"
@@ -140,10 +141,17 @@ int puffIndex(IndexOptions& indexOpts){
     args.push_back("-s");
     args.push_back(rfile);
     args.push_back("-f");
-    args.push_back("pufferized");
+    args.push_back("gfa1");
     args.push_back(outdir+"/tmp_dbg.bin");
-    args.push_back("-p");
-    args.push_back(outdir);
+    // args.push_back("-p");
+    args.push_back("-o");
+    args.push_back(outdir+"/dbg.gfa");
+    //args.push_back(outdir);
+
+    for(auto a : args){
+      std::cout << a << " ";
+    }
+    std::cout << "\n" ;
     dumpGraphMain(args);
 
     // cleanup what we no longer need

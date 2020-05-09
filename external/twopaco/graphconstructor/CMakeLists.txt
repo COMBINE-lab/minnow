@@ -2,6 +2,9 @@ project(twopaco CXX)
 cmake_minimum_required(VERSION 3.9)
 
 set(CMAKE_PROJECT_NAME twopaco)
+#if(CMAKE_COMPILER_IS_GNUCXX)
+#	list(APPEND "CMAKE_CXX_FLAGS" "-std=c++0x")
+#endif()
 
 include_directories(${twopaco_SOURCE_DIR} ${TBB_INCLUDE_DIRS} "../common")
 link_directories(${TBB_LIB_DIR})

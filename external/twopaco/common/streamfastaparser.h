@@ -148,10 +148,6 @@ namespace TwoPaCo
 			}
 		}
 
-		void reset() {
-			parser_.reset(new TwoPaCo::StreamFastaParser(fileName_[0]));
-		}
-
 		bool NextChr(std::string & buf)
 		{
 			buf.clear();

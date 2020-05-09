@@ -50,7 +50,7 @@ public:
 	}
 };
 
-int buildGraphMain(std::vector<std::string>& args)  //}int argc, char * argv[])
+int buildGraphMain(std::vector<std::string>& args)//main(int argc, char * argv[])
 {
 	OddConstraint constraint;
 	try
@@ -124,7 +124,7 @@ int buildGraphMain(std::vector<std::string>& args)  //}int argc, char * argv[])
 			"file name",
 			cmd);
 
-		cmd.parse(args);//argc, argv);		
+		cmd.parse(args);//(argc, argv);		
 		using TwoPaCo::Range;
 		if (runTests.getValue())
 		{

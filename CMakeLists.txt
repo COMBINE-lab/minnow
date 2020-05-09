@@ -81,10 +81,16 @@ set(GAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 ###
 
 ## Try and find TBB first
-find_package(TBB 2018.0 COMPONENTS tbb tbbmalloc tbbmalloc_proxy)
+find_package(TBB 2019.0 COMPONENTS tbb tbbmalloc tbbmalloc_proxy)
+
+## NOTE: we actually require at least 2019 U4 or greater
+## since we are using tbb::global_control.  However, they 
+## seem not to have tagged minor version numbers in their 
+## source.  Check before release if we can bump to the 2020
+## version (requires having tbb 2020 for OSX).
 
 if (${TBB_FOUND})
-  if (${TBB_VERSION} VERSION_GREATER_EQUAL 2018.0)
+  if (${TBB_VERSION} VERSION_GREATER_EQUAL 2019.0)
   message("FOUND SUITABLE TBB VERSION : ${TBB_VERSION}")
   set(TBB_TARGET_EXISTED TRUE)
   else()
@@ -112,7 +118,8 @@ endif()
 message("Build system will fetch and build Intel Threading Building Blocks")
 message("==================================================================")
 # These are useful for the custom install step we'll do later
-set(TBB_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/oneTBB-2019_U8)
+set(TBB_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/oneTBB-2020.2)
+#set(TBB_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/oneTBB-2019_U8)
 #set(TBB_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/tbb-2019_U8)
 set(TBB_INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/install)
 
@@ -126,10 +133,10 @@ set(TBB_CXXFLAGS "${TBB_CXXFLAGS} ${CXXSTDFLAG}")
 
 externalproject_add(libtbb
   DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external
-  DOWNLOAD_COMMAND curl -k -L https://github.com/intel/tbb/archive/2019_U8.tar.gz -o tbb-2019_U8.tgz &&
-    ${SHASUM} 6b540118cbc79f9cbc06a35033c18156c21b84ab7b6cf56d773b168ad2b68566 tbb-2019_U8.tgz &&
-    tar -xzvf tbb-2019_U8.tgz
-  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/oneTBB-2019_U8
+  DOWNLOAD_COMMAND curl -k -L https://github.com/oneapi-src/oneTBB/archive/v2020.2.tar.gz  -o tbb-2020_U2.tgz &&
+    ${SHASUM} 4804320e1e6cbe3a5421997b52199e3c1a3829b2ecb6489641da4b8e32faf500 tbb-2020_U2.tgz &&
+    tar -xzvf tbb-2020_U2.tgz
+  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/oneTBB-2020.2
   INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/install
   PATCH_COMMAND "${TBB_PATCH_STEP}"
   CONFIGURE_COMMAND ""
