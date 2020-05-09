@@ -18,6 +18,7 @@
 #include "string_view.hpp"
 #include "edlib.h"
 #include "macros.hpp"
+#include "ghc/filesystem.hpp"
 
 #include "zstr.hpp"
 
@@ -189,8 +190,13 @@ void dumpGeneCount(
   auto outFile = dumpOpt.outFile;
   std::map<std::string, std::string> t2gMap ;
   parset2gFile(t2gMap, t2gFile) ;
+  
+  ghc::filesystem::path outFilePath{outFile.c_str()}; 
+  auto outFileParentPath = outFilePath.parent_path();
+  auto cellDictPath = outFileParentPath.string() + "/" + "cell_name_map.tsv";
 
   std::map<std::string, std::map<std::string, uint32_t>> cellGeneCountMap ;
+  std::map<std::string, std::string> cellNameMap ;
 
 	{
 		ScopedTimer st ;
@@ -213,11 +219,16 @@ void dumpGeneCount(
           _verbose("\rNumber of reads processed : %lu", rn);
 
         auto& header = rp.name ;
+        auto& seq = rp.seq ;
+        std::string mutatedCellName = seq.substr(0,16);
+
 				std::vector<std::string> headerVec; 
 				split2(header, headerVec, ":") ;
 
         std::string cellName = headerVec[0] ;
 				std::string transcriptName = headerVec[1] ;
+
+        cellNameMap[mutatedCellName] = cellName ;
 
         auto geneName = t2gMap[transcriptName] ;
 
@@ -250,6 +261,12 @@ void dumpGeneCount(
 
     parser.stop() ;
 	}
+
+	std::ofstream cellNameDictFile{cellDictPath.c_str()} ;
+  for(auto& it : cellNameMap){
+    cellNameDictFile << it.first << "\t" << it.second << "\n" ;
+  }
+
 	zstr::ofstream dictFile{outFile.c_str(), std::ios::out } ;
   dictFile << cellGeneCountMap.size() << "\n" ;
 	for(auto it: cellGeneCountMap){

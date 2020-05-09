@@ -1,4 +1,4 @@
-#include <unordered_map>
+
 #include <set>
 #include <memory>
 
@@ -1718,6 +1718,7 @@ void DataMatrix<T>::loadSplatterData(
 	std::unordered_map<uint32_t, std::string> alevinGeneIndex2NameMap ;
 	size_t numOfSkippedGenes{0} ;
   std::set<size_t> validGeneIds;
+  std::set<std::string> invalidGeneNames;
 
 	{
 		// go over gene to transcript map, include a
@@ -1849,6 +1850,7 @@ void DataMatrix<T>::loadSplatterData(
       bool customNames = simOpts.customNames ;
       if(customNames){
         // gene names are already provided
+		// fill up invalid gene ids
         while(splatterGeneId < splatterGeneNames.size()){
           auto spgName = splatterGeneNames[splatterGeneId] ;
           if(geneMap.find(spgName) != geneMap.end()){
@@ -1865,11 +1867,13 @@ void DataMatrix<T>::loadSplatterData(
             }else{
               //consoleLog->warn("the gene name {} is not present in de-Bruijn graph",spgName) ;
               skippedGenes.insert(splatterGeneId) ;
+			  invalidGeneNames.insert(spgName + "\t" + "Absent-De-Bruijn");
               numOfSkippedGenes++ ;
             }
           }else{
             //consoleLog->warn("the gene name {} is not present in reference",spgName) ;
             skippedGenes.insert(splatterGeneId) ;
+			invalidGeneNames.insert(spgName + "\t" + "Absent-Gene-Txp");
             numOfSkippedGenes++ ;
           }
 
@@ -1981,12 +1985,12 @@ void DataMatrix<T>::loadSplatterData(
 
 
 	if(numOfSkippedGenes > 0){
-    if(!useDBG){
-      consoleLog->warn("Skipping {} genes, either they are short or absent in reference",numOfSkippedGenes) ;
-    }else{
-      consoleLog->warn("Skipping {} genes, gene pool size of de-Bruijn graph {}",
-                       numOfSkippedGenes, validGeneIds.size()) ;
-    }
+		if(!useDBG){
+		consoleLog->warn("Skipping {} genes, either they are short or absent in reference",numOfSkippedGenes) ;
+		}else{
+		consoleLog->warn("Skipping {} genes, gene pool size of de-Bruijn graph {}",
+						numOfSkippedGenes, validGeneIds.size()) ;
+		}
 
 		for(size_t cell_id = 0 ; cell_id < originalGeneCountMatrix.size(); ++cell_id){
 			size_t geneCountsGeneIdx{0} ;
@@ -1997,6 +2001,15 @@ void DataMatrix<T>::loadSplatterData(
 				}
 			}
 		}
+		// write down the skipped genes if there is any
+		if (invalidGeneNames.size() > 0){
+			std::string invalidGeneFile = outDir + "/invalidnames.txt" ;
+			std::ofstream invalidGeneNameStream(invalidGeneFile);
+			for(auto& n : invalidGeneNames){
+				invalidGeneNameStream << n << "\n" ;
+			}
+		}
+
 		consoleLog->info("Truncated the matrix to dimension {} x {}",geneCounts.size(), geneCounts[0].size()) ;
 	}else{
 		geneCounts = originalGeneCountMatrix ;
