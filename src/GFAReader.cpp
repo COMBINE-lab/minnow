@@ -1,7 +1,7 @@
 #include "GFAReader.hpp"
 #include "macros.hpp"
 
-// Taken from here 
+// Parts of the methods are taken from here 
 // https://github.com/COMBINE-lab/pufferfish/blob/master/src/GFAConverter.cpp
 
 bool is_number(const std::string& s) {
@@ -17,7 +17,10 @@ std::string getGencodeTranscript(std::string v){
 }
 
 
-std::vector<std::pair<size_t, bool>> explode(const std::string str, const char& ch) {
+std::vector<std::pair<size_t, bool>> GFAReader::explode(
+  const std::string str, 
+  const char& ch
+) {
   std::string next;
   std::vector<std::pair<size_t, bool>> result;
   // For each character in the string
@@ -36,7 +39,10 @@ std::vector<std::pair<size_t, bool>> explode(const std::string str, const char& 
           result.emplace_back(nid, orientation);
         } catch (std::exception& e) {
           // not a numeric contig id
-          std::cerr << "tried to convert " << next << " into a long long\n";
+          consoleLog->error("tried to convert {}"
+                            " into a long long",
+                            next
+          );
           std::exit(1);
         }
         next.clear();
@@ -47,8 +53,10 @@ std::vector<std::pair<size_t, bool>> explode(const std::string str, const char& 
     }
   }
   if (!next.empty()) {
-    std::cerr << "impossible is the opposite of possible " << next << "\n";
-    std::cerr << "The line is " << str << "\n";
+    consoleLog->error("impossible is the opposite of possible {} "
+                      "The line is {} ",
+                      next,str
+                     );
     result.emplace_back(std::stoll(next),
                         true); // this case shouldn't even happen
   }
@@ -139,129 +147,134 @@ void GFAReader::readUnitigs(){
 void GFAReader::parseFile(
 	Reference& refInfo 
 ){
-    std::cerr << "Start loading segments... \n" ;
-    size_t contigCt{0} ;
-    std::string ln, tag, id, value ;
+
+  consoleLog->info("Parsing GFA file {}", gfaFileName_);
+  consoleLog->info("Start loading segments...") ;
+  size_t contigCt{0} ;
+  std::string ln, tag, id, value ;
 
 
-    // calculate overlap size on the fly
-    bool foundOverlapSize{false};
-    size_t overlapsize = READ_LEN-1;
+  //We need to calculate the overlap size on the fly
+  //if and only if the new pufferize TwoPaCo is run
+  //otherwise it is not important, we can go without
+  
+  //ThreePaCo 
+  //overlapSize = READ_LEN - 1
+  //TwoPaCo
+  //overlapSize = READ_LEN + 1
+
+  bool foundOverlapSize{false};
+  // size_t overlapsize = READ_LEN-1;
+  size_t overlapsize = READ_LEN + 1;
+  consoleLog->info("Predicted overlap size: {}", overlapsize);
 
 	file.reset(new std::ifstream(gfaFileName_)) ;
 
 	size_t maxContigId{0} ;
-    while(std::getline(*file, ln)){
-        char fastC = ln[0] ;
-        if(fastC != 'S')
-            continue ; 
-        
-        std::vector<std::string> tokens  ; 
-        util::split(ln, tokens, "\t") ;
+  while(std::getline(*file, ln)){
+      char fastC = ln[0] ;
+      if(fastC != 'S')
+          continue ; 
+      
+      std::vector<std::string> tokens  ; 
+      util::split(ln, tokens, "\t") ;
 
-        id = tokens[1] ;
-        value = tokens[2] ;
-        if(is_number(id)){
-            size_t contigId = std::stoll(id) ;
-            if(contigId > maxContigId)
-              maxContigId = contigId ;
-
+      id = tokens[1] ;
+      value = tokens[2] ;
+      if(is_number(id)){
+          size_t contigId = std::stoll(id) ;
+          if(contigId > maxContigId)
+            maxContigId = contigId ;
+          if (value != "*"){
             unitigMap[contigId] = value ;
-        }
-        contigCt++ ;
-    }
-
-    std::cerr << "Saw " << contigCt << " contigs in total, unitigMap.size(): " << unitigMap.size() << "\n" ; 
-	std::cerr << "Max contig id " << maxContigId << "\n" ; 
-    std::cerr << "Starting to load paths \n" ;
-
-    file.reset(new std::ifstream(gfaFileName_)) ;
-
-    // find overlap size
-    while(std::getline(*file, ln)){
-        char fastC = ln[0] ;
-        if(fastC != 'P')
-            continue ;
-        std::vector<std::string> tokens ;
-        util::split(ln, tokens, "\t") ;
-        if(tokens.size() != 4){
-            continue ;
-        }
-        // sparse this to get the transcript name
-        id = getGencodeTranscript(tokens[1]) ;
-        if(id == ""){
-            continue ;
-        }
-
-        // A valid line
-        auto pvalue = tokens[2] ;
-        std::vector<std::pair<size_t, bool>> contigVec = explode(pvalue, ',') ;
-        // calculate overlap size
-        if(!foundOverlapSize and contigVec.size() > 2){
-          auto selem1 = contigVec[0];
-          auto selem2 = contigVec[1];
-          std::string elem1, elem2;
-          if (!selem1.second){
-            elem1 = util::revcomp(unitigMap[selem1.first]);
-          }else{
-            elem1 = unitigMap[selem1.first];
           }
-          if (!selem2.second){
-            elem2 = util::revcomp(unitigMap[selem2.first]);
-          }else{
-            elem2 = unitigMap[selem2.first];
+      }
+      contigCt++ ;
+  }
+
+  consoleLog->info("Saw {} segment lines, number of unitigs {}",contigCt, unitigMap.size()) ; 
+	//std::cerr << "Max contig id " << maxContigId << "\n" ; 
+  //std::cerr << "Starting to load paths \n" ;
+
+  // reset the file
+  file.reset(new std::ifstream(gfaFileName_)) ;
+  // find overlap size
+  while(std::getline(*file, ln)){
+      char fastC = ln[0] ;
+      if(fastC != 'P')
+          continue ;
+      std::vector<std::string> tokens ;
+      util::split(ln, tokens, "\t") ;
+      if(tokens.size() != 4){
+          continue ;
+      }
+      // sparse this to get the transcript name
+      id = getGencodeTranscript(tokens[1]) ;
+      if(id == ""){
+          continue ;
+      }
+
+      // A valid line
+      auto pvalue = tokens[2] ;
+      std::vector<std::pair<size_t, bool>> contigVec = explode(pvalue, ',') ;
+      // calculate overlap size
+      if(!foundOverlapSize and contigVec.size() > 2){
+        auto selem1 = contigVec[0];
+        auto selem2 = contigVec[1];
+        std::string elem1, elem2;
+        if (!selem1.second){
+          elem1 = util::revcomp(unitigMap[selem1.first]);
+        }else{
+          elem1 = unitigMap[selem1.first];
+        }
+        if (!selem2.second){
+          elem2 = util::revcomp(unitigMap[selem2.first]);
+        }else{
+          elem2 = unitigMap[selem2.first];
+        }
+        while(elem2.substr(0,overlapsize) != elem1.substr(elem1.size()-overlapsize)){
+          overlapsize++;
+          if(overlapsize == elem1.size() || overlapsize == elem2.size()){
+            consoleLog->error("GFA is ill-constructed") ;
+            //std::cout << elem1 << "\t" << elem2 << "\t" << overlapsize << "\n";
+            std::exit(1);
           }
-          while(elem2.substr(0,overlapsize) != elem1.substr(elem1.size()-overlapsize)){
-            overlapsize++;
-            if(overlapsize == elem1.size() || overlapsize == elem2.size()){
-              std::cout << "GFA is ill-constructed\n" ;
-              std::cout << elem1 << "\t" << elem2 << "\t" << overlapsize << "\n";
-              std::exit(1);
-            }
-          }
-          std::cout << "Overlap size " << overlapsize << "\n";
-
-          foundOverlapSize = true;
         }
-        if (foundOverlapSize){
-            break;
-        }
-    }
+        consoleLog->info("Calculated overlap size {}", overlapsize);
 
-    // now update the eqclasses
-    file.reset(new std::ifstream(gfaFileName_)) ;
+        foundOverlapSize = true;
+      }
+      if (foundOverlapSize){
+          break;
+      }
+  }
 
-    while(std::getline(*file, ln)){
-        char fastC = ln[0] ;
-        if(fastC != 'P')
-            continue ;
-        std::vector<std::string> tokens ;
-        util::split(ln, tokens, "\t") ;
-        if(tokens.size() != 4){
-            continue ;
-        }
-        // sparse this to get the transcript name
-        id = getGencodeTranscript(tokens[1]) ;
+  // now update the eqclasses
+  file.reset(new std::ifstream(gfaFileName_)) ;
+  consoleLog->info("Start loading paths...");
+  while(std::getline(*file, ln)){
+      char fastC = ln[0] ;
+      if(fastC != 'P')
+          continue ;
+      std::vector<std::string> tokens ;
+      util::split(ln, tokens, "\t") ;
+      if(tokens.size() != 4){
+          continue ;
+      }
+      // parse this to get the transcript name
+      id = getGencodeTranscript(tokens[1]) ;
 
-        if(id == ""){
-            continue ;
-        }
+      if(id == ""){
+          continue ;
+      }
 
-        // A valid line
-        auto pvalue = tokens[2] ;
-        std::vector<std::pair<size_t, bool>> contigVec = explode(pvalue, ',') ;
+      // A valid line
+      auto pvalue = tokens[2] ;
+      std::vector<std::pair<size_t, bool>> contigVec = explode(pvalue, ',') ;
 
-        updateEqClass(id, contigVec, refInfo, overlapsize) ;
+      updateEqClass(id, contigVec, refInfo, overlapsize) ;
 
-    }
-
-
-	
-    
-    std::cerr << "Done with GFA \n" 
-              << "Equivalece class size " << eqClassMap.size() 
-			  << "\ttrSegmentMap size " << trSegmentMap.size() 
-			  << "\ttranscript map size " << refInfo.transcriptNameMap.size() << "\n" ;
+  }
 
 	// filter segements that is does not have 
 	// any transcript where it is within 
@@ -276,9 +289,9 @@ void GFAReader::parseFile(
 		}else{
 			distanceFromEndMap[tid] = 0 ;
 		}
-    if(tid == 11393){
-      std::cout << "[DEBUG]-----" << distanceFromEndMap[tid]<<"\n";
-    }
+    // if(tid == 11393){
+    //   std::cout << "[DEBUG]-----" << distanceFromEndMap[tid]<<"\n";
+    // }
 	}
 
 	std::unordered_set<size_t> removeKeys ;	
@@ -334,13 +347,22 @@ void GFAReader::parseFile(
 			trSegmentMap[tid].push_back(id) ;
 		}
 	}
+  
+  consoleLog->info("Done with GFA "
+                   "Equivalence class size {} "
+                   "Segment map size after filtering {} "
+                   "number of transcripts {}",
+                   eqClassMap.size(),
+                   trSegmentMap.size(),
+                   refInfo.transcriptNameMap.size()
+  );
+  if(trSegmentMap.size() < refInfo.transcriptNameMap.size()){
+    consoleLog->warn("{} transcripts will not be included as " 
+                    "they don't have suitable segments",
+                    refInfo.transcriptNameMap.size() - trSegmentMap.size()
+    );
+  }
 
-    std::cerr << "Done Filtering \n" 
-              << "Equivalece class size " << eqClassMap.size() 
-			  << "\ttrSegmentMap size " << trSegmentMap.size() 
-			  << "\ttranscript map size " << refInfo.transcriptNameMap.size() << "\n" ;
-
-    //std::cerr << "After filtering eqclassSize " << eqClassMap.size() << " \n" ;
 
 }
 

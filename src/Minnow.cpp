@@ -37,7 +37,25 @@ int main(int argc, char* argv[]) {
                               }
                               return true;
                             };
+  
+  auto ensure_input_dir = [](const std::string& inputdir) -> bool {
+                              if (ghc::filesystem::is_directory(inputdir)){
+                                auto c = inputdir + "/quants_mat_cols.txt";
+                                auto r = inputdir + "/quants_mat_rows.txt";
+                                if(!ghc::filesystem::exists(c) || !ghc::filesystem::exists(r)){
+                                  std::string e = "Either " + c + " or " + r + " does not exist" \
+                                                  + "check the " + inputdir ;
+                                  throw std::runtime_error{e};
+                                }
+                              }else{
+                                std::string e = "The input directory" + inputdir + "does not exist";
+                                throw std::runtime_error{e};
+                              }
+                              return true ;
+  };
 
+
+  std::vector<std::string> indexWrong;
   auto indexMode = (
     command("index").set(selected, mode::index),
     (required("-r", "--ref") & values(ensure_file_exists, "ref_file", indexOpt.rfile)) % "path to the reference fasta file",
@@ -45,7 +63,8 @@ int main(int argc, char* argv[]) {
     (option("-f", "--filt-size") & value("filt_size", indexOpt.filt_size)) % "filter size to pass to TwoPaCo when building the reference dBG",
     (option("--tmpdir") & value("twopaco_tmp_dir", indexOpt.twopaco_tmp_dir)) % "temporary work directory to pass to TwoPaCo when building the reference dBG",
     (option("-k", "--klen") & value("kmer_length", indexOpt.k))  % "length of the k-mer with which the dBG was built (default = 101)",
-    (option("-p", "--threads") & value("threads", indexOpt.p))  % "total number of threads to use for building MPHF (default = 16)"
+    (option("-p", "--threads") & value("threads", indexOpt.p))  % "total number of threads to use for building MPHF (default = 16)",
+    any_other(indexWrong)
   );
 
   auto estimateMode = (
@@ -74,90 +93,70 @@ int main(int argc, char* argv[]) {
   );
 
 
+  std::vector<std::string> simulateWrong;
   auto simulateMode = (
     command("simulate").set(selected, mode::simulate),
 
-    // required options  
+    // it can either be --splatter-mode or --alevin mode
+    // but not both
+    required("--alevin-mode").set(simulateOpt.alevinMode, true) | 
+    required("--splatter-mode").set(simulateOpt.splatterMode, true) 
+                    .if_missing   ( []  { std::cerr << "\n\033[31mNone of the "
+                                                    << "--alevin-mode "
+                                                    << "--splatter-mode " 
+                                                    << "are specified\033[0m \n\n"; } )
+                    .if_conflicted( []  { std::cerr << "\n\033[31mUse either of "
+                                                    << "two modes"
+                                                    << " but not both\033[0m\n\n"; } ),
 
-    (required("-i", "--inputdir") & 
-    value("inputdir", simulateOpt.inputdir)) %
-    "directory with matrix file/ if this is a file instead of a dir",
+    // required options
+    (required("-i", "--inputdir")
+                          .if_missing ([] {std::cerr << "\033[31mrequired option -i/--inputdir missing\033[0m\n\n";})
+                          & value(ensure_input_dir,"inputdir", simulateOpt.inputdir))
+                          % "directory with matrix file/ if this is a file instead of a dir",
+    (required("-r", "--reffile")
+                          .if_missing ([] {std::cerr << "\033[31mrequired option -r/--reffile missing\033[0m\n\n";})
+                          &  value(ensure_file_exists, "ref_file", simulateOpt.refFile)) % "transcriptome reference file (assumed from fasta file)",
+    (required("-w", "--whitelistFile") 
+              .if_missing ([] {std::cerr << "\033[31mrequired option -w/--whitelistFile missing\033[0m\n\n";})
+              & value(ensure_file_exists, "whitelist_file", simulateOpt.whitelistFile)) % "10X provided cell barcodes, generally named as 737K-august-2016.txt",
+    (required("-o", "--outdir") 
+              .if_missing ([] {std::cerr << "\033[31m required option -o/--outdir missing \033[0m\n\n";})
+              & value("output directory", simulateOpt.outDir)) % "the simulated reads will be written here",
+    (required("--t2g") | required("--g2t") 
+              .if_missing ([] {std::cerr << "\033[31m required option --t2g missing \033[0m \n\n";})
+              & value(ensure_file_exists, "gene_tr", simulateOpt.gene2txpFile)) % "tab separated list of Gene to Transcirpt mapping",
 
-    (required("-o", "--outdir") & 
-    value("mat_file", simulateOpt.outDir)) %
-    "the simulated reads will be written here",
 
-    (required("-r", "--reffile") & 
-    value("ref_file", simulateOpt.refFile)) %
-    "transcriptome reference file (assumed from fasta file)",
-
-    (required("-w", "--whitelistFile") &
-     value("whitelist_file", simulateOpt.whitelistFile)) %
-    "transcriptome reference file (assumed from fasta file)",
-
-     (option("--metadataDir") & 
-      value("num mol file", simulateOpt.metadataDir)) %
-     "A directory containing metadata files in case the user defined files don't exit",
-
+    (option("--metadataDir") & value("meta data folder", simulateOpt.metadataDir)) % "A directory containing metadata files in case the user defined files don't exit",
+    (option("--numMolFile") & value("num mol file", simulateOpt.numMolFile)) % "Number of molecules generated from each cell",
     
-    (option("--numMolFile") & 
-    value("num mol file", simulateOpt.numMolFile)) %
-    "Number of molecules generated from each cell",
+    (option("--CBLength") & value("Cell barcode length", simulateOpt.CBLength)) % "Cell barcode length by default is 16",
+    (option("--UMILength") & value("Cell barcode length", simulateOpt.UMILength)) % "Cell barcode length by default is 10",
+    (option("--ReadLength") & value("Read length", simulateOpt.UMILength)) % "read length by default is 100",
+
+    // (option("--alevin-mode").set(simulateOpt.alevinMode, true)) %
+    // "The program would assume that the input matrix is obtained from Alevin",
     
-    (option("--CBLength") & 
-     value("Cell barcode length", simulateOpt.CBLength)) %
-    "Cell barcode length by default is 16",
+    // (option("--splatter-mode").set(simulateOpt.splatterMode, true)) %
+    // "matrix file is obtained from running splatter",
+
+    (option("--custom").set(simulateOpt.customNames, true)) % "Read custom gene names instead of assigning genes creatively",
     
-    (option("--UMILength") & 
-     value("Cell barcode length", simulateOpt.UMILength)) %
-    "Cell barcode length by default is 10",
+    // (option("--normal-mode").set(simulateOpt.normalMode, true)) %"user provided matrix",
     
-    (option("--ReadLength") & 
-     value("Read length", simulateOpt.UMILength)) %
-    "read length by default is 100",
-
-    (option("--alevin-mode").set(simulateOpt.alevinMode, true)) %
-    "The program would assume that the input matrix is obtained from Alevin",
-    
-    (option("--splatter-mode").set(simulateOpt.splatterMode, true)) %
-    "matrix file is obtained from running splatter",
-
-    (option("--custom").set(simulateOpt.customNames, true)) %
-    "Read custom gene names instead of assigning genes creatively",
-
-
-    (option("--normal-mode").set(simulateOpt.normalMode, true)) %
-    "user provided matrix",
-    
-    (option("--testUniqness").set(simulateOpt.testUniqness, true)) %
-    "matrix file is obtained from running splatter",
-
-
-    (option("--reverseUniqness").set(simulateOpt.reverseUniqness, true)) %
-    "matrix file is obtained from running splatter",
-
-    (option("--useWeibull").set(simulateOpt.useWeibull, true)) %
-    "matrix file is obtained from running splatter",
+    (option("--testUniqness").set(simulateOpt.testUniqness, true)) % "matrix file is obtained from running splatter",
+    (option("--reverseUniqness").set(simulateOpt.reverseUniqness, true)) % "matrix file is obtained from running splatter",
+    (option("--useWeibull").set(simulateOpt.useWeibull, true)) % "matrix file is obtained from running splatter",
     
     
-    (option("--numOfDoublets") & 
-    value("number of Doublets", simulateOpt.numOfDoublets)) %
-    "Number of doublets to be generated",
+    (option("--numOfDoublets") & value("number of Doublets", simulateOpt.numOfDoublets)) % "Number of doublets to be generated",
     
-    (option("--gencode").set(simulateOpt.gencode, true)) %
-    "gencode reference has | separator",
+    (option("--gencode").set(simulateOpt.gencode, true)) % "gencode reference has | separator",
     
-    (option("--g2t") & 
-    value("gene_tr", simulateOpt.gene2txpFile)) %
-    "tab separated list of Gene to Transcirpt mapping",
+    (option("--rspd") & value("rspd_dist", simulateOpt.rspdFile)) % "tab separated read start position distribution",
     
-    (option("--rspd") & 
-    value("rspd_dist", simulateOpt.rspdFile)) %
-    "tab separated read start position distribution",
-    
-    (option("--bfh") & 
-    value("BFH file", simulateOpt.bfhFile)) %
-    "BFH file",
+    (option("--bfh") & value(ensure_file_exists, "BFH file", simulateOpt.bfhFile)) % "BFH file",
     
     (option("--geneProb") & 
     value("gene level probability", simulateOpt.geneProbFile)) %
@@ -179,13 +178,9 @@ int main(int argc, char* argv[]) {
     (option("--noDump").set(simulateOpt.noDump, true)) %
     "will use the model file made",
     
-    (option("--gfa") & 
-    value("gfa_file", simulateOpt.gfaFile)) %
-    "gfa file for contigs",
+    (option("--gfa") & value(ensure_file_exists, "gfa_file", simulateOpt.gfaFile)) % "gfa file for contigs",
 
-    (option("--uniq") & 
-    value("sequence uniqueness file", simulateOpt.uniquenessFile)) %
-    "sequence uniqueness file",
+    (option("--uniq") & value("sequence uniqueness file", simulateOpt.uniquenessFile)) % "sequence uniqueness file",
     
     (option("--illum") & 
     value("illumina model", simulateOpt.illuminaModelFile)) %
@@ -259,9 +254,12 @@ int main(int argc, char* argv[]) {
     
     (option("-p", "--num-threads") & 
     value("number of threads", simulateOpt.numThreads))  % 
-    "number of threads to parallelize the process"
+    "number of threads to parallelize the process",
+
+    any_other(simulateWrong)
   );
 
+  std::vector<std::string> wrong;
   auto cli = (
     (simulateMode |
      estimateMode |
@@ -270,7 +268,8 @@ int main(int argc, char* argv[]) {
      command("-h").set(selected,mode::help) |
      command("help").set(selected,mode::help)
     ),
-    option("-v", "--version").call([]{std::cout << "version 0.1.0\n\n";}).doc("show version")
+    option("-v", "--version").call([]{std::cout << "version 0.1.0\n\n";}).doc("show version"),
+    any_other(wrong)
   );
 
   decltype(parse(argc, argv, cli)) res;
@@ -297,7 +296,7 @@ int main(int argc, char* argv[]) {
       if(b->arg() == "index"){
         std::cout << make_man_page(indexMode, "minnow") ;
       }else if(b->arg() == "simulate"){
-        std::cout << make_man_page(simulateMode, "minnow") ;
+        std::cout << usage_lines(simulateMode, "minnow") << "\n" ;
       }else{
         std::cout << "There is no command \"" << b->arg() << "\"\n" ;
         std::cout << usage_lines(cli, "minnow") << '\n';

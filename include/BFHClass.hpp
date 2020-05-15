@@ -28,9 +28,9 @@
 class BFHClass{
     public:
     BFHClass(){}
-  BFHClass(std::shared_ptr<spdlog::logger>& consoleLogIn){
-    consoleLog = consoleLogIn ;
-  }
+    BFHClass(std::shared_ptr<spdlog::logger>& consoleLogIn){
+      consoleLog = consoleLogIn ;
+    }
 
     void loadBFH(
         std::string& bfhFile,
@@ -39,7 +39,8 @@ class BFHClass{
         std::map<std::string, uint32_t>& cellWhiteListMap,
         bool generateNoiseProfile,
         std::unordered_map<std::string, uint32_t>& cellNoisyMap,
-        std::string& outDir
+        std::string& outDir,
+        bool dump = false
     ) ;
 
     void loadProbability(std::string& file, Reference& refInfo, bool geneLevel) ;
@@ -50,7 +51,7 @@ class BFHClass{
     }
 
 
-  std::shared_ptr<spdlog::logger> consoleLog ;
+    std::shared_ptr<spdlog::logger> consoleLog ;
     std::string bfhFile  ;
     std::vector<double> countProbability ;
     std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>> geneCountHistogram ; // Gene id -> (EqClass_Length -> Numebr)

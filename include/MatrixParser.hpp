@@ -160,17 +160,17 @@ public :
 	std::vector<std::vector<T>> data ; // Matrix containing the Cell x Transcriptome Matrix 
 	std::vector<std::vector<T>> geneCounts ; // Matrix containing the Cell x Gene Matrix 
 	std::vector<std::vector<int>> trueGeneCounts ; // True Matrix containing the Cell x Gene Matrix 
+	
+	// cell specific
 	std::vector<std::string> cellNames ; // Vector of Cell Names 
-	
-	
 	std::map<std::string, uint32_t> cellNamesMap ; // Cell Name -> Cell Id 
 	std::map<std::string, uint32_t> cellNamesDupCount ; // Cell Name -> dedup count
-	
 	std::map<std::string, uint32_t> cellWhiteListMap ;
 	std::unordered_map<std::string, uint32_t> cellNoisyMap ;
 	std::unordered_map<std::string, uint32_t> cellDoubletMap ;
 
-   std::unordered_map<uint32_t, uint32_t> cell2ClusterMap ;
+    std::unordered_map<uint32_t, uint32_t> cell2ClusterMap ;
+
 	std::shared_ptr<spdlog::logger> consoleLog ; // Logger for outputting errors 
  
 	std::map<uint32_t, uint32_t> alevin2refMap ; // Map Col 0f Input Matrix -> Gene ID from t2g tsv

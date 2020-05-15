@@ -37,22 +37,22 @@ void BFHClass::loadBFH(
     std::map<std::string, uint32_t>& cellWhiteListMap,
     bool generateNoiseProfile,
     std::unordered_map<std::string, uint32_t>& cellNoisyMap,
-    std::string& outDir
+    std::string& outDir,
+    bool dump
 ){
 
 
 
     if(! util::fs::FileExists(bfhFile.c_str())){
-      std::cerr << bfhFile << " does not exists \n" ;
+      consoleLog->error("{} does not exists", bfhFile) ;
       std::exit(1) ;
 	  }
 
     bool createClusterLevelHist{false} ;
     if(cellClusterFile != ""){
-        std::cout << "[DEBUG] cell Clust file " << cellClusterFile << "\n" ;
-
+        consoleLog->info("Feeding cell cluster file {}", cellClusterFile) ;
         if(! util::fs::FileExists(cellClusterFile.c_str())){
-            std::cerr << cellClusterFile << " is not empty and does not exist \n" ;
+            consoleLog->error("Cell cluster file {} does not exist", cellClusterFile) ;
             std::exit(1) ;
         }
         createClusterLevelHist = true ;
@@ -72,16 +72,15 @@ void BFHClass::loadBFH(
                 auto cell_id = it->second ;
                 cell2ClusterMap[cell_id] = cluster_id ;
             }else{
-                std::cerr << "Avoiding this cluster\n" ;
+                consoleLog->error("Avoiding {} cluster", cluster_id) ;
             }
         }
-        std::cerr << "[DEBUG] read cluster file with size " << cell2ClusterMap.size() << "\n" ;
+        consoleLog->info("read cluster file with size {}",cell2ClusterMap.size());
     }
 
-    std::cerr<< "[DEBUG] Reading BFH file ........ \n" ;
-
-	  std::ifstream dataStream(bfhFile.c_str()) ;
-	  std::string line ;
+    consoleLog->info("Reading BFH file {}",bfhFile);
+	std::ifstream dataStream(bfhFile.c_str()) ;
+	std::string line ;
 
     std::getline(dataStream, line) ;
     uint32_t numTranscripts = std::stoul(line) ;
@@ -90,9 +89,9 @@ void BFHClass::loadBFH(
     std::getline(dataStream, line) ;
     uint32_t numEqClasses = std::stoul(line) ;
 
-    std::cerr << "[DEBUG] numTranscripts: " << numTranscripts << "\n" ;
-    std::cerr << "[DEBUG] numCells: " << numCells << "\n" ;
-    std::cerr << "[DEBUG] numEqClasses: " << numEqClasses << "\n" ;
+    consoleLog->info("numTranscripts: {}", numTranscripts) ;
+    consoleLog->info("numCells: {}", numCells) ;
+    consoleLog->info("numEqClasses: {}", numEqClasses) ;
 
     std::vector<std::string> trNames(numTranscripts) ;
     std::vector<std::string> CBNames(numCells) ;
@@ -101,14 +100,14 @@ void BFHClass::loadBFH(
         trNames[i] = line ;
     }
 
-    std::cerr << "[DEBUG] Transcripts read \n" ;
+    consoleLog->info("Transcripts read ") ;
     for(size_t i  = 0; i < numCells; ++i){
         std::getline(dataStream, line) ;
         CBNames[i] = line ;
     }
 
 
-    std::cerr << "[DEBUG] Cell names read \n" ;
+    consoleLog->info("Cell names read ") ;
 
     // read equivalence classes now
     uint32_t tot_reads{0} ;
@@ -129,7 +128,10 @@ void BFHClass::loadBFH(
                   auto gid = transcript2geneMap[tid] ;
                   geneIds.insert(gid) ;
                 }else{
-                  std::cerr << "transcript is in the list but no corresponding gene found \n" ;
+                  consoleLog->error("transcript is in the list but no corresponding gene found "
+                                    "this signifies that the BFH and the annotation does not belong "
+                                    "to the same annotation (e.g. gencode version) or same organism"
+                  ) ;
                   std::exit(2) ;
                 }
             }
@@ -195,7 +197,7 @@ void BFHClass::loadBFH(
     }
 
 
-    std::cerr << "[DEBUG] countHistogram.size() " << countHistogram.size() << "\n" ;
+    consoleLog->info("countHistogram.size(): {}", countHistogram.size());
 
 
 
@@ -203,21 +205,23 @@ void BFHClass::loadBFH(
         [](const std::pair<uint32_t, uint32_t>& p1, const std::pair<uint32_t, uint32_t>& p2) {
         return p1.first < p2.first; });
 
-    std::cerr << "[DEBUG] x->first, x->second tot_reads "
-              << x->first << "\t" << x->second
-              << "\t" << tot_reads << "\n" ;
+    consoleLog->info("Histogram statistics "
+                     "max value: {}, max freq: {}, total reads {}",
+                     x->first, x->second, tot_reads
+    );
 
+    consoleLog->info("Converting histogram to a probablity vector");
     countProbability.resize(x->first + 1, 0.0) ;
     for(auto it: countHistogram){
       if(it.first >= countProbability.size()){
-        std::cerr << "[DEBUG] out of memory " << it.first << "\t" << countProbability.size() << "\n" ;
+        consoleLog->error("[DEBUG] out of memory {} >= {}",it.first,countProbability.size()) ;
       }
 
         countProbability[it.first] = static_cast<double>(it.second)/static_cast<double>(tot_reads) ; 
     }
 
 
-
+    if(dump)
     {
         std::string geneCountHistogramFile = outDir + "/geneLevelProb.txt" ;
         std::cerr << "DEBUG:  " << geneCountHistogramFile << "\n" ;
@@ -237,7 +241,7 @@ void BFHClass::loadBFH(
 
     }
 
-
+    if(dump)
     {
         std::string countProbabilityFile = outDir + "/countProb.txt" ;
         std::ofstream probStream(countProbabilityFile.c_str()) ;
@@ -248,7 +252,7 @@ void BFHClass::loadBFH(
         }
     }
 
-    std::cerr << "[DEBUG] Exiting after reading BFH \n" ;
+    consoleLog->info("Exiting after reading BFH ") ;
 
 }
 

@@ -6,6 +6,11 @@
 #include "GFAReader.hpp"
 #include "MinnowUtil.hpp"
 
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/ostream_sink.h"
+#include "spdlog/fmt/ostr.h"
+#include "spdlog/fmt/fmt.h"
+
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -398,10 +403,11 @@ void gfaValidate(
   std::string& gfaFile, 
   std::string& fastqFile,
   int& edit_max_lim,
-	std::string& outFile
+	std::string& outFile,
+  std::shared_ptr<spdlog::logger>& consoleLog
 
 ){
-  GFAReader gfaObj(gfaFile) ;
+  GFAReader gfaObj(gfaFile, consoleLog) ;
 
   gfaObj.readUnitigs() ;
 
@@ -487,6 +493,10 @@ void gfaValidate(
 }
 
 void validate(ValidateOpt& valOpts){
+  // Set up logger
+  auto consoleSink = std::make_shared<spdlog::sinks::ansicolor_stderr_sink_mt>() ;
+  auto consoleLog = spdlog::create("minnow-Log", {consoleSink});
+
   if(valOpts.gfaFile == ""){
       std::cerr << "\n Running ref validate \n" ;
 
@@ -501,7 +511,8 @@ void validate(ValidateOpt& valOpts){
       valOpts.gfaFile,
       valOpts.fastqFile,
       valOpts.edit_max_lim,
-      valOpts.outFile
+      valOpts.outFile,
+      consoleLog
     ) ;
   }
 

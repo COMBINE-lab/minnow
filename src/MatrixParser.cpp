@@ -233,7 +233,7 @@ void populateGeneCountMatrix(
           totSum += geneCount[i][j] ;
         }
       }
-      std::cerr << "Total sum " << totSum << "\n" ;
+      std::cerr << "\n\tTotal sum " << totSum << "\n" ;
 }
 
 
@@ -327,7 +327,7 @@ void DataMatrix<T>::loadAlevinData(
 ){
 
 	// Load the values from simOpts
-  // Basic Options
+    // Basic Options
 	auto alevinDir = simOpts.inputdir;
 	auto sampleCells = simOpts.sampleCells;
 	auto outDir = simOpts.outDir ;
@@ -335,7 +335,7 @@ void DataMatrix<T>::loadAlevinData(
 	auto gfaFile = simOpts.gfaFile ;
 	auto bfhFile = simOpts.bfhFile ;
 
-  // Advanced options
+    // Advanced options
 	bool samplePolyA = simOpts.samplePolyA;
 	bool dupCounts = simOpts.dupCounts ;
 	bool generateNoisyCells = simOpts.generateNoisyCells ;
@@ -346,11 +346,11 @@ void DataMatrix<T>::loadAlevinData(
 
 	// load alevin related files
 	if(! util::fs::DirExists(alevinDir.c_str())){
-		consoleLog->info("Alevin directory does not exists") ;
+		consoleLog->error("Alevin directory does not exists") ;
 		std::exit(1) ;
 	}
 	if(!simOpts.useWhiteList && generateNoisyCells){
-		consoleLog->info("--generateNoisyCells needs to be invoked in conjunction with --useWhiteList") ;
+		consoleLog->warn("--generateNoisyCells needs to be invoked in conjunction with --useWhiteList") ;
 	}
 
 	std::ifstream indata ;
@@ -360,74 +360,76 @@ void DataMatrix<T>::loadAlevinData(
 	// reference. This is explicitely obtained fron alevin run
 
 	if (dupCounts){
-    consoleLog->info("Reading duplicated read numbers") ;
-    bool alevin_updated{false} ;
-    std::string dupCountFile_1 = alevinDir + "/MappedUmi.txt" ;
-    std::string dupCountFile_2 = alevinDir + "/featureDump.txt" ;
+		consoleLog->info("Reading duplicated read numbers") ;
+		bool alevin_updated{false} ;
+		std::string dupCountFile_1 = alevinDir + "/MappedUmi.txt" ;
+		std::string dupCountFile_2 = alevinDir + "/featureDump.txt" ;
 
-    std::string dupCountFile ;
+		std::string dupCountFile ;
 
-    if(! util::fs::FileExists(dupCountFile_2.c_str())){
-      if(! util::fs::FileExists(dupCountFile_1.c_str())){
-        std::cerr << "Neither MappedUmi.txt nor featureDump.txt exists run without --dupCounts\n" ;
-        std::exit(2) ;
-      }else{
-        dupCountFile = dupCountFile_1 ;
-      }
-    }else{
-      alevin_updated = true ;
-      dupCountFile = dupCountFile_2 ;
+		if(! util::fs::FileExists(dupCountFile_2.c_str())){
+		if(! util::fs::FileExists(dupCountFile_1.c_str())){
+			consoleLog->error("Neither MappedUmi.txt nor featureDump.txt" 
+							  "exists run without --dupCounts") ;
+			std::exit(2) ;
+		}else{
+			dupCountFile = dupCountFile_1 ;
+		}
+		}else{
+		alevin_updated = true ;
+		dupCountFile = dupCountFile_2 ;
+		}
+
+		if(!alevin_updated){
+			std::ifstream dupCountStream(dupCountFile) ;
+			std::string line ;
+			while(std::getline(dupCountStream, line)){
+				line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
+				std::vector<std::string> tokens ;
+				util::split(line, tokens, "\t") ;
+				if (tokens.size() == 2){
+				cellNamesDupCount[tokens[0]] = std::stoul(tokens[1]) ;
+				}
+			}
+		}else{
+			std::ifstream dupCountStream(dupCountFile) ;
+			std::string line ;
+
+			// throw away the first line
+			std::getline(dupCountStream, line) ;
+
+			while(std::getline(dupCountStream, line)){
+			line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
+			std::vector<std::string> tokens ;
+			util::split(line, tokens, "\t") ;
+				if (tokens.size() > 2){
+					cellNamesDupCount[tokens[0]] = std::stoul(tokens[2]) ;
+				}else{
+					consoleLog->error("{} is does not have enough columns", dupCountFile);
+					std::exit(1);
+				}
+			}
+		}
+
+		if(!dupCounts && (simOpts.numMolFile != "")){
+			if(! util::fs::FileExists(simOpts.numMolFile.c_str())){
+				std::cerr << simOpts.numMolFile << " does not exist\n" ;
+			}else{
+				std::ifstream dupCountStream(simOpts.numMolFile) ;
+				std::string line ;
+				while(std::getline(dupCountStream, line)){
+				line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
+				std::vector<std::string> tokens ;
+				util::split(line, tokens, "\t") ;
+				if (tokens.size() == 2){
+					cellNamesDupCount[tokens[0]] = std::stoul(tokens[1]) ;
+				}
+				}
+
+			}
+		}
     }
-
-    if(!alevin_updated){
-      std::ifstream dupCountStream(dupCountFile) ;
-      std::string line ;
-      while(std::getline(dupCountStream, line)){
-        line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
-        std::vector<std::string> tokens ;
-        util::split(line, tokens, "\t") ;
-        if (tokens.size() == 2){
-          cellNamesDupCount[tokens[0]] = std::stoul(tokens[1]) ;
-        }
-      }
-    }else{
-
-        std::ifstream dupCountStream(dupCountFile) ;
-        std::string line ;
-
-        // throw away the first line
-        std::getline(dupCountStream, line) ;
-
-        while(std::getline(dupCountStream, line)){
-          line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
-          std::vector<std::string> tokens ;
-          util::split(line, tokens, "\t") ;
-          if (tokens.size() > 2){
-            cellNamesDupCount[tokens[0]] = std::stoul(tokens[2]) ;
-          }
-        }
-    }
-
-    if(!dupCounts && (simOpts.numMolFile != "")){
-      if(! util::fs::FileExists(simOpts.numMolFile.c_str())){
-        std::cerr << simOpts.numMolFile << " does not exist\n" ;
-      }else{
-        std::ifstream dupCountStream(simOpts.numMolFile) ;
-        std::string line ;
-        while(std::getline(dupCountStream, line)){
-          line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
-          std::vector<std::string> tokens ;
-          util::split(line, tokens, "\t") ;
-          if (tokens.size() == 2){
-            cellNamesDupCount[tokens[0]] = std::stoul(tokens[1]) ;
-          }
-        }
-
-      }
-    }
-
-  }
-  // End reading the duplicated counts
+  	// End reading the duplicated counts
 
 
 	// The map contains gid to tid map, where
@@ -455,8 +457,8 @@ void DataMatrix<T>::loadAlevinData(
 	size_t numOfOriginalGenes{0} ;
 
 
-  std::cout<<"===============================================================\n\n" ;
-  consoleLog->info("Start parsing Alevin Directory") ;
+  	consoleLog->info("====================Parsing Alevin Directory==========================") ;
+  	consoleLog->info("Start parsing Alevin Directory") ;
 	consoleLog->info("Parsing {}/quants_mat_cols.txt",alevinDir) ;
 	{
 		std::string geneListFile = alevinDir + "/quants_mat_cols.txt" ;
@@ -486,20 +488,22 @@ void DataMatrix<T>::loadAlevinData(
 		}
 	}
 
-	std::string cellColFile = simOpts.outDir + "/alevin/quants_mat_cols.txt" ;
-	std::ofstream cellColStream(cellColFile.c_str()) ;
-	for(uint32_t i= 0; i < alevinGeneIndex2NameMap.size() ; ++i){
-		cellColStream << alevinGeneIndex2NameMap[i] << "\n" ;
+	//FIXME: One should not write the genes here. They can be truncated
+	// std::string cellColFile = simOpts.outDir + "/alevin/quants_mat_cols.txt" ;
+	// std::ofstream cellColStream(cellColFile.c_str()) ;
+	// for(uint32_t i= 0; i < alevinGeneIndex2NameMap.size() ; ++i){
+	// 	cellColStream << alevinGeneIndex2NameMap[i] << "\n" ;
+	// }
+	if (numOfSkippedGenes > 0){
+		consoleLog->warn("Original number of genes: {}\tNumber of genes skipped: {}", numOfOriginalGenes, numOfSkippedGenes) ;
+		consoleLog->warn("This means not all genes given in the input alevin matrix will be utilized");
 	}
 
-	consoleLog->info("Original number of genes: {}\tNumber of genes skipped: {}", numOfOriginalGenes, numOfSkippedGenes) ;
-
-	consoleLog->info("Number of genes in the alevin produced files: {}",alevin2refMap.size()) ;
+	// consoleLog->info("Number of genes in the alevin produced files: {}",alevin2refMap.size()) ;
 
 	auto& gene2transcriptMap = refInfo.gene2transcriptMap ;
-
 	// alevin2refTranscriptMap, a map from columns of the
-	// cell x transcrip count matrix to be fromed to the
+	// cell x transcript count matrix to be formed to the
 	// transcript ids of the reference. This map is *very*
 	// important since we need the reference id to get the
 	// real sequences.
@@ -521,11 +525,11 @@ void DataMatrix<T>::loadAlevinData(
 				}
 			}else{
 				consoleLog->error("This should not happen: gene {} not found",gIt->first) ;
+				std::exit(5);
 			}
 		}
 	}
-  consoleLog->info("Parsing {}/quants_mat_rows.txt",alevinDir) ;
-
+  	consoleLog->info("Parsing {}/quants_mat_rows.txt",alevinDir) ;
 	// all cell names irrespective of whitelist
 	std::map<std::string, uint32_t> allCellListMap ; // map cell-name -> id
 	std::vector<std::string> allCellNames ; // {cell names}
@@ -554,8 +558,6 @@ void DataMatrix<T>::loadAlevinData(
 
 	// Read the whitelist to know which cells are going to be finally part of the matrix.
 	// If the whitelist is not present then treat the rows as whitelist
-
-
 	std::string cellListFile = alevinDir + "/whitelist.txt" ;
 	// When noisy cells are present and considered, then
 	// allCells are the combination of whitelist cells and
@@ -586,8 +588,7 @@ void DataMatrix<T>::loadAlevinData(
 
 	if((! util::fs::FileExists(cellListFile.c_str())) or !(simOpts.useWhiteList)){
 		consoleLog->info("whitelist.txt file does not exist/ or will NOT be used");
-    consoleLog->info("we need to assume that the rows are the whitelisted barcodes") ;
-
+    	consoleLog->info("we need to assume that the rows are the whitelisted barcodes") ;
 		// Copy the vector and map for now, and try something better
 		// later
 		cellNames = allCellNames ;
@@ -612,20 +613,19 @@ void DataMatrix<T>::loadAlevinData(
 		for(size_t i = 0 ; i < cellNames.size(); ++i){
 			original2whitelistMap[allCellListMap[cellNames[i]]] = i ;
 		}
-
-
 		// NOTE: Noisy cells if neccessary will be appended
 		// in the same vector of cell names. This makes
 		// cellWhiteListMap deprecated for the case where
 		// whitelist is provided. as original2whitelistMap and
 		// allCellListMap together provide the same information
+		
 		// TODO: remove cellWhiteListMap in future release
-    // NOTE: Not in use now
-
+        
+		// NOTE: Not in use now
 		consoleLog->info("Number of cells in whitelist file: {}", cellNames.size()) ;
 		if(generateNoisyCells){
 			consoleLog->info("Additionally reads from noisy cells will be generated too,"
-							 "keeping track of noisy cells\n");
+							 "keeping track of noisy cells");
 
 			if(numOfNoisyCells == 0){
 				numOfNoisyCells = allCellNames.size() - cellNames.size() ;
@@ -687,13 +687,13 @@ void DataMatrix<T>::loadAlevinData(
 
 	std::string countFile = alevinDir + "/quants_mat.csv" ;
 	std::string countFileBinary = alevinDir + "/quants_mat.gz" ;
-  bool binary{true} ;
-  if(! util::fs::FileExists(countFileBinary.c_str())){
-    binary = false ;
-  }
+  	bool binary{true} ;
+  	if(! util::fs::FileExists(countFileBinary.c_str())){
+  		binary = false ;
+  	}
 
 
-  // TODO: Not sure if this is needed any more
+  	// TODO: Not sure if this is needed any more
 	std::unordered_map<uint32_t, uint32_t> gene2LastTrMap ;
 	{
 		// Make a map from gene id to last last tid
@@ -706,7 +706,7 @@ void DataMatrix<T>::loadAlevinData(
 
 	}
 
-  // NOTE: This is important for intron retention
+	// NOTE: This is important for intron retention
 	// Decide whether to sample from the introns or not
 	// depending on that use a flag for that cell and gene id
 	// store a flag
@@ -737,7 +737,7 @@ void DataMatrix<T>::loadAlevinData(
 	if(useDBG){
 		// This will read the dbg now
 		if(!util::fs::FileExists(gfaFile.c_str())){
-			std::cerr << gfaFile << "GFA file should exist EXITING !!";
+			consoleLog->error("GFA file {} does not exist EXITING !!", gfaFile);
 			std::exit(4) ;
 		}
 
@@ -759,21 +759,22 @@ void DataMatrix<T>::loadAlevinData(
 					}
 				}
 			}else{
-				std::cerr << "RSPD file is not empty and doesn't exist, going with truncated sampling\n" ;
+				consoleLog->info("RSPD file is not empty and doesn't exist, going with truncated sampling") ;
 			}
 		}
 
+    	consoleLog->info("======================= Parsing GFA file {} ==========================",gfaFile) ;
 
-		dbgPtr = new GFAReader(gfaFile) ;
+		dbgPtr = new GFAReader(gfaFile, consoleLog) ;
 		dbgPtr->parseFile(refInfo) ;
 
-    std::cerr << " Read GFA file \n" << std::flush ;
 
 		// NOTE: stand alone call to bfh
 		// ignore other eqclass stuff for now
-    // They might come handy later.
-		std::string eqFileDir = "dummy/dir" ;
-		eqClassPtr = new BFHClass() ;
+	    // They might come handy later.
+		// std::string eqFileDir = "dummy/dir" ;
+    	consoleLog->info("======================= Parsing BFH/related file ==========================") ;
+		eqClassPtr = new BFHClass(consoleLog) ;
 		if((simOpts.countProbFile != "") || (simOpts.geneProbFile != "")){
 			if(simOpts.countProbFile != ""){
 				eqClassPtr->loadProbability(
@@ -789,8 +790,8 @@ void DataMatrix<T>::loadAlevinData(
 				) ;
 			}
 		}else if(bfhFile != ""){
-      // NOTE: This branch is currently
-      // active
+      		// NOTE: This branch is currently
+      		// active
 			eqClassPtr->loadBFH(
 				bfhFile,
 				simOpts.clusterFile,
@@ -801,8 +802,15 @@ void DataMatrix<T>::loadAlevinData(
 				simOpts.outDir
 			) ;
 		}else{
-			// NOTE Or load currently existing default file
+			// FIXME: Or load currently existing default file, this 
+			// shoud be changed
 			std::string geneProbFile = "../data/hg/geneLebelProb_pbmc_4k.txt" ;
+			if(!util::fs::FileExists(geneProbFile.c_str())){
+				consoleLog->error("alevin-mode is invoked with --dbg but neither bfh file"
+								  " no probability files are produced"
+				);
+				std::exit(5) ;
+			}
 			eqClassPtr->loadProbability(
 					geneProbFile,
 					refInfo,
@@ -810,29 +818,17 @@ void DataMatrix<T>::loadAlevinData(
 			) ;
 		}
 
-    // std::cerr << "Read BFH file \n" << std::flush ;
-    consoleLog->info("Parsed BFH file related information...") ;
-    consoleLog->info("Genes in BFH: {}", numOfGenes) ;
-
-    // std::cerr << numOfGenes << "\n" << " alven2refMap.size(): " << alevin2refMap.size() << "\n"  << std::flush ;
-    // std::cerr << " Space to be allocated \n" << std::flush ;
-
+		consoleLog->info("Parsed BFH/Prob file related information...") ;
+		consoleLog->info("Genes in BFH: {}", numOfGenes) ;
 		preCalculatedSegProb.resize(numOfGenes) ; // per gene
 		preSegOreMapVector.resize(numOfGenes) ;
 		geneSpecificTrVector.resize(numOfGenes) ;
 
 
-    // std::cerr << " Space allocated \n" << std::flush ;
-
 		// fill segment based probability
 		// gene to tr to prob
-
-
-		//uint32_t trackGid{54819} ;
+		// uint32_t trackGid{54819} ;
 		for(uint32_t i = 0; i < numOfGenes; ++i){
-
-      // std::cerr << i << " gene\n" << std::flush ;
-
 			auto it = alevin2refMap.find(i) ;
 			if(it != alevin2refMap.end()){
 				auto originalGeneId = it->second ;
@@ -858,11 +854,12 @@ void DataMatrix<T>::loadAlevinData(
 								for(auto tInfo : tcInfoVec){
 									if(refInfo.transcripts[tid].RefLength - tInfo.eposInContig <= MAX_FRAGLENGTH){
 										if(tInfo.eposInContig - tInfo.sposInContig < READ_LEN){
-											consoleLog->info("seg id: {} \t {}",tInfo.eposInContig,tInfo.sposInContig) ;
+											consoleLog->error("encountered a contig shorter than read length",
+															  "this is not permitted currently"
+											);
+											consoleLog->error("seg id: {} \t {}",tInfo.eposInContig,tInfo.sposInContig) ;
 											std::exit(6) ;
 										}
-
-
 										localGeneProb[seg] = bfhCount ;
 										localTrVector[seg].emplace_back(
 											tid,
@@ -884,7 +881,6 @@ void DataMatrix<T>::loadAlevinData(
 						}
 					}
 				}
-
 				preCalculatedSegProb[i] = localGeneProb ;
 				preSegOreMapVector[i] = localSegOreMap ;
 				geneSpecificTrVector[i] = localTrVector ;
@@ -896,7 +892,7 @@ void DataMatrix<T>::loadAlevinData(
 	}
 
 
-  {
+  	{
 
 		size_t nonWhiteLisBarcodesSkipped{0} ;
 
@@ -925,20 +921,21 @@ void DataMatrix<T>::loadAlevinData(
 		// level counts. It is a multinomial distribution 
 		// to begin with where gene counts are of type double	
 
+		consoleLog->info("=======================Parsing the binary matrix file======================") ;
 		if(!binary){
 			pupulateGeneCountMatrix(countFile, geneCounts, numCells, numOfGenes) ;
 		}else{
-			std::cout << "\n" ;
+			//std::cout << "\n" ;
 			consoleLog->info("After gathering all information about the matrix loading the binary Matrix") ;
 			populateGeneCountMatrix(countFileBinary, originalGeneCountMatrix, numCells, numOfOriginalGenes, original2whitelistMap, original2NoisyMap, numOfOriginalCells) ;
 		}
 
 		consoleLog->info("Loaded the Matrix") ;
 
-
 		// Make a truncated geneCounts file
 		//T skippedCount{0} ;
 		if(numOfSkippedGenes > 0){
+			consoleLog->info("Truncating the matrix as not all genes are included") ;
 			for(size_t cell_id = 0 ; cell_id < originalGeneCountMatrix.size(); ++cell_id){
 				size_t geneCountsGeneIdx{0} ;
 				for(size_t gene_id = 0 ; gene_id < numOfOriginalGenes ; ++ gene_id){
@@ -952,10 +949,8 @@ void DataMatrix<T>::loadAlevinData(
 			geneCounts = originalGeneCountMatrix ;
 		}
 
-		consoleLog->info("Truncated the matrix ") ;
-    std::cout<<"===============================================================\n\n" ;
 
-    // NOTE: This feature is not tested yet
+    	// NOTE: This feature is not tested yet
 		// CREATE Doublets
 		if(createDoublet){
 			// Treat doublets as normal cells and put them in the list of all cells
@@ -998,7 +993,7 @@ void DataMatrix<T>::loadAlevinData(
 		size_t numOfExpressedGenesInput{0};
 		//size_t numOfExpressedGenesOutput{0} ;
 
-    consoleLog->info("We start to prepare Cell-Transcript matrix");
+    	consoleLog->info("We start to prepare Cell-Transcript matrix");
 		for(auto& cellGeneCounts : geneCounts){
 
 			// check if this cell Id is in cellWhiteListMap
@@ -1093,48 +1088,9 @@ void DataMatrix<T>::loadAlevinData(
 				for(int i = 0; i < totGeneCount ; ++i){
 					++cellGeneCountSampled[dg(geng)] ; 
 				}
-				//std::cerr << "[DEBUG] --> After multinomial sampling\n" ;
-				//std::cerr << "[DEBUG] --> cellGeneCountSampled size "<< cellGeneCountSampled.size() <<"\n" ;
-				trueGeneCounts[cellId].assign(cellGeneCountSampled.begin(), cellGeneCountSampled.end()) ;	
-				//size_t numOfExpressedGenes2{0} ;
-				//size_t numOfExpressedGenes3{0} ;
-
-				//// before sampling 
-				//for(auto v : cellGeneCountsCopy){
-
-				//		if(v > 0){
-				//			numOfExpressedGenes3 += 1 ;
-				//	}
-				//}
-
-
-				//for(auto v : cellGeneCountSampled){
-				//		if(v > 0){
-				//			numOfExpressedGenes2 += 1 ;
-				//	}
-				//}
 				
-
-				//double l1_diff{0.0} ; 
-				//double l2_diff{0.0} ; 
-
-
-				//for(size_t i = 0; i < cellGeneCountSampled.size() ; ++i){
-				//	l1_diff += std::abs(
-				//		static_cast<double>(cellGeneCountSampled[i]) - 
-				//		cellGeneCountsCopy[i]
-				//	) ; 
-
-				//	l2_diff += pow((
-				//		static_cast<double>(cellGeneCountSampled[i]) - 
-				//		cellGeneCountsCopy[i]
-				//	         ),2) ; 
-				//}
-
-				//int totGeneCountRecheck = static_cast<int>(std::accumulate(cellGeneCountSampled.begin(), cellGeneCountSampled.end(), 0)) ; 
-
-
-
+				trueGeneCounts[cellId].assign(cellGeneCountSampled.begin(), cellGeneCountSampled.end()) ;	
+				
 				//diffFileStream << l1_diff << "\t" << std::fixed << std::setprecision(5) << "\t"
 				//               << std::sqrt(l2_diff) << std::fixed << std::setprecision(5)  << "\t" 
 				//			   << totGeneCountDouble << "\t" 
@@ -1233,14 +1189,11 @@ void DataMatrix<T>::loadAlevinData(
 									}
 
 									cellSegCount[actualCellId][i] = segCountMap ;
-
-                  //cell2GeneNameMap[actualCellId].append()
-
 								}
 							}
 							else{
-                // In alevin mode if you are not using dbg file then by default
-                // the weibull distribution will be invoked.
+        				        // In alevin mode if you are not using dbg file then by default
+        				        // the weibull distribution will be invoked.
 								// These are the learned distribution weibull paeameters from the paper
 								// https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005761
 								// Assign probability to individual transcripts
@@ -1269,16 +1222,16 @@ void DataMatrix<T>::loadAlevinData(
 
 							//NOTE: If dbg is used we don't work with transcripts 
 							trueGeneCounts[cellId][i] = geneCount ;
-              // NOTE: In DBG mode we should be done by this
-              // point
+              				// NOTE: In DBG mode we should be done by this
+              				// point
 							if(useDBG){
 								continue ;
 							}
 
 
-              // NOTE: For weibull distribution the probability
-              // vector for each transcript could be 0 in which
-              // case we drop the gene altogether
+							// NOTE: For weibull distribution the probability
+							// vector for each transcript could be 0 in which
+							// case we drop the gene altogether
 							auto sum_prob = std::accumulate(probVec.begin(), probVec.end(), 0.0) ;
 							if(sum_prob == 0){
 								dropThisGene = true ;
@@ -1290,8 +1243,8 @@ void DataMatrix<T>::loadAlevinData(
 								continue ;
 							}
 
-              // Otherwise we distribute the gene counts to
-              // individual transcripts
+              				// Otherwise we distribute the gene counts to
+              				// individual transcripts
 							std::random_device rdt3;
 							std::mt19937 gent3(rdt3());
 							std::discrete_distribution<> dmt(probVec.begin(), probVec.end()) ;
@@ -1371,11 +1324,18 @@ void DataMatrix<T>::loadAlevinData(
 	// FIXME: this should not be ad-hoc
 	numCells = geneCounts.size() ;
 
-  if(!useDBG){
-    consoleLog->info("The transcript matrix is constructed, with dimension {} x {} \n" 
-                     "\t\t\t\t\tfrom gene count with dimention {} x {}, geneCounts.size(): {}",
-                     data.size(), data[0].size(), cellNames.size(), alevin2refMap.size(), geneCounts.size()) ;
-  }
+	if(!useDBG){
+		consoleLog->info("The transcript matrix is constructed, with dimension {} x {} \n" 
+						"\t\t\t\t\tfrom gene count with dimention {} x {}, geneCounts.size(): {}",
+						data.size(), data[0].size(), cellNames.size(), alevin2refMap.size(), geneCounts.size()) ;
+	}
+
+	std::string cellColFile = outDir + "/alevin/quants_mat_cols.txt" ;
+	std::ofstream cellColStream(cellColFile.c_str()) ;
+	
+	for(size_t id = 0 ; id < alevinGeneIndex2NameMap.size() ; ++id){
+		cellColStream << alevinGeneIndex2NameMap[id] << "\n" ; 
+	}
 
 }
 
@@ -1707,8 +1667,8 @@ void DataMatrix<T>::loadSplatterData(
 
   std::cout<<"==================Done Parsing Splatter Matrix==================\n" ;
 
-  std::string gene_name_to_track = "ENSG00000001084.13";
-  size_t geneIdToTrack ;
+  std::string gene_name_to_track = ""; // "ENSG00000001084.13";
+  size_t geneIdToTrack = std::numeric_limits<size_t>::max() ;
 
 	consoleLog->info(
 						"Splatter matrix is read, with dimension {} x {}", 
@@ -1825,7 +1785,7 @@ void DataMatrix<T>::loadSplatterData(
       }
 
       // Load transcripts that are present in the gfa file 
-      dbgPtr = new GFAReader(gfaFile) ;
+      dbgPtr = new GFAReader(gfaFile, consoleLog) ;
       dbgPtr->parseFile(refInfo) ;
 
 

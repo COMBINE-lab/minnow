@@ -9,9 +9,11 @@ class GFAReader{
     public:
 
     GFAReader(
-        std::string gfaFileIn
+        std::string gfaFileIn,
+        std::shared_ptr<spdlog::logger>& consoleLogIn
     ){
         gfaFileName_ = gfaFileIn ;
+        consoleLog = consoleLogIn ;
     }
 
     void parseFile(
@@ -19,6 +21,10 @@ class GFAReader{
     ) ;
 
     void readUnitigs() ;
+    std::vector<std::pair<size_t, bool>> explode(
+        const std::string str, 
+        const char& ch
+    );
 
     void updateEqClass(
       std::string& transcriptName, 
@@ -55,7 +61,7 @@ class GFAReader{
     std::unique_ptr<std::ifstream> file ; 
     std::unordered_map<size_t, std::string> unitigMap ;
 
-
+    std::shared_ptr<spdlog::logger> consoleLog;
 
 }; 
 
