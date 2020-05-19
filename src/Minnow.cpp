@@ -9,13 +9,37 @@
 #include <vector>
 #include <string>
 #include <cstdlib>
+#include <unordered_map>
 
 #include <ghc/filesystem.hpp>
 #include "ProgOpts.hpp"
+#include "json.hpp"
+
+using json = nlohmann::json;
 
 int minnowSimulate(SimulateOptions& simOpts) ;
 int minnowEstimate(EstimateOptions& eopts) ;
 int puffIndex(IndexOptions& iopts) ;
+
+void writeCmdParams(std::string& outDir, json& obj){
+  if (outDir.back() == '/'){
+    outDir.pop_back();
+  }
+
+  if (ghc::filesystem::exists(outDir.c_str())) {
+    if (!ghc::filesystem::is_directory(outDir.c_str())) {
+      std::cerr << outDir << " exists as a file. Cannot create a directory of the same name.";
+      std::exit(1);
+    }
+  } else {
+    ghc::filesystem::create_directories(outDir.c_str());
+  }
+
+  std::string filename = outDir + "/arg.json" ;
+  std::ofstream stream(filename.c_str());
+  stream << obj.dump(4) << std::endl ;
+}
+
 
 int main(int argc, char* argv[]) {
   using namespace clipp ;
@@ -157,6 +181,9 @@ int main(int argc, char* argv[]) {
     (option("--rspd") & value("rspd_dist", simulateOpt.rspdFile)) % "tab separated read start position distribution",
     
     (option("--bfh") & value(ensure_file_exists, "BFH file", simulateOpt.bfhFile)) % "BFH file",
+    (option("--gfa") & value(ensure_file_exists, "gfa_file", simulateOpt.gfaFile)) % "gfa file for contigs",
+    (option("--dbg").set(simulateOpt.useDBG, true)) % "Use the provided GFA file and BFH",
+    (option("--duplicateList") & value(ensure_file_exists, "duplicate list of files", simulateOpt.duplicateFile)) % "list of transcripts that are actually duplicated",
     
     (option("--geneProb") & 
     value("gene level probability", simulateOpt.geneProbFile)) %
@@ -172,13 +199,10 @@ int main(int argc, char* argv[]) {
     (option("--binary").set(simulateOpt.binary, true)) %
     "If the matrix file is written in binary",
     
-    (option("--dbg").set(simulateOpt.useDBG, true)) %
-    "Use the provided GFA file and BFH",
     
     (option("--noDump").set(simulateOpt.noDump, true)) %
     "will use the model file made",
     
-    (option("--gfa") & value(ensure_file_exists, "gfa_file", simulateOpt.gfaFile)) % "gfa file for contigs",
 
     (option("--uniq") & value("sequence uniqueness file", simulateOpt.uniquenessFile)) % "sequence uniqueness file",
     
@@ -280,6 +304,44 @@ int main(int argc, char* argv[]) {
     std::cout << "\n\n";
     std::cout << make_man_page(cli, "minnow");
     return 1;
+  }
+
+  // debug::print(std::cout, res);
+  if(!res.any_error()){
+    std::string lastCommand{""};
+    std::unordered_map<std::string, std::string> commandMap ;
+    json commandMapJson;
+    for(const auto& m : res) {
+      if(!m.param()->flags().empty()){
+        //std::cout << "boolean" << m.index() << ": " << m.arg() << " -> " << m.param()->flags().front();
+        commandMap[m.arg()] = m.param()->flags().front(); 
+        lastCommand = m.arg();
+      }
+      
+      if(!m.param()->label().empty()){
+        commandMap[lastCommand] = m.arg();
+      }
+    }
+    auto it1 = commandMap.find("-o");
+    auto it2 = commandMap.find("--outdir");
+    std::string outDir{""}; 
+    if( it1 != commandMap.end()){
+      outDir = it1->second;
+    }else if(it2 != commandMap.end()){
+      outDir = it2->second ;
+    }else{
+      std::cerr << "\033[31m required option -o/--outdir missing \033[0m\n\n" ;
+      return 1;
+    }
+    for(auto it : commandMap){
+      if(it.first == it.second){
+        commandMapJson[it.first] = "true";
+      }else{
+        commandMapJson[it.first] = it.second ;
+      }
+    }
+    
+    writeCmdParams(outDir, commandMapJson) ;
   }
 
   if(res){

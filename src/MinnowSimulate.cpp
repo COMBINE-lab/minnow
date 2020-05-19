@@ -31,6 +31,7 @@
 #include "GFAReader.hpp"
 #include "ghc/filesystem.hpp"
 #include "LibraryConfig.hpp"
+#include "json.hpp"
 
 #include "zstr.hpp"
 
@@ -1847,11 +1848,7 @@ bool spawnCellThreads(
 
 
 void printOptions(SimulateOptions& simOpts){
-    std::cerr << "Input directory  "  << simOpts.inputdir << "\n"
-              << "Reference Fasta " << simOpts.refFile << "\n"
-              << "Number of PCR cycles " << simOpts.numOfPCRCycles << "\n"
-              << "Erorr rate " << simOpts.errorRate << "\n"
-              << "Numeber of threads " << simOpts.numThreads << "\n" ;
+    
 }
 
 
@@ -1911,7 +1908,8 @@ void minnowSimulate(SimulateOptions& simOpts){
 
     Reference refInfo(
         refFileName,
-        gene2txpFile
+        gene2txpFile,
+        consoleLog
     ) ;
     consoleLog->info("Reference sequence is loaded ...") ;
 

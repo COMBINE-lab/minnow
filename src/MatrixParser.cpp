@@ -439,6 +439,7 @@ void DataMatrix<T>::loadAlevinData(
 	// will be of no use as we don't know their
 	// sequence.
 	refInfo.updateGene2TxpMap(refInfo.gene2txpFile) ;
+	if(simOpts.duplicateFile.size()) { refInfo.updateDuplicateMap(simOpts.duplicateFile) ;}
 	auto& geneMap = refInfo.geneMap ;
 	consoleLog->info("Number of genes in the txp2gene file: {}", geneMap.size()) ;
 
@@ -453,6 +454,7 @@ void DataMatrix<T>::loadAlevinData(
 
 	// we might want to skip some genes
 	std::unordered_set<uint32_t> skippedGenes ;
+	std::unordered_set<std::string> skippedGeneNames ;
 	uint32_t numOfSkippedGenes{0} ;
 	size_t numOfOriginalGenes{0} ;
 
@@ -481,6 +483,7 @@ void DataMatrix<T>::loadAlevinData(
 			}else{
 				//consoleLog->error("quant_mat_cols.txt contains gene {} that is not present in the reference ",line)  ;
 				//std::exit(1) ;
+				skippedGeneNames.insert(line);
 				skippedGenes.insert(numOfOriginalGenes) ;
 				numOfSkippedGenes++ ;
 			}
@@ -497,6 +500,13 @@ void DataMatrix<T>::loadAlevinData(
 	if (numOfSkippedGenes > 0){
 		consoleLog->warn("Original number of genes: {}\tNumber of genes skipped: {}", numOfOriginalGenes, numOfSkippedGenes) ;
 		consoleLog->warn("This means not all genes given in the input alevin matrix will be utilized");
+		std::string skippedGenesFile = outDir + "/skipped_genes.txt" ;
+		std::ofstream skippedGeneStream(skippedGenesFile.c_str()) ;
+		
+		for(auto skg : skippedGeneNames){
+			skippedGeneStream << skg << "\n" ; 
+		}
+
 	}
 
 	// consoleLog->info("Number of genes in the alevin produced files: {}",alevin2refMap.size()) ;
@@ -766,7 +776,7 @@ void DataMatrix<T>::loadAlevinData(
     	consoleLog->info("======================= Parsing GFA file {} ==========================",gfaFile) ;
 
 		dbgPtr = new GFAReader(gfaFile, consoleLog) ;
-		dbgPtr->parseFile(refInfo) ;
+		dbgPtr->parseFile(refInfo, outDir) ;
 
 
 		// NOTE: stand alone call to bfh
@@ -1786,7 +1796,7 @@ void DataMatrix<T>::loadSplatterData(
 
       // Load transcripts that are present in the gfa file 
       dbgPtr = new GFAReader(gfaFile, consoleLog) ;
-      dbgPtr->parseFile(refInfo) ;
+      dbgPtr->parseFile(refInfo, outDir) ;
 
 
       // Take only genes that are present in trSegmentMap ;

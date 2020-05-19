@@ -145,7 +145,8 @@ void GFAReader::readUnitigs(){
 }
 
 void GFAReader::parseFile(
-	Reference& refInfo 
+	Reference& refInfo,
+  std::string& outDir
 ){
 
   consoleLog->info("Parsing GFA file {}", gfaFileName_);
@@ -334,6 +335,7 @@ void GFAReader::parseFile(
 	}
 
 
+  std::vector<bool> includedTranscripts(refInfo.numOfTranscripts, false) ;
 	for(auto unitig : eqClassMap){
 
 		auto id = unitig.first ;
@@ -345,8 +347,22 @@ void GFAReader::parseFile(
 		for(auto tinfo : trInfoMap){
 			auto tid = tinfo.first ;
 			trSegmentMap[tid].push_back(id) ;
+      includedTranscripts[tid] = true;
 		}
 	}
+
+  if(refInfo.duplicateList.size() and (trSegmentMap.size() < refInfo.transcriptNameMap.size())){
+    consoleLog->info("Trying to rescue some transcripts that might be dropped due to duplicates");
+    for(size_t i = 0 ; i < refInfo.numOfTranscripts ; ++i){
+      if(!includedTranscripts[i]){
+        auto trIt = refInfo.duplicateList.find(i);
+        if(trIt != refInfo.duplicateList.end()){
+          trSegmentMap[i] = trSegmentMap[trIt->second] ;
+          includedTranscripts[i] = true ;
+        }
+      }
+    }
+  }
   
   consoleLog->info("Done with GFA "
                    "Equivalence class size {} "
@@ -356,11 +372,21 @@ void GFAReader::parseFile(
                    trSegmentMap.size(),
                    refInfo.transcriptNameMap.size()
   );
+  
   if(trSegmentMap.size() < refInfo.transcriptNameMap.size()){
     consoleLog->warn("{} transcripts will not be included as " 
                     "they don't have suitable segments",
                     refInfo.transcriptNameMap.size() - trSegmentMap.size()
     );
+    std::string skippedGenesFile = outDir + "/skipped_transcripts.txt" ;
+		std::ofstream skippedGeneStream(skippedGenesFile.c_str()) ;
+		
+    for(size_t i = 0; i < includedTranscripts.size(); ++i){
+      if (!includedTranscripts[i]){
+        skippedGeneStream << refInfo.transcripts[i].RefName << "\t" 
+        << refInfo.transcripts[i].RefLength << "\n" ;
+      }
+    }
   }
 
 

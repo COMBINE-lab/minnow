@@ -17,7 +17,8 @@ class GFAReader{
     }
 
     void parseFile(
-        Reference& refInfo
+        Reference& refInfo,
+        std::string& outDir
     ) ;
 
     void readUnitigs() ;

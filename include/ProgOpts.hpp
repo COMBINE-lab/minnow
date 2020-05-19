@@ -91,6 +91,7 @@ public:
   std::string countProbFile{""} ;
   std::string numMolFile{""} ;
   std::string metadataDir{""} ;
+  std::string duplicateFile{""};
 
   // ================================================
   // currently not used in main branch

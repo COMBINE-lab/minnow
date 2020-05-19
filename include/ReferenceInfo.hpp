@@ -16,7 +16,9 @@ class Reference{
     public:
         Reference(
             std::string& fastaFileIn,
-            std::string& gene2txpFileIn
+            std::string& gene2txpFileIn,
+            std::shared_ptr<spdlog::logger>& consoleLogIn
+
         ){
             gene2txpFile = gene2txpFileIn ;
             fastaFile = fastaFileIn ;
@@ -28,8 +30,9 @@ class Reference{
             }
 
             numOfTranscripts = transcripts.size();
+            consoleLog = consoleLogIn ;
 
-            std::cerr << "\nTranscript file is read\n" ;
+            consoleLog->info("Transcript file {} is read", fastaFileIn);
 
         }    
 
@@ -95,7 +98,7 @@ class Reference{
                     //std::cerr << tr.RefName << "\t" << sv.size() << "\n" ;
                 }
             }
-            std::cerr << "Total nonzero polyA transcrtipts " << totT << "\n" ;
+            consoleLog->info("Total nonzero polyA transcrtipts {}",totT) ;
 
         }
         
@@ -137,7 +140,10 @@ class Reference{
                         //std::exit(1) ;
                     }
                 }
-                std::cerr << "Skipped " << skippedTranscripts << " transcripts because either short or not present in reference \n" ;
+                //std::cerr << "Skipped " << skippedTranscripts << " transcripts because either short or not present in reference \n" ;
+                consoleLog->info("Skipped {} transcripts" 
+                                  "because either short or not present in reference ",
+                                  skippedTranscripts) ;
                 //std::cerr << "Done with parsing " << gene2txpFile << "\n" ;
                 //std::cerr << "#of genes " << gene2transcriptMap.size() << "\n" ;
         }
@@ -151,16 +157,43 @@ class Reference{
             }
         }
 
+        inline void updateDuplicateMap(std::string filename){
+            std::ifstream dupStream(filename.c_str()) ;
+            std::string line ;
+
+            while(std::getline(dupStream, line)){
+                std::stringstream lineStream(line) ;
+                std::vector<std::string> valueOfCells ; 
+                //line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
+                util::split(line, valueOfCells, "\t") ;
+
+                
+                // get the transcript name 
+                auto transcriptKept = valueOfCells[0] ;
+                auto transcriptRemoved = valueOfCells[1] ;
+
+                auto trIt = transcriptNameMap.find(transcriptKept) ;
+                auto trIt2 = transcriptNameMap.find(transcriptRemoved) ;
+                if( trIt != transcriptNameMap.end() && trIt2 != transcriptNameMap.end() ){
+                    duplicateList[trIt2->second] = trIt->second ;
+                }
+            }
+
+        }
+
     // private:
         std::string fastaFile ;
         std::string gene2txpFile ;
+
         
         std::vector<Transcript> transcripts; 
+        std::unordered_map<uint32_t, uint32_t> duplicateList ;
         std::unordered_map<std::string, uint32_t> geneMap ;
         std::map<uint32_t, std::vector<uint32_t>> gene2transcriptMap ;
         std::unordered_map<uint32_t, uint32_t> transcript2geneMap ;
         std::unordered_map<std::string, uint32_t> transcriptNameMap ;
         size_t numOfTranscripts ;
+        std::shared_ptr<spdlog::logger> consoleLog;
 
 } ;
 
