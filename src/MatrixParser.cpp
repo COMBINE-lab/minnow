@@ -1600,6 +1600,8 @@ void DataMatrix<T>::loadSplatterData(
 
 	consoleLog->info("Number of genes in the txp2gene file: {}", geneMap.size()) ;
 	
+	// In splatter there is no whitelist but there can be clusters 
+  std::cout<<"=======================Reading Splatter Matrix=====================\n" ;
 	consoleLog->info(
 		"Parsing {}/quants_mat_cols.txt",splatterDir) ;	
 	
@@ -1617,8 +1619,6 @@ void DataMatrix<T>::loadSplatterData(
 			allCellListMap[line] = allCellNames.size() - 1 ;
 		} 
 	}
-	// In splatter there is no whitelist but there can be clusters 
-  std::cout<<"=======================Reading Splatter Matrix=====================\n" ;
 	consoleLog->info("{} cells are present ", allCellNames.size()) ;
 	consoleLog->info("Start parsing Splatter output") ;
 	consoleLog->info(
@@ -1637,6 +1637,7 @@ void DataMatrix<T>::loadSplatterData(
 			splatterGeneNames.push_back(line) ;
 		}
 	}
+	consoleLog->info("{} genes are present ", splatterGeneNames.size()) ;
 
 
 	if(simOpts.numMolFile != ""){
@@ -1696,6 +1697,7 @@ void DataMatrix<T>::loadSplatterData(
     	std::memset(&v[0], 0, sizeof(v[0]) * v.size());
 
 
+	consoleLog->info("Reading count matrix {}", countFile) ;
 	readSplatterMatrix(
 		countFile,
 		originalGeneCountMatrix,
@@ -2108,7 +2110,7 @@ void DataMatrix<T>::loadSplatterData(
                                         ) ;
           }else{
             consoleLog->error("Invoked with DBG mode but --countProb file is not present") ;
-            consoleLog->error("Add --countProb option with the file countProb_pbmc_4k.txt") ;
+            consoleLog->error("One such file is available in https://github.com/COMBINE-lab/minnow/blob/refactor/data/hg/countProb_pbmc_4k.txt") ;
             std::exit(10) ;
           }
       }
