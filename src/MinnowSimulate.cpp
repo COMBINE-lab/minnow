@@ -539,6 +539,7 @@ void printVector(std::vector<T>& vec){
 void doPCRBulkDBG(
     std::string& cellName, 
     uint32_t dupCount,
+    std::vector<int>& trueCellExpression,
     std::vector<util::CellBarcodeUMISegmentBlock>& uniqueMolecules,
     std::vector<uint32_t> rspdVec,
     std::vector<Transcript>& transcripts,
@@ -584,6 +585,8 @@ void doPCRBulkDBG(
     auto unitigMap = dbgPtr->unitigMap ;  
     size_t smallerMu{0} ; 
     size_t biggerMu{0} ; 
+
+    std::vector<int> writtenExpressionVec(trueCellExpression.size(), 0);
 
 
     for(uint32_t i = 0 ; i < uniqueMolecules.size() ; ++i){
@@ -738,7 +741,7 @@ void doPCRBulkDBG(
     // Write down the normal stuff
     {
       for(uint32_t i = 0; i < uniqueMolecules.size(); ++i){
-        uint32_t ind = i ;
+                uint32_t ind = i ;
                  numOfWritten++ ;
 
                  std::string modifiedCellName = sequenceMap[ind].substr(0, CB_LENGTH) ;
@@ -780,7 +783,14 @@ void doPCRBulkDBG(
                 sstream_right << "+\n" ;
                 sstream_right << std::string(READ_LEN, 'N') << "\n" ; 
                 uniqReadId++ ;              
-            
+
+                auto geneId = transcripts[uniqueMolecules[ind].transcriptId].getGeneId();
+                if(geneId != std::numeric_limits<uint32_t>::max()){
+                    writtenExpressionVec[geneId]++ ;
+                }else{
+                    std::cerr << "tid " << uniqueMolecules[ind].transcriptId << "\n";
+                    std::exit(2);
+                }
 
                 if(numOfWritten >= numMol)
                     break ;
@@ -862,7 +872,14 @@ void doPCRBulkDBG(
                     sstream_right << "+\n" ;
                     sstream_right << std::string(READ_LEN, 'N') << "\n" ; 
                     uniqReadId++ ;    
-                    
+
+                    auto geneId = transcripts[uniqueMolecules[grandParentId].transcriptId].getGeneId();
+                    if(geneId != std::numeric_limits<uint32_t>::max()){
+                        writtenExpressionVec[geneId]++ ;
+                    }else{
+                        std::cerr << "tid " << uniqueMolecules[grandParentId].transcriptId << "\n";
+                        std::exit(2);
+                    }
                         
                 }else{
                     std::cerr << "Should not happen\n" ;
@@ -882,6 +899,12 @@ void doPCRBulkDBG(
         }
 
         delete pcrClassPtr ;
+    }
+
+    // make sure every entry of
+    if(writtenExpressionVec < trueCellExpression){
+        std::cerr << "Less number of reads are produced that the truth matrix\n";
+        std::exit(2);
     }
 
 
@@ -1373,6 +1396,7 @@ void generateSequencesForCellDBG(
         doPCRBulkDBG(
             cellName,
             dupCounts,
+            trueCellExpression,
             uniqueMolecules,
             dataMatrixObj.rspdVec,
             transcripts,

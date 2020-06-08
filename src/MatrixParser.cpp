@@ -16,6 +16,7 @@
 #include <iomanip>
 #include <numeric>
 #include <cmath>
+#include <cassert>
 
 #include "zstr.hpp"
 
@@ -748,7 +749,7 @@ void DataMatrix<T>::loadAlevinData(
 		// This will read the dbg now
 		if(!util::fs::FileExists(gfaFile.c_str())){
 			consoleLog->error("GFA file {} does not exist EXITING !!", gfaFile);
-			std::exit(4) ;
+			std::exit(4); 
 		}
 
 		auto rspdFile = simOpts.rspdFile ;
@@ -849,6 +850,8 @@ void DataMatrix<T>::loadAlevinData(
 				std::unordered_map<size_t, std::vector<trInfo>> localTrVector ;
 
 				for(auto tid : transcriptIds){
+					refInfo.transcripts[tid].setGeneId(i);
+
 					if(dbgPtr->trSegmentMap.find(tid) != dbgPtr->trSegmentMap.end()){
 						auto segVec = dbgPtr->trSegmentMap[tid] ;
 						bool everRC{false} ;
@@ -1199,6 +1202,7 @@ void DataMatrix<T>::loadAlevinData(
 									}
 
 									cellSegCount[actualCellId][i] = segCountMap ;
+
 								}
 							}
 							else{
@@ -2038,10 +2042,10 @@ void DataMatrix<T>::loadSplatterData(
 					}
 				}
 			}else{
-				std::cerr << "RSPD file is not empty and doesn't exist, going with truncated sampling\n" ;
+				consoleLog->warn("RSPD file is not empty and doesn't exist, going with truncated sampling\n") ;
 			}
 		}else{
-			std::cerr << "RSPD ::: \n" ;
+			consoleLog->warn("No RSPD file provided \n") ;
 		}
 
 
@@ -2051,7 +2055,7 @@ void DataMatrix<T>::loadSplatterData(
       // FIXME we don't call equivalence
       // class folder any more
       //std::string eqFileDir = "/mnt/scratch1/hirak/minnow/metadata/hg/" ;
-      eqClassPtr = new BFHClass() ;
+      eqClassPtr = new BFHClass(consoleLog) ;
       if(bfhFile != ""){
         eqClassPtr->loadBFH(
                             bfhFile, 
@@ -2114,6 +2118,7 @@ void DataMatrix<T>::loadSplatterData(
         bool tqVecZero{false} ;
         size_t numTids = transcriptIds.size() ;
 				for(auto tid : transcriptIds){
+					refInfo.transcripts[tid].setGeneId(i);
 					if(dbgPtr->trSegmentMap.find(tid) != dbgPtr->trSegmentMap.end()){
 						auto segVec = dbgPtr->trSegmentMap[tid] ;
 						bool everRC{false} ;
@@ -2132,7 +2137,7 @@ void DataMatrix<T>::loadSplatterData(
 								// localTrVector[seg].emplace_back(tid) ;
 
 								auto tcInfoVec = dbgPtr->eqClassMap[seg][tid] ;
-                tqVecZero = (tcInfoVec.size() == 0) ;
+                				tqVecZero = (tcInfoVec.size() == 0) ;
 								for(auto tInfo : tcInfoVec){
 									if(refInfo.transcripts[tid].RefLength - tInfo.eposInContig <= MAX_FRAGLENGTH){
 										localGeneProb[seg] = bfhCount ;

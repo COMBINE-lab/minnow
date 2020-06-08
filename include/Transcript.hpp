@@ -71,6 +71,14 @@ class Transcript{
             polyASeq.push_back(seq) ;
         }
 
+        void setGeneId(uint32_t& geneIdIn){
+            geneId = geneIdIn;
+        }
+
+        uint32_t getGeneId(){
+            return geneId;
+        }
+
         // load intron sequence
         std::vector<std::pair<uint32_t,std::string>>& loadIntronSeq(){
             return intronSeq ;
@@ -87,6 +95,7 @@ class Transcript{
         uint32_t RefLength;
         uint32_t CompleteLength;
         uint32_t id;
+        uint32_t geneId{std::numeric_limits<uint32_t>::max()};
     private:
         std::unique_ptr<const char, void (*)(const char*)> Sequence_ =
             std::unique_ptr<const char, void (*)(const char*)>(nullptr,
