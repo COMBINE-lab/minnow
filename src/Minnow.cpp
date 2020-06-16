@@ -307,43 +307,44 @@ int main(int argc, char* argv[]) {
   }
 
   // debug::print(std::cout, res);
-  if(!res.any_error()){
-    std::string lastCommand{""};
-    std::unordered_map<std::string, std::string> commandMap ;
-    json commandMapJson;
-    for(const auto& m : res) {
-      if(!m.param()->flags().empty()){
-        //std::cout << "boolean" << m.index() << ": " << m.arg() << " -> " << m.param()->flags().front();
-        commandMap[m.arg()] = m.param()->flags().front(); 
-        lastCommand = m.arg();
+  if(selected != mode::help){
+    if(!res.any_error()){
+      std::string lastCommand{""};
+      std::unordered_map<std::string, std::string> commandMap ;
+      json commandMapJson;
+      for(const auto& m : res) {
+        if(!m.param()->flags().empty()){
+          //std::cout << "boolean" << m.index() << ": " << m.arg() << " -> " << m.param()->flags().front();
+          commandMap[m.arg()] = m.param()->flags().front(); 
+          lastCommand = m.arg();
+        }
+        
+        if(!m.param()->label().empty()){
+          commandMap[lastCommand] = m.arg();
+        }
+      }  
+      auto it1 = commandMap.find("-o");
+      auto it2 = commandMap.find("--outdir");
+      std::string outDir{""}; 
+      if( it1 != commandMap.end()){
+        outDir = it1->second;
+      }else if(it2 != commandMap.end()){
+        outDir = it2->second ;
+      }else{
+        std::cerr << "\033[31m required option -o/--outdir missing \033[0m\n\n" ;
+        return 1;
+      }
+
+      for(auto it : commandMap){
+        if(it.first == it.second){
+          commandMapJson[it.first] = "true";
+        }else{
+          commandMapJson[it.first] = it.second ;
+        }
       }
       
-      if(!m.param()->label().empty()){
-        commandMap[lastCommand] = m.arg();
-      }
+      writeCmdParams(outDir, commandMapJson) ;
     }
-
-    auto it1 = commandMap.find("-o");
-    auto it2 = commandMap.find("--outdir");
-    std::string outDir{""}; 
-    if( it1 != commandMap.end()){
-      outDir = it1->second;
-    }else if(it2 != commandMap.end()){
-      outDir = it2->second ;
-    }else{
-      std::cerr << "\033[31m required option -o/--outdir missing \033[0m\n\n" ;
-      return 1;
-    }
-
-    for(auto it : commandMap){
-      if(it.first == it.second){
-        commandMapJson[it.first] = "true";
-      }else{
-        commandMapJson[it.first] = it.second ;
-      }
-    }
-    
-    writeCmdParams(outDir, commandMapJson) ;
   }
 
   if(res){
