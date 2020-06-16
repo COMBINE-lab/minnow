@@ -322,6 +322,7 @@ int main(int argc, char* argv[]) {
         commandMap[lastCommand] = m.arg();
       }
     }
+
     auto it1 = commandMap.find("-o");
     auto it2 = commandMap.find("--outdir");
     std::string outDir{""}; 
@@ -333,6 +334,7 @@ int main(int argc, char* argv[]) {
       std::cerr << "\033[31m required option -o/--outdir missing \033[0m\n\n" ;
       return 1;
     }
+
     for(auto it : commandMap){
       if(it.first == it.second){
         commandMapJson[it.first] = "true";
