@@ -156,7 +156,7 @@ int main(int argc, char* argv[]) {
     (option("--numMolFile") & value("num mol file", simulateOpt.numMolFile)) % "Number of molecules generated from each cell",
     
     (option("--CBLength") & value("Cell barcode length", simulateOpt.CBLength)) % "Cell barcode length by default is 16",
-    (option("--UMILength") & value("Cell barcode length", simulateOpt.UMILength)) % "Cell barcode length by default is 10",
+    (option("--UMILength") & value("UMI length length", simulateOpt.UMILength)) % "Cell barcode length by default is 10",
     (option("--ReadLength") & value("Read length", simulateOpt.UMILength)) % "read length by default is 100",
 
     // (option("--alevin-mode").set(simulateOpt.alevinMode, true)) %
@@ -169,9 +169,9 @@ int main(int argc, char* argv[]) {
     
     // (option("--normal-mode").set(simulateOpt.normalMode, true)) %"user provided matrix",
     
-    (option("--testUniqness").set(simulateOpt.testUniqness, true)) % "matrix file is obtained from running splatter",
-    (option("--reverseUniqness").set(simulateOpt.reverseUniqness, true)) % "matrix file is obtained from running splatter",
-    (option("--useWeibull").set(simulateOpt.useWeibull, true)) % "matrix file is obtained from running splatter",
+    (option("--testUniqness").set(simulateOpt.testUniqness, true)) % "In splatter mode the gene names are not specified, therefore the genes should are selected according to uniqueness score",
+    (option("--reverseUniqness").set(simulateOpt.reverseUniqness, true)) % "Genes are selected with reversed uniqueness scores",
+    (option("--useWeibull").set(simulateOpt.useWeibull, true)) % "The transcripts within one gene get the gene counts following weibull distribution",
     
     
     (option("--numOfDoublets") & value("number of Doublets", simulateOpt.numOfDoublets)) % "Number of doublets to be generated",
@@ -194,14 +194,14 @@ int main(int argc, char* argv[]) {
     "global scale count probability file",
     
     (option("--velocity").set(simulateOpt.velocityMode, true)) %
-    "In velocity mode we generate reads from exon-exon junction",
+    "In velocity mode we generate reads from out side exons junction",
     
     (option("--binary").set(simulateOpt.binary, true)) %
     "If the matrix file is written in binary",
     
-    
+    // This option has to be implemented properly
     (option("--noDump").set(simulateOpt.noDump, true)) %
-    "will use the model file made",
+    "The output fules will not be dumped",
     
 
     (option("--uniq") & value("sequence uniqueness file", simulateOpt.uniquenessFile)) % "sequence uniqueness file",
@@ -216,16 +216,16 @@ int main(int argc, char* argv[]) {
     
     //librarySize provided 
     (option("--librarySize") & 
-    value("error rate for sequences", simulateOpt.librarySize))  % 
-    "Library sizes to be replicated from ",
+    value("specify library size", simulateOpt.librarySize))  % 
+    "Total library size, if not specified it will be set to the maximum of 100,000",
     
     //Use white list  
     (option("--useWhiteList").set(simulateOpt.useWhiteList, true)) %
-    "Flag for making minnow read the dup counts TSV filtered_cb_frequency.txt in the same folder",
+    "A switch effective for in --alevin-mode, where the whitelisted cells will be used for simulation",
 
     //generate Noise, should come with useWhiteList  
     (option("--generateNoisyCells").set(simulateOpt.generateNoisyCells, true)) %
-    "Flag for making minnow read the dup counts TSV filtered_cb_frequency.txt in the same folder",
+    "Add some noise to the generated count data [OPTION NOT IN USE]",
     
     //polyAsiteFile
     (option("--polyA").set(simulateOpt.samplePolyA, true)) %
