@@ -130,6 +130,7 @@ class EstimateOptions {
   public:
     std::string gene2txpFile{""} ;
     std::string eqClassFolder{""} ;
+    std::string refFile ;
 
     std::string bfhFile{""} ;
     std::string outDir{""} ;

@@ -91,19 +91,24 @@ int main(int argc, char* argv[]) {
     any_other(indexWrong)
   );
 
+  std::vector<std::string> estimateWrong;
   auto estimateMode = (
     command("estimate").set(selected, mode::estimate),
 
-    (required("-eq", "--eqClassDir") &
-    value("eqclass_dir", estimateOpt.eqClassFolder)) %
-    "directory containing relevent files produced by the python script",
+    // (required("-eq", "--eqClassDir") &
+    // value("eqclass_dir", estimateOpt.eqClassFolder)) %
+    // "directory containing relevent files produced by the python script",
 
     (required("-o", "--outdir") &
-    value("mat_file", estimateOpt.outDir)) %
+    value("outdir", estimateOpt.outDir)) %
     "the simulated models will be written",
 
+    (required("-r") &
+    value(ensure_file_exists,"reference", estimateOpt.refFile)) %
+    "transcript fasta file",
+
     (required("--g2t") &
-    value("gene_tr", estimateOpt.gene2txpFile)) %
+    value(ensure_file_exists,"gene_tr", estimateOpt.gene2txpFile)) %
     "tab separated list of Gene to Transcirpt mapping",
 
     (required("--bfh") &
@@ -112,7 +117,8 @@ int main(int argc, char* argv[]) {
 
     (option("--cluster") &
     value("cluster", estimateOpt.clusterFile)) %
-    "Optional cluster file to model cluster based histogram"
+    "Optional cluster file to model cluster based histogram",
+    any_other(estimateWrong)
 
   );
 
@@ -362,6 +368,8 @@ int main(int argc, char* argv[]) {
         std::cout << make_man_page(indexMode, "minnow") ;
       }else if(b->arg() == "simulate"){
         std::cout << usage_lines(simulateMode, "minnow") << "\n" ;
+      }else if(b->arg() == "estimate"){
+        std::cout << usage_lines(estimateMode, "minnow") << "\n" ;
       }else{
         std::cout << "There is no command \"" << b->arg() << "\"\n" ;
         std::cout << usage_lines(cli, "minnow") << '\n';

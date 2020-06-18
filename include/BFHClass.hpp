@@ -43,6 +43,12 @@ class BFHClass{
         bool dump = false
     ) ;
 
+    void loadBFHLite(
+        std::string& bfhFile,
+        Reference& refInfo,
+        std::string& outDir
+    );
+
     void loadProbability(std::string& file, Reference& refInfo, bool geneLevel) ;
     void dumpClusterHistoGram(std::string& file_name) ;
 

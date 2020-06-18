@@ -102,7 +102,7 @@ class Reference{
 
         }
         
-        void inline updateGene2TxpMap(std::string& gene2txpFile){
+        void inline updateGene2TxpMap(){
                 
                 std::ifstream gene2txpStream(gene2txpFile.c_str()) ;
                 std::string line ;

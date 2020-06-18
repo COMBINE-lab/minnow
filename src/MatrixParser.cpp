@@ -439,7 +439,7 @@ void DataMatrix<T>::loadAlevinData(
 	// are taken from the fasta file. Other transcripts
 	// will be of no use as we don't know their
 	// sequence.
-	refInfo.updateGene2TxpMap(refInfo.gene2txpFile) ;
+	refInfo.updateGene2TxpMap() ;
 	if(simOpts.duplicateFile.size()) { refInfo.updateDuplicateMap(simOpts.duplicateFile) ;}
 	auto& geneMap = refInfo.geneMap ;
 	consoleLog->info("Number of genes in the txp2gene file: {}", geneMap.size()) ;
@@ -1559,7 +1559,7 @@ void DataMatrix<T>::loadSplatterData(
 	// update txp to gene
 
 
-	refInfo.updateGene2TxpMap(refInfo.gene2txpFile) ;
+	refInfo.updateGene2TxpMap() ;
 
 	auto& geneMap = refInfo.geneMap ;
 
