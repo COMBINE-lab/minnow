@@ -154,6 +154,7 @@ int puffIndex(IndexOptions& indexOpts){
     std::cout << "\n" ;
     dumpGraphMain(args);
 
+    console->info("graphdump finished cleaning up");
     // cleanup what we no longer need
     ghc::filesystem::path outpath{outdir};
     ghc::filesystem::path tmpDBG = outdir / ghc::filesystem::path{"tmp_dbg.bin"};

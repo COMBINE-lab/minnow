@@ -18,23 +18,40 @@ class Reference{
             std::string& fastaFileIn,
             std::string& gene2txpFileIn,
             std::shared_ptr<spdlog::logger>& consoleLogIn
-
         ){
+            consoleLog = consoleLogIn ;
             gene2txpFile = gene2txpFileIn ;
             fastaFile = fastaFileIn ;
             FASTAParser fastaParser(fastaFile) ;
-            fastaParser.populateTargets(transcripts) ;
-            size_t trId{0} ;
-            for(auto& tr : transcripts){
-                transcriptNameMap[tr.RefName] = trId++ ;
+
+            {
+                fastaParser.populateTargets(transcripts) ;
+                size_t trId{0} ;
+                for(auto& tr : transcripts){
+                    transcriptNameMap[tr.RefName] = trId++ ;
+                }
+                numOfTranscripts = transcripts.size();
+            }
+        } 
+
+        void inline fillIntronSequence(
+            std::string& intronFastaFile
+        ){
+            FASTAParser fastaParser;
+            if(transcripts.size() > 0)
+            {
+                fastaParser.populateIntronTargets(
+                    transcripts, 
+                    intronFastaFile,
+                    transcriptNameMap    
+                ) ;
+                consoleLog->info("Intron file {} is read", intronFastaFile);
+            }else{
+                consoleLog->error("There are no transcripts");
+                std::exit(1);
             }
 
-            numOfTranscripts = transcripts.size();
-            consoleLog = consoleLogIn ;
-
-            consoleLog->info("Transcript file {} is read", fastaFileIn);
-
-        }    
+        }
 
         void inline updateIntronSequence(std::string& intronfname_){
             FASTAParser fastaParser(intronfname_) ;

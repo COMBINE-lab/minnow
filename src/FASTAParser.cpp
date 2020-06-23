@@ -16,6 +16,7 @@
 #include "MinnowUtil.hpp"
 #include "macros.hpp"
 
+FASTAParser::FASTAParser() {}
 FASTAParser::FASTAParser(const std::string& fname) : fname_(fname) {}
 
 void FASTAParser::updateGeneLevelIntron(
@@ -217,6 +218,92 @@ void FASTAParser::populateTargets(
         char* seqCopy = new char[seq.length() + 1];
         std::strcpy(seqCopy, seq.c_str());
         refs[id-1].setSequenceOwned(seqCopy);
+        // seqCopy will only be freed when the transcript is destructed!
+    }
+    
+  }
+
+  parser.stop();
+
+  if(numNucleotidesReplaced > 0)
+    std::cout<<
+      "replaced " << numNucleotidesReplaced << " non-ACGT nucleotides with random nucleotides";
+}
+
+void FASTAParser::populateIntronTargets(
+  std::vector<Transcript>& refs,
+  std::string& intronFileName,
+  std::unordered_map<std::string, uint32_t>& transcriptNameMap
+) {
+  using single_parser = fastx_parser::FastxParser<fastx_parser::ReadSeq>;
+
+  using std::string;
+  using std::unordered_map;
+
+  unordered_map<string, size_t> nameToID;
+  
+  // Separators for the header (default ' ' and '\t')
+  // If we have the gencode flag, then add '|'.
+  // TODO: make an option
+  bool gencodeRef{true} ;
+
+  std::string sepStr = " \t";
+  if (gencodeRef) {
+    sepStr += '|';
+  }
+
+  std::vector<std::string> readFiles{intronFileName};
+  size_t maxReadGroup{1000}; // Number of files to read simultaneously
+  //size_t concurrentFile{1};  // Number of reads in each "job"
+
+  single_parser parser(readFiles, 1, 1, maxReadGroup);
+  parser.start();
+
+  constexpr char bases[] = {'A', 'C', 'G', 'T'};
+  // Create a random uniform distribution
+  std::random_device rd;
+  std::default_random_engine eng(rd());
+  std::uniform_int_distribution<> dis(0, 3);
+  uint64_t numNucleotidesReplaced{0};
+
+  // All header names we encounter in the fasta file
+  std::unordered_set<std::string> fastaNames;
+
+  auto rg = parser.getReadGroup();
+  while (parser.refill(rg)) {
+    for (auto& read : rg) {
+      std::string& header = read.name;
+      std::string name = header.substr(0, header.find_first_of(sepStr));
+      fastaNames.insert(name);
+      
+        // std::string& seq = j->data[i].seq;
+        std::string& seq = read.seq;
+        size_t readLen = seq.length();
+        if(readLen < READ_LEN)
+          continue ;
+
+        // Replace non-ACGT bases
+        for (size_t b = 0; b < readLen; ++b) {
+          seq[b] = ::toupper(seq[b]);
+          int c = jellyfish::mer_dna::code(seq[b]);
+          // Replace non-ACGT bases with pseudo-random bases
+          if (jellyfish::mer_dna::not_dna(c)) {
+            char rbase = bases[dis(eng)];
+            c = jellyfish::mer_dna::code(rbase);
+            seq[b] = rbase;
+            ++numNucleotidesReplaced;
+          }
+        }
+
+        // find out the sequence id for this transcript
+        auto it = transcriptNameMap.find(name);
+        if(it != transcriptNameMap.end()){
+          auto id  = it->second ;
+          // allocate space for the new copy
+          char* seqCopy = new char[seq.length() + 1];
+          std::strcpy(seqCopy, seq.c_str());
+          refs[id].setIntronSequenceOwned(seqCopy);
+        }
         // seqCopy will only be freed when the transcript is destructed!
     }
     

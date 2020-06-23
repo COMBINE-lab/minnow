@@ -100,9 +100,13 @@ public:
   // intended for reading the binary mode of the file
   std::string modelDir{""} ;
   // intended for storing all model files for analysis
+  // Velocity mode
   bool velocityMode{false} ;
   // to switch on the velocity mode
   std::string intronFile{""} ;
+  // splicing rate vector
+  std::string spliceVecFile{""};
+
   // intended for intron retention
   std::string exonLengthFile{""} ;
   // exon lengths are stored to help simulate intron

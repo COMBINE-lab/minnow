@@ -198,9 +198,21 @@ int main(int argc, char* argv[]) {
     (option("--countProb") & 
     value("global count probability", simulateOpt.countProbFile)) %
     "global scale count probability file",
-    
+
+
+    // Veclocity related commands 
     (option("--velocity").set(simulateOpt.velocityMode, true)) %
     "In velocity mode we generate reads from out side exons junction",
+    
+    (option("--spliceVec") & 
+    value(ensure_file_exists,"Splicing rate vector", simulateOpt.spliceVecFile)) %
+    "splicing rate per cell in a vetor (values should vary from 0 to 1)",
+    
+    (option("--intronfile") & 
+    value(ensure_file_exists,"intron_file", simulateOpt.intronFile)) %
+    "Intron bed file which contains the intron boundaries per transcript",
+    // end  
+
     
     (option("--binary").set(simulateOpt.binary, true)) %
     "If the matrix file is written in binary",
@@ -250,10 +262,6 @@ int main(int argc, char* argv[]) {
     (option("-s", "--sampleCells") & 
     value("sample_cells", simulateOpt.sampleCells)) %
     "sample this many cells from the set of all cells",
-    
-    (option("--intronfile") & 
-    value("intron_file", simulateOpt.intronFile)) %
-    "Intron bed file which contains the intron boundaries per transcript",
     
     (option("--genome") & 
     value("genome", simulateOpt.genomefile)) %

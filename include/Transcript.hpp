@@ -37,6 +37,17 @@ class Transcript{
             );
     
         }
+        
+        // Will delete seq on destruction
+        void setIntronSequenceOwned(
+            const char* seq
+        ){
+            intronSequence_ = std::unique_ptr<const char, void (*)(const char*)>(
+                seq,                              // store seq
+                [](const char* p) { delete[] p; } // do nothing deleter
+            );
+            hasIntron = true;
+        }
 
         // store coordinate and intron sequence
         void insertIntronSeq(uint32_t chrEndPos, std::string& seq){
@@ -90,19 +101,28 @@ class Transcript{
 
         // get Sequence 
         const char* Sequence() const { return Sequence_.get(); }
+        
+        // get Sequence 
+        const char* intronSequence() const { return intronSequence_.get(); }
 
         std::string RefName;
         uint32_t RefLength;
         uint32_t CompleteLength;
         uint32_t id;
         uint32_t geneId{std::numeric_limits<uint32_t>::max()};
+        bool hasIntron{false};
     private:
         std::unique_ptr<const char, void (*)(const char*)> Sequence_ =
             std::unique_ptr<const char, void (*)(const char*)>(nullptr,
                                                          [](const char*) {});
 
+        std::unique_ptr<const char, void (*)(const char*)> intronSequence_ =
+            std::unique_ptr<const char, void (*)(const char*)>(nullptr,
+                                                         [](const char*) {});
+
         std::vector<std::pair<uint32_t,std::string>> intronSeq ; // A vector of intron position and the sequences 
         std::vector<std::string> polyASeq ;
+        
         uint32_t lastExonLength ;
 };
 

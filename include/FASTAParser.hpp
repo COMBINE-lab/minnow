@@ -10,8 +10,14 @@
 
 class FASTAParser {
 public:
+  FASTAParser();
   FASTAParser(const std::string& fname);
   void populateTargets(std::vector<Transcript>& transcripts);
+  void populateIntronTargets(
+    std::vector<Transcript>& refs,
+    std::string& intronFileName,
+    std::unordered_map<std::string, uint32_t>& transcriptNameMap
+  ) ;
   void updateTranscriptLevelIntron(std::vector<Transcript>& transcripts, 
     std::unordered_map<std::string, uint32_t>& transcriptNameMap
   ) ;

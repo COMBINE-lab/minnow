@@ -1526,6 +1526,7 @@ void DataMatrix<T>::loadSplatterData(
 	//bool useEqClass = simOpts.useEqClass ;
 	bool useWeibull = simOpts.useWeibull ;
 	bool useDBG = simOpts.useDBG ;
+	bool velocityMode = simOpts.velocityMode;
 
 
 	std::string geneListFile = splatterDir + "/quants_mat_rows.txt" ;
@@ -1989,6 +1990,7 @@ void DataMatrix<T>::loadSplatterData(
 		geneCounts = originalGeneCountMatrix ;
 	}
 
+
 	numOfGenes = geneCounts[geneCounts.size()-1].size() ;
 
 	auto& gene2transcriptMap = refInfo.gene2transcriptMap ;
@@ -2015,9 +2017,6 @@ void DataMatrix<T>::loadSplatterData(
 
 
 	numOfTranscripts = alevin2refTranscriptMap.size() ;
-	data.resize(sampleCells, std::vector<T>(numOfTranscripts)) ;
-	for(auto& v : data)
-    	std::memset(&v[0], 0, sizeof(v[0]) * v.size());
 
 
 	// If we use dbg then the transcripts used above won't be needed  
@@ -2071,7 +2070,7 @@ void DataMatrix<T>::loadSplatterData(
         //load default file
         std::string countProbFile{simOpts.countProbFile} ;
         if(countProbFile == ""){
-          consoleLog->warn("counting hard coded count prob file") ;
+          consoleLog->warn("picking hard coded count prob file") ;
           countProbFile = "../data/hg/countProb_pbmc_4k.txt" ;
         }
         if(util::fs::FileExists(countProbFile.c_str())){
@@ -2112,16 +2111,38 @@ void DataMatrix<T>::loadSplatterData(
 				std::unordered_map<size_t, std::vector<trInfo>> localTrVector ;
 
 				//std::cerr << "tr size " << transcriptIds.size() << "\n" ;
-        size_t shortTranscriptLength{0};
-        bool shortLength{false} ;
-        uint32_t shortTid{0};
-        bool tqVecZero{false} ;
-        size_t numTids = transcriptIds.size() ;
+				size_t shortTranscriptLength{0};
+				bool shortLength{false} ;
+				uint32_t shortTid{0};
+				bool tqVecZero{false} ;
+				size_t numTids = transcriptIds.size() ;
+
+				
 				for(auto tid : transcriptIds){
 					refInfo.transcripts[tid].setGeneId(i);
 					if(dbgPtr->trSegmentMap.find(tid) != dbgPtr->trSegmentMap.end()){
 						auto segVec = dbgPtr->trSegmentMap[tid] ;
 						bool everRC{false} ;
+						// check if this transcript has enough transcripts
+						bool eligibleSegments{false};
+						for(auto seg: segVec){
+							auto segCount = dbgPtr->eqClassMapCounts[seg] ;
+							//auto bfhCount = eqClassPtr->getGeneLevelProbCount(
+							//	originalGeneId,
+							//	segCount 
+							//) ;
+							auto bfhCount = eqClassPtr->countProbability[segCount] ;
+							if(bfhCount != 0){
+								eligibleSegments = true ;
+								break ;
+							}
+						}
+						
+						double uniformProb{0.0};
+						if(!eligibleSegments && (segVec.size() > 0)){
+							uniformProb = static_cast<double>(1.0) / static_cast<double>(segVec.size());
+						}
+
 						for(auto seg : segVec){
 							auto segCount = dbgPtr->eqClassMapCounts[seg] ;
 							//auto bfhCount = eqClassPtr->getGeneLevelProbCount(
@@ -2129,43 +2150,48 @@ void DataMatrix<T>::loadSplatterData(
 							//	segCount 
 							//) ;
 							auto bfhCount = eqClassPtr->countProbability[segCount] ;
-							if (bfhCount == 0)
-								bfhCount = 1 ;
+							// if this multimapping is not seen in count probability
+							// vector then just 
+							if (bfhCount == 0 && !eligibleSegments){
+								bfhCount = uniformProb ;
+							}else if (bfhCount == 0){
+								continue;
+							}
 
 							//if(bfhCount != 0){
 								// old one
 								// localTrVector[seg].emplace_back(tid) ;
 
-								auto tcInfoVec = dbgPtr->eqClassMap[seg][tid] ;
-                				tqVecZero = (tcInfoVec.size() == 0) ;
-								for(auto tInfo : tcInfoVec){
-									if(refInfo.transcripts[tid].RefLength - tInfo.eposInContig <= MAX_FRAGLENGTH){
-										localGeneProb[seg] = bfhCount ;
-										localTrVector[seg].emplace_back(
-											tid,
-											tInfo.sposInContig,
-											tInfo.eposInContig
-										) ;
-									}else{
-                    shortTid = tid ;
-                    shortLength = true ;
-                    shortTranscriptLength = refInfo.transcripts[tid].RefLength - tInfo.eposInContig;
-                  }
-
-									if(!tInfo.ore && !everRC){
-										everRC = true ;
-									}
-								}
-								if(everRC){
-									localSegOreMap[seg] = false ;
+							auto tcInfoVec = dbgPtr->eqClassMap[seg][tid] ;
+							tqVecZero = (tcInfoVec.size() == 0) ;
+							for(auto tInfo : tcInfoVec){
+								if(refInfo.transcripts[tid].RefLength - tInfo.eposInContig <= MAX_FRAGLENGTH){
+									localGeneProb[seg] = bfhCount ;
+									localTrVector[seg].emplace_back(
+										tid,
+										tInfo.sposInContig,
+										tInfo.eposInContig
+									) ;
 								}else{
-									localSegOreMap[seg] = true ;
+									shortTid = tid ;
+									shortLength = true ;
+									shortTranscriptLength = refInfo.transcripts[tid].RefLength - tInfo.eposInContig;
 								}
+
+								if(!tInfo.ore && !everRC){
+									everRC = true ;
+								}
+							}
+							if(everRC){
+								localSegOreMap[seg] = false ;
+							}else{
+								localSegOreMap[seg] = true ;
+							}
 							//}
 						}
 					}else{
             if(numTids == 1){
-              consoleLog->error("There is one transcript {} for this gene, length: {}, name: {}",
+              consoleLog->warn("There is one transcript {} for this gene, length: {}, name: {}",
                                 tid, refInfo.transcripts[tid].RefLength,
                                 refInfo.transcripts[tid].RefName);
             }
@@ -2194,6 +2220,11 @@ void DataMatrix<T>::loadSplatterData(
 
 		std::cerr << "SPLATTER MODE: After loading bfh prob size " << preCalculatedSegProb.size() << "\n" ;
 		cellSegCount.resize(numCells + numOfDoublets) ;
+	}else{
+
+		data.resize(sampleCells, std::vector<T>(numOfTranscripts)) ;
+		for(auto& v : data)
+ 		   	std::memset(&v[0], 0, sizeof(v[0]) * v.size());
 	}
 
 
@@ -2206,7 +2237,7 @@ void DataMatrix<T>::loadSplatterData(
 			size_t droppedGeneExpression{0} ;
 			size_t cellSum{0} ;
 
-      size_t cellSumCheck{0} ;
+      		size_t cellSumCheck{0} ;
 			auto barcode = cellNames[cellId] ;
 			for(size_t i = 0 ; i < cellGeneCounts.size() ; ++i){
 				std::string geneName = alevinGeneIndex2NameMap[i] ;
@@ -2218,7 +2249,7 @@ void DataMatrix<T>::loadSplatterData(
 				//               << "gene count " << geneCount << "\n";
 				// }
 
-        // std::cerr << "\n new gcount " << geneCount << "\n" ;
+        		// std::cerr << "\n new gcount " << geneCount << "\n" ;
 				//int geneLevelTrCount{0} ;
 				//int geneLevelExCount{0} ;
 
@@ -2340,8 +2371,8 @@ void DataMatrix<T>::loadSplatterData(
 						numOfDroppedGenes++ ;
 						continue ;
 					}
+					
 					// fill up the cell to transcriptome matrix 
-
 					std::random_device rdt3;
 					std::mt19937 gent3(rdt3());
 
@@ -2361,7 +2392,7 @@ void DataMatrix<T>::loadSplatterData(
 						data[cellId][alevinTid] = transcriptCounts[j] ;
 						totCount += data[cellId][alevinTid] ;
 
-            cellSumCheck += data[cellId][alevinTid] ;
+            			cellSumCheck += data[cellId][alevinTid] ;
 						//lastAlevinTid = alevinTid ;
 					}
 				}
