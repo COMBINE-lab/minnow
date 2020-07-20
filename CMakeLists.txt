@@ -31,6 +31,74 @@ endif()
 # Let us check the sha sum of our packages if we have the right tools
 ##
 set(SHASUM ${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_shasum.sh)
+##
+# Compiler-specific C++11/14 activation.
+# http://stackoverflow.com/questions/10984442/how-to-detect-c11-support-of-a-compiler-with-cmake
+##
+##
+# First take care of what to do if we have gcc
+##
+if("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
+  execute_process(
+    COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+    # If we're on OSX
+    if(APPLE AND NOT (GCC_VERSION VERSION_GREATER ${GCCVERSION} OR GCC_VERSION VERSION_EQUAL ${GCCVERSION}))
+      message(FATAL_ERROR "When building under OSX, ${PROJECT_NAME} requires "
+                            "either clang or g++ >= ${GCCVERSION}")
+    elseif(NOT (GCC_VERSION VERSION_GREATER ${GCCVERSION} OR GCC_VERSION VERSION_EQUAL ${GCCVERSION}))
+      message(FATAL_ERROR "${PROJECT_NAME} requires g++ ${GCCVERSION} or greater.")
+    endif()
+    
+    if(GCC_VERSION VERSION_GREATER_EQUAL "7.1")
+      list(APPEND TGT_WARN_FLAGS "-Wno-int-in-bool-context")
+    endif()
+    
+    if(GCC_VERSION VERSION_GREATER_EQUAL "9.1")
+      list(APPEND TGT_WARN_FLAGS "-Wno-deprecated-copy")
+    endif()
+
+    set(GCC TRUE)
+
+    # Put complete static linking on hold for the time-being
+    # If we're not on OSX, make an attempt to compile everything statically
+    #if(NOT APPLE)
+    #set(CMAKE_EXE_LINK_FLAGS "-static")
+    set(PTHREAD_LIB "pthread")
+    #endif()
+
+    # If we're on Linux (i.e. not OSX) and we're using
+    # gcc, then set the -static-libstdc++ flag
+    if(NOT APPLE)
+        list(APPEND TGT_COMPILE_FLAGS -static-libstdc++)
+    endif()
+
+    set(WARNING_IGNORE_FLAGS "${WARNING_IGNORE_FLAGS} -Wno-unused-local-typedefs")
+# Tentatively, we support clang now
+elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    set(CLANG TRUE)
+    # If we have libc++, then try and use it
+    include(CheckCXXCompilerFlag)
+    check_cxx_compiler_flag(-stdlib=libc++ HAVE_LIBCPP)
+    if(HAVE_LIBCPP)
+      message("It appears that you're compiling with clang and that libc++ is available, so I'll use that")
+      list(APPEND TGT_COMPILE_FLAGS -stdlib=libc++)
+    # Otherwise, use libstdc++ (and make it static)
+    else()
+      list(APPEND TGT_COMPILE_FLAGS -static-libstdc++)
+    endif()
+    # There's currently a bug with clang-3.4 & Boost 1.55 -- this hack fixes it
+    # but we should do something better (does this break things if CPU doesn't
+    # have 128-bit support)?
+
+    if(APPLE)
+      set(NON_APPLECLANG_LIBS "")
+    else()
+      set(PTHREAD_LIB "pthread")
+    endif()
+else()
+  message(FATAL_ERROR "Your C++ compiler does not support C++14.")
+endif()
+
 
 #find_package(JeMalloc)
 #    if(JEMALLOC_FOUND)
@@ -42,11 +110,6 @@ set(SHASUM ${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_shasum.sh)
 
 set(GAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-#message("Build system will NOT compile libgff")
-##
-# Let us check the sha sum of our pacakges if we have the right tools
-##
-#set(SHASUM ${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_shasum.sh)
 
 #message("Build system will compile libgff")
 #message("==================================================================")
