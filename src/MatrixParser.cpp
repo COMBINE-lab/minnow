@@ -335,6 +335,7 @@ void DataMatrix<T>::loadAlevinData(
 	bool useDBG = (simOpts.gfaFile.size() != 0) ;
 	auto gfaFile = simOpts.gfaFile ;
 	auto bfhFile = simOpts.bfhFile ;
+	bool fivePrime = true;
 
     // Advanced options
 	bool samplePolyA = simOpts.samplePolyA;
@@ -865,7 +866,10 @@ void DataMatrix<T>::loadAlevinData(
 							if(bfhCount != 0){
 								auto tcInfoVec = dbgPtr->eqClassMap[seg][tid] ;
 								for(auto tInfo : tcInfoVec){
-									if(refInfo.transcripts[tid].RefLength - tInfo.eposInContig <= MAX_FRAGLENGTH){
+									if(
+										(refInfo.transcripts[tid].RefLength - tInfo.eposInContig <= MAX_FRAGLENGTH) ||
+										fivePrime
+									){
 										if(tInfo.eposInContig - tInfo.sposInContig < READ_LEN){
 											consoleLog->error("encountered a contig shorter than read length",
 															  "this is not permitted currently"
@@ -1523,6 +1527,7 @@ void DataMatrix<T>::loadSplatterData(
 	std::string bfhFile = simOpts.bfhFile ;
 	std::string gfaFile = simOpts.gfaFile ;
 	std::string uniquenessListFile = simOpts.uniquenessFile ;
+	bool fivePrime = true;
 	//bool useEqClass = simOpts.useEqClass ;
 	bool useWeibull = simOpts.useWeibull ;
 	bool useDBG = simOpts.useDBG ;
@@ -1985,6 +1990,14 @@ void DataMatrix<T>::loadSplatterData(
 			}
 		}
 
+
+		if (geneCounts[0].size() == 0){
+			consoleLog->error("Skipped all genes, please check if gene names are consistent"
+			                  " across transcript to gene mapping file and others"
+			);
+			std::exit(13);
+		}
+
 		consoleLog->info("Truncated the matrix to dimension {} x {}",geneCounts.size(), geneCounts[0].size()) ;
 	}else{
 		geneCounts = originalGeneCountMatrix ;
@@ -2088,6 +2101,11 @@ void DataMatrix<T>::loadSplatterData(
 
 
       consoleLog->info("The size of probability Vector {}",eqClassPtr->countProbability.size()) ;
+	  // the size should not be zero
+	  if (eqClassPtr->countProbability.size() == 0){
+		  consoleLog->error("Recheck the bfh file, the probability vector size is zero");
+		  std::exit(11);
+	  }
 
 		preCalculatedSegProb.resize(numOfGenes) ; // per gene
 		preSegOreMapVector.resize(numOfGenes) ;
@@ -2165,7 +2183,10 @@ void DataMatrix<T>::loadSplatterData(
 							auto tcInfoVec = dbgPtr->eqClassMap[seg][tid] ;
 							tqVecZero = (tcInfoVec.size() == 0) ;
 							for(auto tInfo : tcInfoVec){
-								if(refInfo.transcripts[tid].RefLength - tInfo.eposInContig <= MAX_FRAGLENGTH){
+								if(
+									(refInfo.transcripts[tid].RefLength - tInfo.eposInContig <= MAX_FRAGLENGTH) ||
+									fivePrime
+								){
 									localGeneProb[seg] = bfhCount ;
 									localTrVector[seg].emplace_back(
 										tid,
