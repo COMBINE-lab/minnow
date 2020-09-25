@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/COMBINE-lab/minnow.svg?branch=master)](https://travis-ci.org/COMBINE-lab/minnow)
 ~[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat-square)](http://bioconda.github.io/)~ 
 [![Join the chat at https://gitter.im/minnow-sim](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/minnow-sim?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-## Use https://github.com/COMBINE-lab/minnow or https://github.com/COMBINE-lab/minnow/tree/minnow-velocity istead of conda installation, the conda version is outdated. 
+## Use https://github.com/COMBINE-lab/minnow or https://github.com/COMBINE-lab/minnow/tree/minnow-velocity instead of conda installation, the conda version is outdated. 
 
 # Minnow ( read level simulator for dscRNA-seq data)
 
