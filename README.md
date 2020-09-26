@@ -232,7 +232,7 @@ src/minnow simulate --splatter-mode \
 Minnow generate two `fastq` files as the simulated read files, which can be analyzed by Alevin directly!
 
 
-## Step 5 -- Run Alevin on minnow simulated data
+## (Optional) Step 5 -- Run Alevin on minnow simulated data
 
 we will use alevin to re-estimate the read count matrix, all required files have already been downloaded in the `data` folder.
 
