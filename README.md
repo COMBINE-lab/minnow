@@ -1,6 +1,4 @@
-[![Build Status](https://travis-ci.org/COMBINE-lab/minnow.svg?branch=master)](https://travis-ci.org/COMBINE-lab/minnow)
-[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat-square)](http://bioconda.github.io/)
-[![Join the chat at https://gitter.im/minnow-sim](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/minnow-sim?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+Current development is awaiting a release use `minnow-velocity` for using the recent version of minnow 
 
 # Minnow ( read level simulator for dscRNA-seq data)
 
@@ -13,142 +11,244 @@ Minnow is a read level simulator for droplet based single cell RNA-seq data. Min
 <img src="data/minnow_main_figure.001.jpeg">
 </p>
 
-## Pre-build images
-
-[docker](`docker pull hrksrkr/minnow`)
-
-[tutorial](https://combine-lab.github.io/alevin-tutorial/2019/running-minnow/)
+# 'Updated tutorial to Minnow' (authors: Hirak Sarkar and Dongze He)
 
 
 
-## Installation
-### Via conda 
-`conda install minnow -c bioconda`
-### Manual installation (latest)
-Minnow is written in C++14 and tested in a ubuntu server, please let us know if you have difficulty compiling it in your own machine.
 
-```console
-git clone https://github.com/COMBINE-lab/minnow.git
+# Install the current active branch `minnow-velocity`
+Minnow-velocity is currently available on Minnow's github repo under the minnow-velocity branch, for downloading, please
+1. Open your Terminal and go to the folder you want to download minnow in.
+2. Run the following codes:
+``` shell
+git clone --single-branch --branch minnow-velocity https://github.com/COMBINE-lab/minnow.git
 cd minnow
 mkdir build
 cd build
 cmake ..
 make
 ```
-Given the above steps run withot error, the binary will be stored within the `build/src`.
 
-## Main input options
-In terms of input currently minnow works in two different modes, 1. `alevin-mode` and 2. `splatter-mode`. Although it can be be made to work with other matrices given the input is provided with correct format.
+**NOTICE: In the following steps, we assume that your working directory is in the `minnow/build` folder.**
 
-### `alevin-mode`
-This works now with binary flag `--binary` as most by default alevin writes a binary files. The minimal requirement of alevin directory are `quants_mat.gz`, `quants_mat_rows.txt`, `quants_mat_cols.txt`.
+# Step 0 -- Run Alevin for a dataset of the orgamism you will work on.
+As Minnow need the BFH file dumpped from Alevin to make its probability files, we need to run alevin before simulation with `--dumpBfh` option specified.
 
-A typical example (minimal) 
+### Step 0.1 -- build salmon index
+Download the reference files from [GENCODE](https://www.gencodegenes.org), and build Salmon index.
+```shell
+mkdir data
 
-```console
-src/minnow simulate --alevin-mode --binary --g2t <transcript_to_gene_file> -m <alevin_dir_run_on_real_data> -r <fasta_file> --PCR 8 -e 0.001 -p 2 -o <output>
+wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M25/gencode.vM25.pc_transcripts.fa.gz
+gunzip data/gencode.vM25.pc_transcripts.fa.gz
+
+wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M25/gencode.vM25.annotation.gtf.gz
+gunzip data/gencode.vM25.annotation.gtf.gz
+
+wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M25/GRCm38.primary_assembly.genome.fa.gz
+gunzip data/GRCm38.primary_assembly.genome.fa.gz
+
+grep ">" GRCm38.primary_assembly.genome.fa | cut -d ">" -f 2 | cut -d " " -f 1 > GRCm38.primary_assembly.genome.chrnames.txt
+
+cd ..
+
+salmon index \
+-t gencode.vM25.pc_transcripts.fa \
+-i gencode.vM25.annotation.sidx --gencode -p 128 \
+-d GRCm38.primary_assembly.genome.chrnames.txt
 ```
-Optionally using `whitelist` produced by alevin
 
-```console
-src/minnow simulate --alevin-mode --binary --g2t <transcript_to_gene_file> -m <alevin_dir_run_on_real_data> -r <fasta_file> --PCR 8 -e 0.001 -p 2 -o <output> --useWhiteList
+### Step 0.2 -- Run Alevin on a mouse dataset
+
+1. Get data set from [Hermann et al., 2018](https://www.sciencedirect.com/science/article/pii/S2211124718316024?via%3Dihub). Here we use [bamtofastq](https://github.com/10XGenomics/bamtofastq) from 10X Genomics, please load before you run the code.
+
+```shell
+cd data
+wget https://sra-pub-src-1.s3.amazonaws.com/SRR6459157/AdultMouse_Rep3_possorted_genome_bam.bam.1
+
+mv AdultMouse_Rep3_possorted_genome_bam.bam.1 AdultMouse_Rep3_possorted_genome_bam.bam
+
+bamtofastq --reads-per-fastq=500000000 AdultMouse_Rep3_possorted_genome_bam.bam FASTQtmp
+
+mv FASTQtmp/Ad-Ms-Total-Sorted_20k_count_MissingLibrary_1_HK2GNBBXX/bamtofastq_S1_L006_I1_001.fastq.gz AdultMouseRep3_S1_L001_I1_001.fastq.gz
+
+mv FASTQtmp/Ad-Ms-Total-Sorted_20k_count_MissingLibrary_1_HK2GNBBXX/bamtofastq_S1_L006_R1_001.fastq.gz AdultMouseRep3_S1_L001_R1_001.fastq.gz
+
+mv FASTQtmp/Ad-Ms-Total-Sorted_20k_count_MissingLibrary_1_HK2GNBBXX/bamtofastq_S1_L006_R2_001.fastq.gz AdultMouseRep3_S1_L001_R2_001.fastq.gz
+cd ..
 ```
 
-### `splatter-mode`
- 
-In `splatter-mode`, just like in alevin mode minnow accepts at least three different files, in the same format, `quants_mat.csv`, `quants_mat_cols.txt`, `quants_mat_rows.txt`. Although splatter matrix is a gene to cell matrix. While running splatter it is easy to create this format by inserting few lines after running splatter.
-Below is an example,
+2. Run Alevin to quantify the gene abundances based on the index generated above.
 
- 
+```shell
+awk -F "\t" '$3 == "transcript" { print $9 }' data/gencode.vM25.annotation.gtf | tr -d ";\"" | awk '{print $4"\t"$2}' > data/gencode.vM25.annotation.tx2gene.tsv
 
-```R
+salmon alevin -l ISR -i gencode.vM25.annotation.sidx \
+-1 data/AdultMouseRep3_S1_L001_R1_001.fastq.gz \
+-2 data/AdultMouseRep3_S1_L001_R2_001.fastq.gz \
+-o alevin_out -p 36 \
+--tgMap data/gencode.vM25.annotation.tx2gene.tsv \
+--chromium \
+--dumpFeatures --expectCells 1850 \
+--dumpBfh
+```
+
+By specifying `--dumpBfh`, alevin will dump the BFH file in its result, which will be used in the following steps.
+
+
+## Step 1 -- `minnow index`
+
+The indexing phase of minnow is mostly concerned with creating de-Bruijn graph for the transcriptome, additionally to run minnow we need a transcript to gene mapping which can be obtained from gtf file. At the end, minnow index command will create a direcory with updated fasta file that has the following features:
+- Any sequence in the fasta file with smaller length than the read length will be removed.
+- PolyA tails will be clipped.
+- `N`s will be replaced by random `A/T/G/C`.
+
+## 1.1 De-Bruijn graph construction using `minnow index`
+
+Create the de-Buijn graph on your **transcriptome file**  using the following command, note that **do not** pass your genome file into `minnow index`.
+
+``` shell
+src/minnow index -r data/gencode.vM25.pc_transcripts.fa -k 101 -f 20 --tmpdir tmp -p 10 -o minnow_index
+```
+
+There will be a `ref_k101_fixed.fa` in the `minnow index` folder, this fasta file is the updated fasta file we talked above. 
+
+
+Followings are the options,
+
+```
+SYNOPSIS
+        minnow index -r <ref_file>... -o <output_dir> [-f <filt_size>] [--tmpdir <twopaco_tmp_dir>] [-k <kmer_length>] [-p <threads>]
+
+OPTIONS
+        -r, --ref <ref_file>
+                    path to the reference transcriptome fasta file
+
+        -o, --output <output_dir>
+                    directory where index is written
+
+        -f, --filt-size <filt_size>
+                    filter size to pass to TwoPaCo when building the reference dBG
+
+        --tmpdir <twopaco_tmp_dir>
+                    temporary work directory to pass to TwoPaCo when building the reference dBG
+
+        -k, --klen <kmer_length>
+                    length of the k-mer with which the dBG was built (default = 101)
+
+        -p, --threads <threads>
+                    total number of threads to use for building MPHF (default = 16)
+```
+
+While creating the index, `-k` option should be treated as `read length` for rest of the simulation.
+
+## 1.2  Clean the transcriptome file header (optional)
+
+If you just want to see the transcript name in your fasta file, please run the following option to clean the header in this file.
+```shell
+sed -e '/^>/ s/|.*//' data/gencode.vM25.pc_transcripts.fa > \
+gencode.vM25.pc_transcripts_cleanHeader.fa
+```
+
+
+## Step 2 -- `minnow estimate`
+
+You can find the `bfh.txt` file in the `alevin_out/alevin` folder, this file is what we need for `minnow estimate` to get geneProb and cellProb files, which specify the multimapping probability.
+
+To run minnow estimate, please run 
+
+```shell
+src/minnow estimate -o minnow_estimate -r data/gencode.vM25.pc_transcripts.fa --g2t data/gencode.vM25.annotation.tx2gene.tsv --bfh alevin_out/alevin/bfh.txt
+```
+The `countProb.txt` file will be used in the following steps.
+
+
+
+
+## Step 3 -- Prepare a read count matrix
+
+Here we show how to use [splatter package](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-017-1305-0) in R to simulate the read count matrix, you can [download this package from Bioconductor](https://www.bioconductor.org/packages/release/bioc/html/splatter.html).
+
+1. create 100 genes with 150 cells data
+Splatter is a package for the simulation of single-cell RNA sequencing count data, following codes are ran in R.
+
+```r
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("splatter")
+
+library(splatter)
+
+out_dir <- "data/test_splatter_data"
+num_genes <- 100
+num_cells <- 150
 sim <- splatSimulate( 
 	nGenes=num_genes, 
 	batchCells=num_cells, 
 	verbose = FALSE
 )
-write.table(rownames(sim), file= file.path(out_dir, "quants_mat_rows.txt"), quote=FALSE, col.names=FALSE, row.names=FALSE)
+
+dir.create(out_dir, showWarnings=FALSE)
 write.table(colnames(sim), file= file.path(out_dir, "quants_mat_cols.txt"), quote=FALSE, col.names=FALSE, row.names=FALSE)
 write.table(counts(sim), file= file.path(out_dir, "quants_mat.csv"), quote=FALSE, col.names=FALSE, row.names=FALSE, sep=",")  
 
 ```
 
-
-
-## Main model options 
-
-### How to generate a right `gfa` file given a particular `READ_LEN`
-
-#### Run [TwoPaCo](https://github.com/medvedevgroup/TwoPaCo)
-
-```console
-# delete non unique k-mers of length <READ_LEN>
-fixFasta --klen <READ_LEN+1> --input <fasta_file> --output <fixed_fasta_file> 
-
-# delete duplicated sequences 
-seqkit rmdup -s  <fixed_fasta_file> > <dedup_fasta>
-
-# run TwoPaCo to produce gfa
-TwoPaCo/build/graphconstructor/twopaco -k <READ_LEN+1> -t 10 -f 20 <dedup_fasta> --outfile dbg.bin --tmpdir /tmp/
-
-TwoPaCo/build/graphdump/graphdump <tr.gfa> -k <READ_LEN+1> -s <fasta_file> -f gfa1 dbg.bin
-
+2. Specify gene names for simulated data.
+As we want to simulate date with real gene names, while splatter only returns meaningless gene names (for instance, gene1, gene2, etc), we need to randomly select gene names from our reference files such that the selected genes have at least one isoform with length longer than read length. Fortunately, if you have run `minnow estimate`, you will have a fixed reference file `ref_k101_fixed.fa` which contains only transcripts that meet this criteria.
 
 ```
-The above process are required to be executed sequencially, 
-
-#### -OR- download files 
-
-for ease of use we uploaded the de-Bruijn graph and reference transcripts are uploaded in zenodo. 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3276716.svg)](https://doi.org/10.5281/zenodo.3276716) [![Join the chat at https://gitter.im/minnow-sim/community](https://badges.gitter.im/minnow-sim/community.svg)](https://gitter.im/minnow-sim/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-
-
-### `--dbg`-mode 
-Minnow accepts a de-Bruijn graph in gfa format. (produced by TwoPaCo)
-
-In `--dbg` mode minnow accepts few additional options, such as `--gfa` (required), `--bfh` (optional), `--rspd` (optional). The repository currently contains two different probability files estimated from `10X pbmc 4k` dataset. If `--dgb` option is provided without any of `--bfh`, `--geneProb` or `--countProb` is provided, those default files will be read.
-
-### Default mode
-In default mode `weibull` distribution is used. 
-
-
-### Example files 
-```
-gene prob file - data/hg/geneLebelProb_pbmc_4k.txt
-gene prob file - data/hg/countProb_pbmc_4k.txt
-transcript to gene - data/hg/hg_t2g.tsv
+grep ">" minnow_index/ref_k101_fixed.fa | awk -F "|" '{print $2}'|shuf -n 100 > data/test_splatter_data/quants_mat_rows.txt
 ```
 
-## Complete examples
-
-### `--alevin-mode` + `--dbg` + `--geneProb`
+If you are using Mac OS and `shuf` is not found, please download it from [Homebrew](https://brew.sh) by `brew install coreutils` or use a Linux machine.
 
 
-```console
-src/minnow simulate --alevin-mode --binary --g2t <transcript_to_gene_file> -m <alevin-dir>/alevin --PCR <PCR-cycle> -r <fasta_file> -e <error_rate < 1> -p <#threads> 2> -o <out_dir> --useWhiteList --dbg --gfa <gfa_file> --geneProb <gene_prob_file> --rspd <fragment_length_dist_file> -s <#samples>
 
+## Step 4 -- `minnow simulate`
+
+Now we can start our simulation process. There are two mode in minnow, here we give the example of ``--splatter-mode`.
+
+We can run minnow simulate in `--splatter-mode` by running the following codes:
+
+```shell
+src/minnow simulate --splatter-mode \
+--g2t  data/gencode.vM25.annotation.tx2gene.tsv \
+--inputdir data/test_splatter_data \
+--PCR 4 \
+-r minnow_index/ref_k101_fixed.fa \
+-e 0.01 \
+-p 16 \
+-o minnow_simulate \
+--dbg \
+--gfa minnow_index/dbg.gfa \
+-w data/737K-august-2016.txt \
+--countProb minnow_estimate/countProb.txt \
+--custom \
+--gencode 
 ```
 
-### `--alevin-mode` + `--dbg` + `--bfh`
+Minnow generate two `fastq` files as the simulated read files, which can be analyzed by Alevin directly!
 
 
-```console
-src/minnow simulate --alevin-mode --binary --g2t <transcript_to_gene_file> -m <alevin-dir>/alevin --PCR <PCR-cycle> -r <fasta_file> -e <error_rate < 1> -p <#threads> 2> -o <out_dir> --useWhiteList --dbg --gfa <gfa_file> --bfh <bfh_file> --rspd <fragment_length_dist_file> -s <#samples>
+## (Optional) Step 5 -- Run Alevin on minnow simulated data
+
+we will use alevin to re-estimate the read count matrix, all required files have already been downloaded in the `data` folder.
 
 ```
-
-### `--splatter-mode` + `--dbg`
-
-```console
-src/minnow simulate --splatter-mode --g2t <transcript-gene> -m <alevin-dir> --PCR <PCR-cucle> -r <fasta_file> -e <error-rate> -p <#threads> -o <out_dir> --dbg --gfa <gfa_file> --bfh <bfh_file>
+salmon alevin -l ISR -i gencode.vM25.annotation.sidx \
+-1 minnow_simulate/hg_100_S1_L001_R1_001.fastq.gz \
+-2 minnow_simulate/hg_100_S1_L001_R2_001.fastq.gz \
+-o minnow_simulate/alevin_out -p 16 \
+--tgMap data/gencode.vM25.annotation.tx2gene.tsv \
+--chromium \
+--dumpFeatures --expectCells 100 \
 ```
 
-### `--splatter-mode` + `--useWeibull` (Create favorable example)
+Now we are done with the process!
 
-```console
-src/minnow simulate --splatter-mode --g2t /mnt/scratch6/avi/data/cgat/references/metadata/hg_t2g.tsv -m ../example_data/splatter_data_100_Cells_50K_Genes_pbmc/ --PCR 7 -r /mnt/scratch6/avi/data/cgat/references/txome/hg_transcriptome.fasta -e 0.01 -p 25 -o <out_dir> --useWeibull --testUniqness --reverseUniqness
-```
+The truth read count matrix is in the `minnow_simulate/alevin` folder, and the re-estimated read count matrix is in the `minnow_simulate/alevin_out/alevin` folder, check it now!
 
 
 ### Things to be added
