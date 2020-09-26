@@ -254,8 +254,10 @@ Now we are done with the process!
 
 The truth read count matrix is in the `minnow_simulate/alevin` folder, and the re-estimated read count matrix is in the `minnow_simulate/alevin_out/alevin` folder, check it now!
 
-------------------------------------------------------------------------------------------------------------
+--------------------------
+
 <div id="TLDR"></div>
+
 ## &#9889; TLDR
 
 ### Getting the right branch of minnow
