@@ -11,15 +11,10 @@ Minnow is a read level simulator for droplet based single cell RNA-seq data. Min
 <img src="data/minnow_main_figure.001.jpeg">
 </p>
 
----
-title: 'Updated tutorial to Minnow'
-disqus: hackmd
-author: Hirak Sarkar and Dongze He
----
+# 'Updated tutorial to Minnow' (authors: Hirak Sarkar and Dongze He)
 
 
-###### tags `minnow` `tutorial`
-[TOC]
+
 
 # Install the current active branch `minnow-velocity`
 Minnow-velocity is currently available on Minnow's github repo under the minnow-velocity branch, for downloading, please
