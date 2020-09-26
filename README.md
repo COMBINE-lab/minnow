@@ -1,6 +1,10 @@
 Current development is awaiting a release use `minnow-velocity` for using the recent version of minnow 
 
+[&#9889; Quick Run](#TLDR)
+
+
 # Minnow ( read level simulator for dscRNA-seq data)
+
 
 
 Most analysis pipelines validate their results using known marker genes (which are not widely available for all types of analysis) and by using simulated data from gene-count-level simulators. Typically, the impact of using different read-alignment or UMI deduplication methods has not been widely explored. Assessments based on simulation tend to start at the level of assuming a simulated count matrix, ignoring the effect that different approaches for resolving UMI counts from the raw read data may produce. Here, we present minnow, a comprehensive sequence-level droplet-based single-cell RNA-seq (dscRNA-seq) experiment simulation framework.  Minnow accounts for important sequence-level characteristics of experimental scRNA-seq datasets and models effects such as PCR amplification,  CB (cellular barcodes) and UMI (Unique Molecule Identifiers) selection, and sequence fragmentation and sequencing. 
@@ -249,6 +253,75 @@ salmon alevin -l ISR -i gencode.vM25.annotation.sidx \
 Now we are done with the process!
 
 The truth read count matrix is in the `minnow_simulate/alevin` folder, and the re-estimated read count matrix is in the `minnow_simulate/alevin_out/alevin` folder, check it now!
+
+------------------------------------------------------------------------------------------------------------
+<div id="TLDR"></div>
+## &#9889; TLDR
+
+### Getting the right branch of minnow
+```bash
+git clone --single-branch --branch minnow-velocity https://github.com/COMBINE-lab/minnow.git
+cd minnow
+mkdir build
+cd build
+cmake ..
+make
+```
+
+### Making consistent transcript to gene name and compatible De-Bruijn graphs 
+
+```bash
+wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M25/gencode.vM25.chr_patch_hapl_scaff.annotation.gtf.gz
+
+wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M25/gencode.vM25.transcripts.fa.gz
+```
+#### extracting the t2g mapping 
+```bash
+awk -F "\t" '$3 == "transcript" { print $9 }' <( zcat gencode.vM25.chr_patch_hapl_scaff.annotation.gtf.gz ) | tr -d ";\"" | awk '{print $4"\t"$2}' > tx2gene.tsv
+```
+#### making right de-Bruijn graph
+```
+src/minnow index -r ../mouse/GRCm38.p6/gencode.vM25.transcripts.fa.gz -k 101 -f 20 --tmpdir tmp -p 10 -o minnow_ind
+```
+
+### Generating the splatter matrix (I followed your example just making a realistic gene number)
+```R
+BiocManager::install("splatter")
+library(splatter)
+library(scater)
+set.seed(1)
+num_genes<- 1000
+num_cells <- 1000
+sim <- splatSimulate( 
+  nGenes=num_genes, 
+  batchCells=num_cells, 
+  verbose = FALSE
+)
+out_dir<-"splatter_out"
+write.table(rownames(sim), file= file.path(out_dir, "quants_mat_rows.txt"), quote=FALSE, col.names=FALSE, row.names=FALSE)
+write.table(colnames(sim), file= file.path(out_dir, "quants_mat_cols.txt"), quote=FALSE, col.names=FALSE, row.names=FALSE)
+write.table(counts(sim), file= file.path(out_dir, "quants_mat.csv"), quote=FALSE, col.names=FALSE, row.names=FALSE, sep=",")
+```
+
+Assigning _unique_ gene names  (same number of _unique_ gene names as your rows in the count matrix generated in splatter)
+```
+cut -f 2 ../mouse/GRCm38.p6/tx2gene.tsv | sort | uniq > ../mouse/GRCm38.p6/gene.list
+shuf -n 1000 ../mouse/GRCm38.p6/gene.list > splatter_out/quants_mat_rows.txt
+```
+
+Now you can run minnow with the files generated above 
+
+### Run minnow (assuming inside build)
+```bash
+src/minnow simulate --splatter-mode \
+--g2t tx2gene.tsv \
+--inputdir splatter_out \
+--PCR 6 \
+-r minnow_ind/ref_k101_fixed.fa \
+-e 0.01 -p 10 -o minnow_splatter_out \
+--dbg --gfa minnow_ind/dbg.gfa \
+-w ../data/737K-august-2016.txt --countProb ../data/hg/countProb_pbmc_4k.txt --custom 
+```
 
 
 ### Things to be added
