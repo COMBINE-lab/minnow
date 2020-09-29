@@ -313,10 +313,11 @@ void refValidate(
 		trMap[transcripts[i].RefName] = i ;
 	}
 
-  std::cerr << transcripts[0].RefName << "\n" ;
+  // std::cerr << transcripts[0].RefName << "\n" ;
   // std::exit(1) ;
 
 	std::map<int, int> editDistanceMap ;
+  std::map<int, int> distanceFromEnd ;
 
 	{
 		ScopedTimer st ;
@@ -358,6 +359,7 @@ void refValidate(
 
 				auto& index = trMap[transcriptName] ;
 				stx::string_view refSeq = sampleSequence(transcripts[index], position) ;
+        auto lfe = static_cast<int>(transcripts[index].RefLength - position);
 
 				AlignerEngine ae_ ;
 				ae_(
@@ -385,6 +387,13 @@ void refValidate(
 				}else{
 					editDistanceMap.insert({result.editDistance, 1}) ;
 				}
+
+        auto it2 = distanceFromEnd.find(lfe);
+				if(it2 != distanceFromEnd.end()){
+					it2->second += 1 ;
+				}else{
+					distanceFromEnd.insert({lfe, 1}) ;
+				}
 			}
 		}
     std::cout << "Done with " << rn << " reads \n" ;
@@ -393,6 +402,10 @@ void refValidate(
 	}
 	std::ofstream dictFile{outFile.c_str()} ;
 	for(auto it: editDistanceMap){
+		dictFile << it.first << "\t" << it.second << "\n" ; 
+	}
+  dictFile << "--\n" ;
+	for(auto it: distanceFromEnd){
 		dictFile << it.first << "\t" << it.second << "\n" ; 
 	}
 	dictFile.close() ;
@@ -625,7 +638,7 @@ int main(int argc, char* argv[]) {
   } catch (std::exception& e) {
     std::cout << "\n\nParsing command line failed with exception: " << e.what() << "\n";
     std::cout << "\n\n";
-    std::cout << make_man_page(cli, "validate") << make_man_page(cli, "extract") ;
+    std::cout << make_man_page(cli, "validate") ;
     return 1;
   }
 
@@ -634,9 +647,7 @@ int main(int argc, char* argv[]) {
       case mode::validate: validate(valOpts) ; break ; 
       case mode::extract: extract(extOpt) ; break ; 
       case mode::dump: dumpGeneCount(dumpOpt) ; break ; 
-    case mode::help: std::cout << make_man_page(cli, "validate") 
-                               << make_man_page(cli, "extract") 
-                               << make_man_page(cli, "dump"); 
+      case mode::help: std::cout << make_man_page(cli, "validate") ;
     }
   }else{
     cout << usage_lines(cli, "validate") << '\n';
