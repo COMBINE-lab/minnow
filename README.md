@@ -327,7 +327,9 @@ src/minnow simulate --splatter-mode \
 
 ### Quick validation
 To check the edit distance distribution and the distribution of `distance from end` please run the following
-`src/validate validate -f <( gunzip -c hg_100_S1_L001_R2_001.fastq.gz ) -t minnow_ind/ref_k101_fixed.fa -o splatter_out/edit.dist -m 10`
+```
+src/validate validate -f <( gunzip -c hg_100_S1_L001_R2_001.fastq.gz ) -t minnow_ind/ref_k101_fixed.fa -o splatter_out/edit.dist -m 10
+```
 `-m` option is for edit distance, if you use a PCR cycle of 6, it's unlikely to see a sequence which is more than 6 edit distance apart, if you use a higher
 PCR cycle then use higher values to find the edit-distance distribution with arbitarary high edit distances, 
 
