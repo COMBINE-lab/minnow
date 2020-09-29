@@ -329,12 +329,13 @@ void DataMatrix<T>::loadAlevinData(
 
     // Load the values from simOpts
     // Basic Options
-    auto alevinDir = simOpts.inputdir;
-    auto sampleCells = simOpts.sampleCells;
-    auto outDir = simOpts.outDir ;
-    bool useDBG = (simOpts.gfaFile.size() != 0) ;
-    auto gfaFile = simOpts.gfaFile ;
-    auto bfhFile = simOpts.bfhFile ;
+	auto alevinDir = simOpts.inputdir;
+	auto sampleCells = simOpts.sampleCells;
+	auto outDir = simOpts.outDir ;
+	bool useDBG = (simOpts.gfaFile.size() != 0) ;
+	auto gfaFile = simOpts.gfaFile ;
+	auto bfhFile = simOpts.bfhFile ;
+	bool fivePrime = true;
 
     // Advanced options
     bool samplePolyA = simOpts.samplePolyA;
@@ -681,293 +682,296 @@ void DataMatrix<T>::loadAlevinData(
   // NOTE: This matrix is made after multinomial sampling of the original matrix
     geneCounts.resize(sampleCells + numOfDoublets, std::vector<T>(numOfGenes)) ;
   // NOTE: This matrix is constructed in DBG mode
-    trueGeneCounts.resize(sampleCells + numOfDoublets, std::vector<int>(numOfGenes)) ;
+	trueGeneCounts.resize(sampleCells + numOfDoublets, std::vector<int>(numOfGenes)) ;
 
-    // this matrix might have more genes
-    for(auto& v : originalGeneCountMatrix)
-        std::memset(&v[0], 0, sizeof(v[0]) * v.size());
+	// this matrix might have more genes
+	for(auto& v : originalGeneCountMatrix)
+    	std::memset(&v[0], 0, sizeof(v[0]) * v.size());
 
-    for(auto& v : data)
-        std::memset(&v[0], 0, sizeof(v[0]) * v.size());
+	for(auto& v : data)
+    	std::memset(&v[0], 0, sizeof(v[0]) * v.size());
 
-    for(auto& v : geneCounts)
-        std::memset(&v[0], 0, sizeof(v[0]) * v.size());
+	for(auto& v : geneCounts)
+    	std::memset(&v[0], 0, sizeof(v[0]) * v.size());
 
-    for(auto& v : trueGeneCounts)
-        std::memset(&v[0], 0, sizeof(v[0]) * v.size());
+	for(auto& v : trueGeneCounts)
+    	std::memset(&v[0], 0, sizeof(v[0]) * v.size());
 
-    std::string countFile = alevinDir + "/quants_mat.csv" ;
-    std::string countFileBinary = alevinDir + "/quants_mat.gz" ;
-      bool binary{true} ;
-      if(! util::fs::FileExists(countFileBinary.c_str())){
-          binary = false ;
-      }
-
-
-      // TODO: Not sure if this is needed any more
-    std::unordered_map<uint32_t, uint32_t> gene2LastTrMap ;
-    {
-        // Make a map from gene id to last last tid
-        for(auto& gmpair : geneMap){
-            auto trIds = refInfo.gene2transcriptMap[gmpair.second] ;
-            auto lastTid = trIds[trIds.size() - 1] ;
-            auto alevinLastTid = alevinReverseMap[lastTid] ;
-            gene2LastTrMap[gmpair.second] = alevinLastTid ;
-        }
-
-    }
-
-    // NOTE: This is important for intron retention
-    // Decide whether to sample from the introns or not
-    // depending on that use a flag for that cell and gene id
-    // store a flag
-    std::unordered_set<uint32_t> geneIntronMap ;
-    if(samplePolyA){
-        consoleLog->info("Sampling from polyA sites in between gene") ;
-        auto& tsvFile = simOpts.polyAsiteFractionFile ; // fraction file 
-        auto& polyAFastaFile = simOpts.polyAsiteFile ; // fasta file
-
-        // load polyA fraction
-        loadTSVFile(
-            tsvFile,
-            geneMap,
-            fractionVector
-        ) ;
-        // load the fasta file with the sequences 
-        refInfo.updatePolyASequence(
-            polyAFastaFile,
-            geneMap,
-            gene2LastTrMap,
-            geneIntronMap
-        ) ;
-    }
+	std::string countFile = alevinDir + "/quants_mat.csv" ;
+	std::string countFileBinary = alevinDir + "/quants_mat.gz" ;
+  	bool binary{true} ;
+  	if(! util::fs::FileExists(countFileBinary.c_str())){
+  		binary = false ;
+  	}
 
 
-    bool useClusters{false} ;
-    // TODO:
-    if(useDBG){
-        // This will read the dbg now
-        if(!util::fs::FileExists(gfaFile.c_str())){
-            consoleLog->error("GFA file {} does not exist EXITING !!", gfaFile);
-            std::exit(4); 
-        }
+  	// TODO: Not sure if this is needed any more
+	std::unordered_map<uint32_t, uint32_t> gene2LastTrMap ;
+	{
+		// Make a map from gene id to last last tid
+		for(auto& gmpair : geneMap){
+			auto trIds = refInfo.gene2transcriptMap[gmpair.second] ;
+			auto lastTid = trIds[trIds.size() - 1] ;
+			auto alevinLastTid = alevinReverseMap[lastTid] ;
+			gene2LastTrMap[gmpair.second] = alevinLastTid ;
+		}
 
-        auto rspdFile = simOpts.rspdFile ;
-        if(rspdFile != ""){
-            if(util::fs::FileExists(rspdFile.c_str())){
-                rspdVec.resize(MAX_FRAGLENGTH) ;
-                std::ifstream rspdStream(rspdFile.c_str()) ;
-                std::string line ;
-                while(std::getline(rspdStream, line)){
-                    std::vector<std::string> tokens ;
-                    util::split(line, tokens, ",") ;
-                    if(tokens.size() != 2)
-                        continue ;
-                    uint32_t pos = std::stoul(tokens[0]) ;
-                    uint32_t prob = std::stoul(tokens[1]) ;
-                    if(pos < rspdVec.size()){
-                        rspdVec[pos] = prob ;
-                    }
-                }
-            }else{
-                consoleLog->info("RSPD file is not empty and doesn't exist, going with truncated sampling") ;
-            }
-        }
+	}
 
-        consoleLog->info("======================= Parsing GFA file {} ==========================",gfaFile) ;
+	// NOTE: This is important for intron retention
+	// Decide whether to sample from the introns or not
+	// depending on that use a flag for that cell and gene id
+	// store a flag
+	std::unordered_set<uint32_t> geneIntronMap ;
+	if(samplePolyA){
+		consoleLog->info("Sampling from polyA sites in between gene") ;
+		auto& tsvFile = simOpts.polyAsiteFractionFile ; // fraction file 
+		auto& polyAFastaFile = simOpts.polyAsiteFile ; // fasta file
 
-        dbgPtr = new GFAReader(gfaFile, consoleLog) ;
-        dbgPtr->parseFile(refInfo, outDir) ;
-
-
-        // NOTE: stand alone call to bfh
-        // ignore other eqclass stuff for now
-        // They might come handy later.
-        // std::string eqFileDir = "dummy/dir" ;
-        consoleLog->info("======================= Parsing BFH/related file ==========================") ;
-        eqClassPtr = new BFHClass(consoleLog) ;
-        if((simOpts.countProbFile != "") || (simOpts.geneProbFile != "")){
-            if(simOpts.countProbFile != ""){
-                eqClassPtr->loadProbability(
-                    simOpts.countProbFile,
-                    refInfo,
-                    false
-                ) ;
-            }else{
-                eqClassPtr->loadProbability(
-                    simOpts.geneProbFile,
-                    refInfo,
-                    true
-                ) ;
-            }
-        }else if(bfhFile != ""){
-              // NOTE: This branch is currently
-              // active
-            eqClassPtr->loadBFH(
-                bfhFile,
-                simOpts.clusterFile,
-                refInfo,
-                cellWhiteListMap,
-                false,
-                cellNoisyMap,
-                simOpts.outDir
-            ) ;
-        }else{
-            // FIXME: Or load currently existing default file, this 
-            // shoud be changed
-            std::string geneProbFile = "../data/hg/geneLebelProb_pbmc_4k.txt" ;
-            if(!util::fs::FileExists(geneProbFile.c_str())){
-                consoleLog->error("alevin-mode is invoked with --dbg but neither bfh file"
-                                  " no probability files are produced"
-                );
-                std::exit(5) ;
-            }
-            eqClassPtr->loadProbability(
-                    geneProbFile,
-                    refInfo,
-                    true
-            ) ;
-        }
-
-        consoleLog->info("Parsed BFH/Prob file related information...") ;
-        consoleLog->info("Genes in BFH: {}", numOfGenes) ;
-        preCalculatedSegProb.resize(numOfGenes) ; // per gene
-        preSegOreMapVector.resize(numOfGenes) ;
-        geneSpecificTrVector.resize(numOfGenes) ;
+		// load polyA fraction
+		loadTSVFile(
+			tsvFile,
+			geneMap,
+			fractionVector
+		) ;
+		// load the fasta file with the sequences 
+		refInfo.updatePolyASequence(
+			polyAFastaFile,
+			geneMap,
+			gene2LastTrMap,
+			geneIntronMap
+		) ;
+	}
 
 
-        // fill segment based probability
-        // gene to tr to prob
-        // uint32_t trackGid{54819} ;
-        for(uint32_t i = 0; i < numOfGenes; ++i){
-            auto it = alevin2refMap.find(i) ;
-            if(it != alevin2refMap.end()){
-                auto originalGeneId = it->second ;
-                auto transcriptIds = refInfo.gene2transcriptMap[originalGeneId] ;
+	bool useClusters{false} ;
+	// TODO:
+	if(useDBG){
+		// This will read the dbg now
+		if(!util::fs::FileExists(gfaFile.c_str())){
+			consoleLog->error("GFA file {} does not exist EXITING !!", gfaFile);
+			std::exit(4); 
+		}
 
-                std::unordered_map<size_t, uint32_t> localGeneProb ;
-                std::unordered_map<size_t, bool> localSegOreMap ;
-                std::unordered_map<size_t, std::vector<trInfo>> localTrVector ;
+		auto rspdFile = simOpts.rspdFile ;
+		if(rspdFile != ""){
+			if(util::fs::FileExists(rspdFile.c_str())){
+				rspdVec.resize(MAX_FRAGLENGTH) ;
+				std::ifstream rspdStream(rspdFile.c_str()) ;
+				std::string line ;
+				while(std::getline(rspdStream, line)){
+					std::vector<std::string> tokens ;
+					util::split(line, tokens, ",") ;
+					if(tokens.size() != 2)
+						continue ;
+					uint32_t pos = std::stoul(tokens[0]) ;
+					uint32_t prob = std::stoul(tokens[1]) ;
+					if(pos < rspdVec.size()){
+						rspdVec[pos] = prob ;
+					}
+				}
+			}else{
+				consoleLog->info("RSPD file is not empty and doesn't exist, going with truncated sampling") ;
+			}
+		}
 
-                for(auto tid : transcriptIds){
-                    refInfo.transcripts[tid].setGeneId(i);
+    	consoleLog->info("======================= Parsing GFA file {} ==========================",gfaFile) ;
 
-                    if(dbgPtr->trSegmentMap.find(tid) != dbgPtr->trSegmentMap.end()){
-                        auto segVec = dbgPtr->trSegmentMap[tid] ;
-                        bool everRC{false} ;
-                        for(auto seg : segVec){
-                            auto segCount = dbgPtr->eqClassMapCounts[seg] ;
-                            auto bfhCount = eqClassPtr->getGeneLevelProbCount(
-                                originalGeneId,
-                                segCount
-                            ) ;
-
-                            if(bfhCount != 0){
-                                auto tcInfoVec = dbgPtr->eqClassMap[seg][tid] ;
-                                for(auto tInfo : tcInfoVec){
-                                    if(refInfo.transcripts[tid].RefLength - tInfo.eposInContig <= MAX_FRAGLENGTH){
-                                        if(tInfo.eposInContig - tInfo.sposInContig < READ_LEN){
-                                            consoleLog->error("encountered a contig shorter than read length",
-                                                              "this is not permitted currently"
-                                            );
-                                            consoleLog->error("seg id: {} \t {}",tInfo.eposInContig,tInfo.sposInContig) ;
-                                            std::exit(6) ;
-                                        }
-                                        localGeneProb[seg] = bfhCount ;
-                                        localTrVector[seg].emplace_back(
-                                            tid,
-                                            tInfo.sposInContig,
-                                            tInfo.eposInContig
-                                        ) ;
-                                    }
-
-                                    if(!tInfo.ore && !everRC){
-                                        everRC = true ;
-                                    }
-                                }
-                                if(everRC){
-                                    localSegOreMap[seg] = false ;
-                                }else{
-                                    localSegOreMap[seg] = true ;
-                                }
-                            }
-                        }
-                    }
-                }
-                preCalculatedSegProb[i] = localGeneProb ;
-                preSegOreMapVector[i] = localSegOreMap ;
-                geneSpecificTrVector[i] = localTrVector ;
-            }
-        }
-
-        consoleLog->info("After loading bfh prob size {}",preCalculatedSegProb.size()) ;
-        cellSegCount.resize(numCells + numOfDoublets) ;
-    }
+		dbgPtr = new GFAReader(gfaFile, consoleLog) ;
+		dbgPtr->parseFile(refInfo, outDir) ;
 
 
-      {
+		// NOTE: stand alone call to bfh
+		// ignore other eqclass stuff for now
+	    // They might come handy later.
+		// std::string eqFileDir = "dummy/dir" ;
+    	consoleLog->info("======================= Parsing BFH/related file ==========================") ;
+		eqClassPtr = new BFHClass(consoleLog) ;
+		if((simOpts.countProbFile != "") || (simOpts.geneProbFile != "")){
+			if(simOpts.countProbFile != ""){
+				eqClassPtr->loadProbability(
+					simOpts.countProbFile,
+					refInfo,
+					false
+				) ;
+			}else{
+				eqClassPtr->loadProbability(
+					simOpts.geneProbFile,
+					refInfo,
+					true
+				) ;
+			}
+		}else if(bfhFile != ""){
+      		// NOTE: This branch is currently
+      		// active
+			eqClassPtr->loadBFH(
+				bfhFile,
+				simOpts.clusterFile,
+				refInfo,
+				cellWhiteListMap,
+				false,
+				cellNoisyMap,
+				simOpts.outDir
+			) ;
+		}else{
+			// FIXME: Or load currently existing default file, this 
+			// shoud be changed
+			std::string geneProbFile = "../data/hg/geneLebelProb_pbmc_4k.txt" ;
+			if(!util::fs::FileExists(geneProbFile.c_str())){
+				consoleLog->error("alevin-mode is invoked with --dbg but neither bfh file"
+								  " no probability files are produced"
+				);
+				std::exit(5) ;
+			}
+			eqClassPtr->loadProbability(
+					geneProbFile,
+					refInfo,
+					true
+			) ;
+		}
 
-        size_t nonWhiteLisBarcodesSkipped{0} ;
-
-        // The alevin data can be binary 
-        // or can be non-binary, based on which
-        // we decide it to read and fill the geneCount
-        // matrix if useWhitelist is on we have to read
-        // the entire matrix. 
-        // Given N whitelistes and M noisy barcodes, if
-        // asked minnow will generate (N+M) x numOfTranscripts
-        // matrix in this order. 
-
-        // if given in txt format.
-        // the gene count matrix produced
-        // by Alevin has the structure of 
-        // cell to gene counts with a
-        // comma as delimeter 
-        // each line also ends with comma
-
-        // we would simultaneously create the
-        // cell x transcript matrix, it will have more 
-        // columns presumably
-
-        // Using a two level selection process for 
-        // converting the the gene counts to transcript 
-        // level counts. It is a multinomial distribution 
-        // to begin with where gene counts are of type double	
-
-        consoleLog->info("=======================Parsing the binary matrix file======================") ;
-        if(!binary){
-            pupulateGeneCountMatrix(countFile, geneCounts, numCells, numOfGenes) ;
-        }else{
-            //std::cout << "\n" ;
-            consoleLog->info("After gathering all information about the matrix loading the binary Matrix") ;
-            populateGeneCountMatrix(countFileBinary, originalGeneCountMatrix, numCells, numOfOriginalGenes, original2whitelistMap, original2NoisyMap, numOfOriginalCells) ;
-        }
-
-        consoleLog->info("Loaded the Matrix") ;
-
-        // Make a truncated geneCounts file
-        //T skippedCount{0} ;
-        if(numOfSkippedGenes > 0){
-            consoleLog->info("Truncating the matrix as not all genes are included") ;
-            for(size_t cell_id = 0 ; cell_id < originalGeneCountMatrix.size(); ++cell_id){
-                size_t geneCountsGeneIdx{0} ;
-                for(size_t gene_id = 0 ; gene_id < numOfOriginalGenes ; ++ gene_id){
-                    if(skippedGenes.find(gene_id) == skippedGenes.end()){
-                        geneCounts[cell_id][geneCountsGeneIdx] = originalGeneCountMatrix[cell_id][gene_id] ;
-                        geneCountsGeneIdx++ ;
-                    }
-                }
-            }
-        }else{
-            geneCounts = originalGeneCountMatrix ;
-        }
+		consoleLog->info("Parsed BFH/Prob file related information...") ;
+		consoleLog->info("Genes in BFH: {}", numOfGenes) ;
+		preCalculatedSegProb.resize(numOfGenes) ; // per gene
+		preSegOreMapVector.resize(numOfGenes) ;
+		geneSpecificTrVector.resize(numOfGenes) ;
 
 
-        // NOTE: This feature is not tested yet
-        // CREATE Doublets
-        if(createDoublet){
-            // Treat doublets as normal cells and put them in the list of all cells
-            auto CB10XList = util::generate10XCBList(numOfDoublets,
+		// fill segment based probability
+		// gene to tr to prob
+		// uint32_t trackGid{54819} ;
+		for(uint32_t i = 0; i < numOfGenes; ++i){
+			auto it = alevin2refMap.find(i) ;
+			if(it != alevin2refMap.end()){
+				auto originalGeneId = it->second ;
+				auto transcriptIds = refInfo.gene2transcriptMap[originalGeneId] ;
+
+				std::unordered_map<size_t, uint32_t> localGeneProb ;
+				std::unordered_map<size_t, bool> localSegOreMap ;
+				std::unordered_map<size_t, std::vector<trInfo>> localTrVector ;
+
+				for(auto tid : transcriptIds){
+					refInfo.transcripts[tid].setGeneId(i);
+
+					if(dbgPtr->trSegmentMap.find(tid) != dbgPtr->trSegmentMap.end()){
+						auto segVec = dbgPtr->trSegmentMap[tid] ;
+						bool everRC{false} ;
+						for(auto seg : segVec){
+							auto segCount = dbgPtr->eqClassMapCounts[seg] ;
+							auto bfhCount = eqClassPtr->getGeneLevelProbCount(
+								originalGeneId,
+								segCount
+							) ;
+
+							if(bfhCount != 0){
+								auto tcInfoVec = dbgPtr->eqClassMap[seg][tid] ;
+								for(auto tInfo : tcInfoVec){
+									if(
+										(refInfo.transcripts[tid].RefLength - tInfo.eposInContig <= MAX_FRAGLENGTH) ||
+										fivePrime
+									){
+										if(tInfo.eposInContig - tInfo.sposInContig < READ_LEN){
+											consoleLog->error("encountered a contig shorter than read length",
+															  "this is not permitted currently"
+											);
+											consoleLog->error("seg id: {} \t {}",tInfo.eposInContig,tInfo.sposInContig) ;
+											std::exit(6) ;
+										}
+										localGeneProb[seg] = bfhCount ;
+										localTrVector[seg].emplace_back(
+											tid,
+											tInfo.sposInContig,
+											tInfo.eposInContig
+										) ;
+									}
+
+									if(!tInfo.ore && !everRC){
+										everRC = true ;
+									}
+								}
+								if(everRC){
+									localSegOreMap[seg] = false ;
+								}else{
+									localSegOreMap[seg] = true ;
+								}
+							}
+						}
+					}
+				}
+				preCalculatedSegProb[i] = localGeneProb ;
+				preSegOreMapVector[i] = localSegOreMap ;
+				geneSpecificTrVector[i] = localTrVector ;
+			}
+		}
+
+		consoleLog->info("After loading bfh prob size {}",preCalculatedSegProb.size()) ;
+		cellSegCount.resize(numCells + numOfDoublets) ;
+	}
+
+
+  	{
+
+		size_t nonWhiteLisBarcodesSkipped{0} ;
+
+		// The alevin data can be binary 
+		// or can be non-binary, based on which
+		// we decide it to read and fill the geneCount
+		// matrix if useWhitelist is on we have to read
+		// the entire matrix. 
+		// Given N whitelistes and M noisy barcodes, if
+		// asked minnow will generate (N+M) x numOfTranscripts
+		// matrix in this order. 
+
+		// if given in txt format.
+		// the gene count matrix produced
+		// by Alevin has the structure of 
+		// cell to gene counts with a
+		// comma as delimeter 
+		// each line also ends with comma
+
+		// we would simultaneously create the
+		// cell x transcript matrix, it will have more 
+		// columns presumably
+
+		// Using a two level selection process for 
+		// converting the the gene counts to transcript 
+		// level counts. It is a multinomial distribution 
+		// to begin with where gene counts are of type double	
+
+		consoleLog->info("=======================Parsing the binary matrix file======================") ;
+		if(!binary){
+			pupulateGeneCountMatrix(countFile, geneCounts, numCells, numOfGenes) ;
+		}else{
+			//std::cout << "\n" ;
+			consoleLog->info("After gathering all information about the matrix loading the binary Matrix") ;
+			populateGeneCountMatrix(countFileBinary, originalGeneCountMatrix, numCells, numOfOriginalGenes, original2whitelistMap, original2NoisyMap, numOfOriginalCells) ;
+		}
+
+		consoleLog->info("Loaded the Matrix") ;
+
+		// Make a truncated geneCounts file
+		//T skippedCount{0} ;
+		if(numOfSkippedGenes > 0){
+			consoleLog->info("Truncating the matrix as not all genes are included") ;
+			for(size_t cell_id = 0 ; cell_id < originalGeneCountMatrix.size(); ++cell_id){
+				size_t geneCountsGeneIdx{0} ;
+				for(size_t gene_id = 0 ; gene_id < numOfOriginalGenes ; ++ gene_id){
+					if(skippedGenes.find(gene_id) == skippedGenes.end()){
+						geneCounts[cell_id][geneCountsGeneIdx] = originalGeneCountMatrix[cell_id][gene_id] ;
+						geneCountsGeneIdx++ ;
+					}
+				}
+			}
+		}else{
+			geneCounts = originalGeneCountMatrix ;
+		}
+
+
+    	// NOTE: This feature is not tested yet
+		// CREATE Doublets
+		if(createDoublet){
+			// Treat doublets as normal cells and put them in the list of all cells
+			auto CB10XList = util::generate10XCBList(numOfDoublets,
                                                simOpts.whitelistFile,
                                                consoleLog) ;
             for(size_t i = 0; i < numOfDoublets; ++i){
@@ -1524,38 +1528,39 @@ void DataMatrix<T>::loadSplatterData(
     Reference& refInfo
 ){
 
-    // Load data from the simOpts
-    auto splatterDir = simOpts.inputdir ;
-    size_t sampleCells = simOpts.sampleCells ;
-    std::string outDir = simOpts.outDir ;
-    std::string bfhFile = simOpts.bfhFile ;
-    std::string gfaFile = simOpts.gfaFile ;
-    std::string uniquenessListFile = simOpts.uniquenessFile ;
-    //bool useEqClass = simOpts.useEqClass ;
-    bool useWeibull = simOpts.useWeibull ;
-    bool useDBG = simOpts.useDBG ;
-    bool velocityMode = simOpts.velocityMode;
+	// Load data from the simOpts
+	auto splatterDir = simOpts.inputdir ;
+	size_t sampleCells = simOpts.sampleCells ;
+	std::string outDir = simOpts.outDir ;
+	std::string bfhFile = simOpts.bfhFile ;
+	std::string gfaFile = simOpts.gfaFile ;
+	std::string uniquenessListFile = simOpts.uniquenessFile ;
+	bool fivePrime = true;
+	//bool useEqClass = simOpts.useEqClass ;
+	bool useWeibull = simOpts.useWeibull ;
+	bool useDBG = simOpts.useDBG ;
+	bool velocityMode = simOpts.velocityMode;
 
 
-    std::string geneListFile = splatterDir + "/quants_mat_rows.txt" ;
-    std::string cellListFile = splatterDir + "/quants_mat_cols.txt" ;
+	std::string geneListFile = splatterDir + "/quants_mat_rows.txt" ;
+	std::string cellListFile = splatterDir + "/quants_mat_cols.txt" ;
 
-    // this is gene to cell matrix
-    std::string countFile = splatterDir + "/quants_mat.csv" ;
+	// this is gene to cell matrix
+	std::string countFile = splatterDir + "/quants_mat.csv" ;
 
-    if(! util::fs::FileExists(geneListFile.c_str())){
-        consoleLog->error("{} file does not exist", geneListFile) ;
-        std::exit(1) ;
-    }
-    if(! util::fs::FileExists(cellListFile.c_str())){
-        consoleLog->error("{} file  not exist",cellListFile) ;
-        std::exit(1) ;
-    }
+	if(! util::fs::FileExists(geneListFile.c_str())){
+		consoleLog->error("{} file does not exist", geneListFile) ;
+		std::exit(1) ;
+	}
+	if(! util::fs::FileExists(cellListFile.c_str())){
+		consoleLog->error("{} file  not exist",cellListFile) ;
+		std::exit(1) ;
+	}
 
-    if(! util::fs::FileExists(countFile.c_str())){
-        consoleLog->error("{} file does not exist",countFile) ;
-        std::exit(1) ;
-    }
+	if(! util::fs::FileExists(countFile.c_str())){
+		consoleLog->error("{} file does not exist",countFile) ;
+		std::exit(1) ;
+	}
 
   // Check command combinations first, since all combinations
   // are not allowed in splatter
@@ -1958,107 +1963,115 @@ void DataMatrix<T>::loadSplatterData(
         }
     }
 
-    // Make a truncated geneCounts file
-    //T skippedCount{0} ;
-    geneCounts.resize(sampleCells, std::vector<T>(numOfGenes - numOfSkippedGenes)) ;
-    trueGeneCounts.resize(sampleCells, std::vector<int>(numOfGenes - numOfSkippedGenes)) ;
-    for(auto& v : geneCounts)
-        std::memset(&v[0], 0, sizeof(v[0]) * v.size());
+	// Make a truncated geneCounts file
+	//T skippedCount{0} ;
+	geneCounts.resize(sampleCells, std::vector<T>(numOfGenes - numOfSkippedGenes)) ;
+	trueGeneCounts.resize(sampleCells, std::vector<int>(numOfGenes - numOfSkippedGenes)) ;
+	for(auto& v : geneCounts)
+    	std::memset(&v[0], 0, sizeof(v[0]) * v.size());
 
-    for(auto& v : trueGeneCounts)
-        std::memset(&v[0], 0, sizeof(v[0]) * v.size());
-
-
-    if(numOfSkippedGenes > 0){
-        if(!useDBG){
-        consoleLog->warn("Skipping {} genes, either they are short or absent in reference",numOfSkippedGenes) ;
-        }else{
-        consoleLog->warn("Skipping {} genes, gene pool size of de-Bruijn graph {}",
-                        numOfSkippedGenes, validGeneIds.size()) ;
-        }
-
-        for(size_t cell_id = 0 ; cell_id < originalGeneCountMatrix.size(); ++cell_id){
-            size_t geneCountsGeneIdx{0} ;
-            for(size_t gene_id = 0 ; gene_id < numOfOriginalGenes ; ++ gene_id){
-                if(skippedGenes.find(gene_id) == skippedGenes.end()){
-                    geneCounts[cell_id][geneCountsGeneIdx] = originalGeneCountMatrix[cell_id][gene_id] ;
-                    geneCountsGeneIdx++ ;
-                }
-            }
-        }
-        // write down the skipped genes if there is any
-        if (invalidGeneNames.size() > 0){
-            std::string invalidGeneFile = outDir + "/invalidnames.txt" ;
-            std::ofstream invalidGeneNameStream(invalidGeneFile);
-            for(auto& n : invalidGeneNames){
-                invalidGeneNameStream << n << "\n" ;
-            }
-        }
-
-        consoleLog->info("Truncated the matrix to dimension {} x {}",geneCounts.size(), geneCounts[0].size()) ;
-    }else{
-        geneCounts = originalGeneCountMatrix ;
-    }
+	for(auto& v : trueGeneCounts)
+    	std::memset(&v[0], 0, sizeof(v[0]) * v.size());
 
 
-    numOfGenes = geneCounts[geneCounts.size()-1].size() ;
+	if(numOfSkippedGenes > 0){
+		if(!useDBG){
+		consoleLog->warn("Skipping {} genes, either they are short or absent in reference",numOfSkippedGenes) ;
+		}else{
+		consoleLog->warn("Skipping {} genes, gene pool size of de-Bruijn graph {}",
+						numOfSkippedGenes, validGeneIds.size()) ;
+		}
 
-    auto& gene2transcriptMap = refInfo.gene2transcriptMap ;
-    std::map<uint32_t, uint32_t> alevinReverseMap ;
-    {
-        // create a transcript map
-        uint32_t trId{0} ;
-        for(auto it : alevin2refMap){
-            auto gIt = gene2transcriptMap.find(it.second) ;
-            if(gIt != gene2transcriptMap.end()){
-                auto& trVec = gIt->second ;
-                //std::cerr << "# of transcripts in this gene "<< gIt->first 
-                //	      <<  ":\t" << trVec.size() << "\n" ;	
-                for(auto tr : trVec){
-                    alevin2refTranscriptMap[trId] = tr ;
-                    alevinReverseMap[tr] = trId ;
-                    trId += 1 ;
-                }
-            }else{
-                consoleLog->error("This should not happen: gene {} not found",gIt->first) ;
-            }
-        }
-    }
-
-
-    numOfTranscripts = alevin2refTranscriptMap.size() ;
-
-
-    // If we use dbg then the transcripts used above won't be needed  
-    if(useDBG){
-
-        auto rspdFile = simOpts.rspdFile ;
-        if(rspdFile != ""){
-            if(util::fs::FileExists(rspdFile.c_str())){
-                std::cerr << "RSPD file " << rspdFile << "\n" ;
-                rspdVec.resize(MAX_FRAGLENGTH) ;
-                std::ifstream rspdStream(rspdFile.c_str()) ;
-                std::string line ;
-                while(std::getline(rspdStream, line)){
-                    std::vector<std::string> tokens ;
-                    util::split(line, tokens, ",") ;
-                    if(tokens.size() != 2)
-                        continue ;
-                    uint32_t pos = std::stoul(tokens[0]) ;
-                    uint32_t prob = std::stoul(tokens[1]) ;
-                    if(pos < rspdVec.size()){
-                        rspdVec[pos] = prob ;
-                    }
-                }
-            }else{
-                consoleLog->warn("RSPD file is not empty and doesn't exist, going with truncated sampling\n") ;
-            }
-        }else{
-            consoleLog->warn("No RSPD file provided \n") ;
-        }
+		for(size_t cell_id = 0 ; cell_id < originalGeneCountMatrix.size(); ++cell_id){
+			size_t geneCountsGeneIdx{0} ;
+			for(size_t gene_id = 0 ; gene_id < numOfOriginalGenes ; ++ gene_id){
+				if(skippedGenes.find(gene_id) == skippedGenes.end()){
+					geneCounts[cell_id][geneCountsGeneIdx] = originalGeneCountMatrix[cell_id][gene_id] ;
+					geneCountsGeneIdx++ ;
+				}
+			}
+		}
+		// write down the skipped genes if there is any
+		if (invalidGeneNames.size() > 0){
+			std::string invalidGeneFile = outDir + "/invalidnames.txt" ;
+			std::ofstream invalidGeneNameStream(invalidGeneFile);
+			for(auto& n : invalidGeneNames){
+				invalidGeneNameStream << n << "\n" ;
+			}
+		}
 
 
-        
+		if (geneCounts[0].size() == 0){
+			consoleLog->error("Skipped all genes, please check if gene names are consistent"
+			                  " across transcript to gene mapping file and others"
+			);
+			std::exit(13);
+		}
+
+		consoleLog->info("Truncated the matrix to dimension {} x {}",geneCounts.size(), geneCounts[0].size()) ;
+	}else{
+		geneCounts = originalGeneCountMatrix ;
+	}
+
+
+	numOfGenes = geneCounts[geneCounts.size()-1].size() ;
+
+	auto& gene2transcriptMap = refInfo.gene2transcriptMap ;
+	std::map<uint32_t, uint32_t> alevinReverseMap ;
+	{
+		// create a transcript map
+		uint32_t trId{0} ;
+		for(auto it : alevin2refMap){
+			auto gIt = gene2transcriptMap.find(it.second) ;
+			if(gIt != gene2transcriptMap.end()){
+				auto& trVec = gIt->second ;
+				//std::cerr << "# of transcripts in this gene "<< gIt->first 
+				//	      <<  ":\t" << trVec.size() << "\n" ;	
+				for(auto tr : trVec){
+					alevin2refTranscriptMap[trId] = tr ;
+					alevinReverseMap[tr] = trId ;
+					trId += 1 ;
+				}
+			}else{
+				consoleLog->error("This should not happen: gene {} not found",gIt->first) ;
+			}
+		}
+	}
+
+
+	numOfTranscripts = alevin2refTranscriptMap.size() ;
+
+
+	// If we use dbg then the transcripts used above won't be needed  
+	if(useDBG){
+
+		auto rspdFile = simOpts.rspdFile ;
+		if(rspdFile != ""){
+			if(util::fs::FileExists(rspdFile.c_str())){
+				std::cerr << "RSPD file " << rspdFile << "\n" ;
+				rspdVec.resize(MAX_FRAGLENGTH) ;
+				std::ifstream rspdStream(rspdFile.c_str()) ;
+				std::string line ;
+				while(std::getline(rspdStream, line)){
+					std::vector<std::string> tokens ;
+					util::split(line, tokens, ",") ;
+					if(tokens.size() != 2)
+						continue ;
+					uint32_t pos = std::stoul(tokens[0]) ;
+					uint32_t prob = std::stoul(tokens[1]) ;
+					if(pos < rspdVec.size()){
+						rspdVec[pos] = prob ;
+					}
+				}
+			}else{
+				consoleLog->warn("RSPD file is not empty and doesn't exist, going with truncated sampling\n") ;
+			}
+		}else{
+			consoleLog->warn("No RSPD file provided \n") ;
+		}
+
+
+		
       // stand alone call to bfh
       // ignore other eqclass stuff
       // FIXME we don't call equivalence
@@ -2098,108 +2111,116 @@ void DataMatrix<T>::loadSplatterData(
 
 
       consoleLog->info("The size of probability Vector {}",eqClassPtr->countProbability.size()) ;
+	  // the size should not be zero
+	  if (eqClassPtr->countProbability.size() == 0){
+		  consoleLog->error("Recheck the bfh file, the probability vector size is zero");
+		  std::exit(11);
+	  }
 
-        preCalculatedSegProb.resize(numOfGenes) ; // per gene
-        preSegOreMapVector.resize(numOfGenes) ;
-        geneSpecificTrVector.resize(numOfGenes) ;
+		preCalculatedSegProb.resize(numOfGenes) ; // per gene
+		preSegOreMapVector.resize(numOfGenes) ;
+		geneSpecificTrVector.resize(numOfGenes) ;
 
-        // fill segment based probability
-        // gene to tr to prob mapping
+		// fill segment based probability
+		// gene to tr to prob mapping
 
-        for(uint32_t i = 0; i < numOfGenes; ++i){
-            auto it = alevin2refMap.find(i) ;
-            if(it != alevin2refMap.end()){
-                auto originalGeneId = it->second ;
-                // if (i == geneIdToTrack)
-                // 	std::cerr << "Tracking gene id " << i << " original gene id " << originalGeneId << "\n" ; 
-                //std::cerr << "original gene id "  << originalGeneId << "\n" ;
+		for(uint32_t i = 0; i < numOfGenes; ++i){
+			auto it = alevin2refMap.find(i) ;
+			if(it != alevin2refMap.end()){
+				auto originalGeneId = it->second ;
+				// if (i == geneIdToTrack)
+				// 	std::cerr << "Tracking gene id " << i << " original gene id " << originalGeneId << "\n" ; 
+				//std::cerr << "original gene id "  << originalGeneId << "\n" ;
 
-                auto transcriptIds = refInfo.gene2transcriptMap[originalGeneId] ;
+				auto transcriptIds = refInfo.gene2transcriptMap[originalGeneId] ;
 
-                std::unordered_map<size_t, uint32_t> localGeneProb ;
-                std::unordered_map<size_t, bool> localSegOreMap ;
-                std::unordered_map<size_t, std::vector<trInfo>> localTrVector ;
+				std::unordered_map<size_t, uint32_t> localGeneProb ;
+				std::unordered_map<size_t, bool> localSegOreMap ;
+				std::unordered_map<size_t, std::vector<trInfo>> localTrVector ;
 
-                //std::cerr << "tr size " << transcriptIds.size() << "\n" ;
-                size_t shortTranscriptLength{0};
-                bool shortLength{false} ;
-                uint32_t shortTid{0};
-                bool tqVecZero{false} ;
-                size_t numTids = transcriptIds.size() ;
+				//std::cerr << "tr size " << transcriptIds.size() << "\n" ;
+				size_t shortTranscriptLength{0};
+				bool shortLength{false} ;
+				uint32_t shortTid{0};
+				bool tqVecZero{false} ;
+				size_t numTids = transcriptIds.size() ;
 
-                
-                for(auto tid : transcriptIds){
-                    refInfo.transcripts[tid].setGeneId(i);
-                    if(dbgPtr->trSegmentMap.find(tid) != dbgPtr->trSegmentMap.end()){
-                        auto segVec = dbgPtr->trSegmentMap[tid] ;
-                        bool everRC{false} ;
-                        // check if this transcript has enough transcripts
-                        bool eligibleSegments{false};
-                        for(auto seg: segVec){
-                            auto segCount = dbgPtr->eqClassMapCounts[seg] ;
-                            //auto bfhCount = eqClassPtr->getGeneLevelProbCount(
-                            //	originalGeneId,
-                            //	segCount 
-                            //) ;
-                            auto bfhCount = eqClassPtr->countProbability[segCount] ;
-                            if(bfhCount != 0){
-                                eligibleSegments = true ;
-                                break ;
-                            }
-                        }
-                        
-                        double uniformProb{0.0};
-                        if(!eligibleSegments && (segVec.size() > 0)){
-                            uniformProb = static_cast<double>(1.0) / static_cast<double>(segVec.size());
-                        }
+				
+				for(auto tid : transcriptIds){
+					refInfo.transcripts[tid].setGeneId(i);
+					if(dbgPtr->trSegmentMap.find(tid) != dbgPtr->trSegmentMap.end()){
+						auto segVec = dbgPtr->trSegmentMap[tid] ;
+						bool everRC{false} ;
+						// check if this transcript has enough transcripts
+						bool eligibleSegments{false};
+						for(auto seg: segVec){
+							auto segCount = dbgPtr->eqClassMapCounts[seg] ;
+							//auto bfhCount = eqClassPtr->getGeneLevelProbCount(
+							//	originalGeneId,
+							//	segCount 
+							//) ;
+							auto bfhCount = eqClassPtr->countProbability[segCount] ;
+							if(bfhCount != 0){
+								eligibleSegments = true ;
+								break ;
+							}
+						}
+						
+						double uniformProb{0.0};
+						if(!eligibleSegments && (segVec.size() > 0)){
+							uniformProb = static_cast<double>(1.0) / static_cast<double>(segVec.size());
+						}
 
-                        for(auto seg : segVec){
-                            auto segCount = dbgPtr->eqClassMapCounts[seg] ;
-                            //auto bfhCount = eqClassPtr->getGeneLevelProbCount(
-                            //	originalGeneId,
-                            //	segCount 
-                            //) ;
-                            auto bfhCount = eqClassPtr->countProbability[segCount] ;
-                            // if this multimapping is not seen in count probability
-                            // vector then just 
-                            if (bfhCount == 0 && !eligibleSegments){
-                                bfhCount = uniformProb ;
-                            }else if (bfhCount == 0){
-                                continue;
-                            }
+						for(auto seg : segVec){
+							auto segCount = dbgPtr->eqClassMapCounts[seg] ;
+							//auto bfhCount = eqClassPtr->getGeneLevelProbCount(
+							//	originalGeneId,
+							//	segCount 
+							//) ;
+							auto bfhCount = eqClassPtr->countProbability[segCount] ;
+							// if this multimapping is not seen in count probability
+							// vector then just 
+							if (bfhCount == 0 && !eligibleSegments){
+								bfhCount = uniformProb ;
+							}else if (bfhCount == 0){
+								continue;
+							}
 
-                            //if(bfhCount != 0){
-                                // old one
-                                // localTrVector[seg].emplace_back(tid) ;
+							//if(bfhCount != 0){
+								// old one
+								// localTrVector[seg].emplace_back(tid) ;
 
-                            auto tcInfoVec = dbgPtr->eqClassMap[seg][tid] ;
-                            tqVecZero = (tcInfoVec.size() == 0) ;
-                            for(auto tInfo : tcInfoVec){
-                                if(refInfo.transcripts[tid].RefLength - tInfo.eposInContig <= MAX_FRAGLENGTH){
-                                    localGeneProb[seg] = bfhCount ;
-                                    localTrVector[seg].emplace_back(
-                                        tid,
-                                        tInfo.sposInContig,
-                                        tInfo.eposInContig
-                                    ) ;
-                                }else{
-                                    shortTid = tid ;
-                                    shortLength = true ;
-                                    shortTranscriptLength = refInfo.transcripts[tid].RefLength - tInfo.eposInContig;
-                                }
+							auto tcInfoVec = dbgPtr->eqClassMap[seg][tid] ;
+							tqVecZero = (tcInfoVec.size() == 0) ;
+							for(auto tInfo : tcInfoVec){
+								if(
+									(refInfo.transcripts[tid].RefLength - tInfo.eposInContig <= MAX_FRAGLENGTH) ||
+									fivePrime
+								){
+									localGeneProb[seg] = bfhCount ;
+									localTrVector[seg].emplace_back(
+										tid,
+										tInfo.sposInContig,
+										tInfo.eposInContig
+									) ;
+								}else{
+									shortTid = tid ;
+									shortLength = true ;
+									shortTranscriptLength = refInfo.transcripts[tid].RefLength - tInfo.eposInContig;
+								}
 
-                                if(!tInfo.ore && !everRC){
-                                    everRC = true ;
-                                }
-                            }
-                            if(everRC){
-                                localSegOreMap[seg] = false ;
-                            }else{
-                                localSegOreMap[seg] = true ;
-                            }
-                            //}
-                        }
-                    }else{
+								if(!tInfo.ore && !everRC){
+									everRC = true ;
+								}
+							}
+							if(everRC){
+								localSegOreMap[seg] = false ;
+							}else{
+								localSegOreMap[seg] = true ;
+							}
+							//}
+						}
+					}else{
             if(numTids == 1){
               consoleLog->warn("There is one transcript {} for this gene, length: {}, name: {}",
                                 tid, refInfo.transcripts[tid].RefLength,

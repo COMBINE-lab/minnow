@@ -152,6 +152,7 @@ void GFAReader::parseFile(
   consoleLog->info("Parsing GFA file {}", gfaFileName_);
   consoleLog->info("Start loading segments...") ;
   size_t contigCt{0} ;
+  bool fivePrime{true};
   std::string ln, tag, id, value ;
 
 
@@ -276,64 +277,113 @@ void GFAReader::parseFile(
       updateEqClass(id, contigVec, refInfo, overlapsize) ;
 
   }
+  
+  size_t eqMapPreFilterSize = eqClassMap.size();
+  consoleLog->info("Equivalence class made from De-Bruijn graph has size {}"
+                    , eqMapPreFilterSize
+  );
 
 	// filter segements that is does not have 
 	// any transcript where it is within 
 	// MAX_FRAGLEN within 3'
 
-	std::unordered_map<uint32_t, uint32_t> distanceFromEndMap ;
-	for(auto tr : refInfo.transcriptNameMap){
-		auto tid = tr.second ;
-		auto refLen = refInfo.transcripts[tid].RefLength ;
-		if(refLen > MAX_FRAGLENGTH){
-			distanceFromEndMap[tid] = refLen - MAX_FRAGLENGTH ;
-		}else{
-			distanceFromEndMap[tid] = 0 ;
-		}
-    // if(tid == 11393){
-    //   std::cout << "[DEBUG]-----" << distanceFromEndMap[tid]<<"\n";
-    // }
-	}
+  // A new protocol form 10X follows protocol that 
+  // there could be data clipped from the 
+  // 5' end of the transcript
 
-	std::unordered_set<size_t> removeKeys ;	
+  if (!fivePrime){
+    consoleLog->info("Deleting unitigs of lower length");
+    std::unordered_map<uint32_t, uint32_t> distanceFromEndMap ;
+    for(auto tr : refInfo.transcriptNameMap){
+      auto tid = tr.second ;
+      auto refLen = refInfo.transcripts[tid].RefLength ;
+      if(refLen > MAX_FRAGLENGTH){
+        distanceFromEndMap[tid] = refLen - MAX_FRAGLENGTH ;
+      }else{
+        distanceFromEndMap[tid] = 0 ;
+      }
+      // if(tid == 11393){
+      //   std::cout << "[DEBUG]-----" << distanceFromEndMap[tid]<<"\n";
+      // }
+    }
 
-  // debug
-  //size_t unitig_id_to_track{0};
-	for(auto unitig : eqClassMap){
-		auto id = unitig.first ;
-		auto trInfoMap = unitig.second ;
-		bool keepIt{false} ;
+    std::unordered_set<size_t> removeKeys ;	
 
-		for(auto tinfo : trInfoMap){
-			auto tid = tinfo.first ;
-			auto tidVec = tinfo.second ;
-			for(auto info : tidVec){
-        // [DEBUG]
-        //if(id == 38557 and tid == 11393){
-        //   std::cout << "[DEBUG]-----" << "\t"
-        //             <<info.sposInContig << "\t"
-        //             <<info.eposInContig
-        //             << "\t" << distanceFromEndMap[tid] << "\t"
-        //             << refInfo.transcripts[tid].RefLength <<  "\n" ;
-        //}
-				if(info.eposInContig >= distanceFromEndMap[tid]){
-					keepIt = true ;
-					break ;
-				}
-			}
-			if(keepIt)
-				break ;
-		}
+    // debug
+    //size_t unitig_id_to_track{0};
+    for(auto unitig : eqClassMap){
+      auto id = unitig.first ;
+      auto trInfoMap = unitig.second ;
+      bool keepIt{false} ;
 
-		if(!keepIt){
-			removeKeys.insert(id) ;
-		}
-	}
+      for(auto tinfo : trInfoMap){
+        auto tid = tinfo.first ;
+        auto tidVec = tinfo.second ;
+        for(auto info : tidVec){
+          // [DEBUG]
+          //if(id == 38557 and tid == 11393){
+          //   std::cout << "[DEBUG]-----" << "\t"
+          //             <<info.sposInContig << "\t"
+          //             <<info.eposInContig
+          //             << "\t" << distanceFromEndMap[tid] << "\t"
+          //             << refInfo.transcripts[tid].RefLength <<  "\n" ;
+          //}
+          if(info.eposInContig >= distanceFromEndMap[tid]){
+            keepIt = true ;
+            break ;
+          }
+        }
+        if(keepIt)
+          break ;
+      }
 
-	for(auto k : removeKeys){
-		eqClassMap.erase(k) ;
-	}
+      if(!keepIt){
+        removeKeys.insert(id) ;
+      }
+	  }
 
+    for(auto k : removeKeys){
+      eqClassMap.erase(k) ;
+    }
+
+  }else{
+    consoleLog->info("In 5' 10X protocol");
+    // don't consider a contig if the start is beyond
+    // MAX_FRAGLENGTH
+    std::unordered_set<size_t> removeKeys;
+    for(auto unitig : eqClassMap){
+      auto id = unitig.first ;
+      auto trInfoMap = unitig.second ;
+      bool keepIt{false} ;
+
+      for(auto tinfo : trInfoMap){
+        auto tid = tinfo.first ;
+        auto tidVec = tinfo.second ;
+        for(auto info : tidVec){
+          if(info.sposInContig < MAX_FRAGLENGTH){
+            keepIt = true ;
+            break ;
+          }
+        }
+        if(keepIt)
+          break ;
+      }
+
+      if(!keepIt){
+        removeKeys.insert(id) ;
+      }
+	  }
+
+    for(auto k : removeKeys){
+      eqClassMap.erase(k) ;
+    }
+
+  }
+
+  if (eqMapPreFilterSize != eqClassMap.size()){
+    consoleLog->warn("After filtering the size of equivalence class {}",
+      eqClassMap.size());    
+  }
 
   std::vector<bool> includedTranscripts(refInfo.numOfTranscripts, false) ;
 	for(auto unitig : eqClassMap){

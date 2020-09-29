@@ -554,6 +554,7 @@ void doPCRBulkDBG(
 ){
     PCRClass* pcrClassPtr{nullptr} ;
     bool rspdMode{false} ;
+    bool fivePrime{true};
 
     if(rspdVec.size() > 0){
         rspdMode = true ;
@@ -618,6 +619,9 @@ void doPCRBulkDBG(
         if(tr.RefLength < MAX_FRAGLENGTH) {
                 fragmentStartPos = 0 ;
                fragLen = tr.RefLength;
+        }else if(fivePrime){
+            fragmentStartPos = 0;
+            fragLen = MAX_FRAGLENGTH;
         }else {
             fragmentStartPos = tr.RefLength - MAX_FRAGLENGTH ;
             fragLen = MAX_FRAGLENGTH ;
@@ -664,11 +668,36 @@ void doPCRBulkDBG(
             absStartPos = segStartPos ;
 
             startPos = generateSegmentRSPD(fragmentSeq, readSeq, rspdVec) ;
+        }else if (fivePrime){
+            auto segmentLength = segEndPos - segStartPos + 1 ;
+            // scale segment start pos
+            // segStartPos = segStartPos - fragmentStartPos ; 
+            auto mu = std::round(segmentLength/2) ;
+            muMap[i] = mu ;
+            // Sanity check
+            if(mu < READ_LEN){
+                smallerMu++ ;
+            }else{
+                biggerMu++ ;
+            }
+            //fragmentEnd = fragmentStartPos + fragLen - 1 ;
+            // goes through PCR
+            fragmentSeq = std::string{tr.Sequence() + segStartPos, segmentLength} ;
+            // std::cerr << "mu: " << mu << "\t fraglen: " << fragLen << "\n";
+            startPos = generateFragmentSeqFromSegment(fragmentSeq, mu, readSeq) ;
+            absStartPos = fragmentStartPos ;
         }else{
             auto segmentLength = segEndPos - segStartPos + 1 ;
             // scale segment start pos
             segStartPos = segStartPos - fragmentStartPos ; 
-            auto mu = static_cast<uint32_t>(fragLen - (segStartPos + std::round(segmentLength/2))) ;
+            auto extendedLength = (segStartPos + std::round(segmentLength/2)) ;
+            uint32_t mu{0};
+            if (extendedLength > fragLen){
+                std::cerr << fragLen << "\t" << extendedLength << " adjusting mu\n";
+                mu = extendedLength ;
+            }else {
+                mu = static_cast<uint32_t>(fragLen - extendedLength) ;
+            }
             muMap[i] = mu ;
             // Sanity check
             if(mu < READ_LEN){
@@ -679,8 +708,10 @@ void doPCRBulkDBG(
             //fragmentEnd = fragmentStartPos + fragLen - 1 ;
             // goes through PCR
             fragmentSeq = std::string{tr.Sequence() + fragmentStartPos, fragLen} ;
+            // std::cerr << "mu: " << mu << "\t fraglen: " << fragLen << "\n";
             startPos = generateFragmentSeqFromSegment(fragmentSeq, mu, readSeq) ;
             absStartPos = fragmentStartPos ;
+
         }
 
         
@@ -902,6 +933,8 @@ void doPCRBulkDBG(
     }
 
     // make sure every entry of
+    // matrix is consistent with number 
+    // of reads produced
     if(writtenExpressionVec < trueCellExpression){
         std::cerr << "Less number of reads are produced that the truth matrix\n";
         std::exit(2);
