@@ -333,7 +333,7 @@ PCR cycle then use higher values to find the edit-distance distribution with arb
 
 The edit distance distribution will be followd by a distribution of the `distance from end`. A snapshot of the out put from the above command is as follows,
 ```
-➜  build git:(minnow-velocity) ✗ head -20 mouse_splatter_sample_10/edit.dist
+➜  build git:(minnow-velocity) ✗ head -20 splatter_out/edit.dist
 0       606398
 1       304145
 2       75481
