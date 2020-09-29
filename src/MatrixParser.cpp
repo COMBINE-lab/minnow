@@ -2193,20 +2193,32 @@ void DataMatrix<T>::loadSplatterData(
 							auto tcInfoVec = dbgPtr->eqClassMap[seg][tid] ;
 							tqVecZero = (tcInfoVec.size() == 0) ;
 							for(auto tInfo : tcInfoVec){
-								if(
-									(refInfo.transcripts[tid].RefLength - tInfo.eposInContig <= MAX_FRAGLENGTH) ||
-									fivePrime
-								){
-									localGeneProb[seg] = bfhCount ;
-									localTrVector[seg].emplace_back(
-										tid,
-										tInfo.sposInContig,
-										tInfo.eposInContig
-									) ;
+								if (!fivePrime){
+									if(
+										(refInfo.transcripts[tid].RefLength - tInfo.eposInContig <= MAX_FRAGLENGTH)
+									){
+										localGeneProb[seg] = bfhCount ;
+										localTrVector[seg].emplace_back(
+											tid,
+											tInfo.sposInContig,
+											tInfo.eposInContig
+										) ;
+									}else{
+										shortTid = tid ;
+										shortLength = true ;
+										shortTranscriptLength = refInfo.transcripts[tid].RefLength - tInfo.eposInContig;
+									}
 								}else{
-									shortTid = tid ;
-									shortLength = true ;
-									shortTranscriptLength = refInfo.transcripts[tid].RefLength - tInfo.eposInContig;
+									if(
+										tInfo.sposInContig <= MAX_FRAGLENGTH - READ_LEN
+									){
+										localGeneProb[seg] = bfhCount ;
+										localTrVector[seg].emplace_back(
+											tid,
+											tInfo.sposInContig,
+											tInfo.eposInContig
+										) ;
+									}
 								}
 
 								if(!tInfo.ore && !everRC){
@@ -2221,12 +2233,12 @@ void DataMatrix<T>::loadSplatterData(
 							//}
 						}
 					}else{
-            if(numTids == 1){
-              consoleLog->warn("There is one transcript {} for this gene, length: {}, name: {}",
-                                tid, refInfo.transcripts[tid].RefLength,
-                                refInfo.transcripts[tid].RefName);
-            }
-          }
+						if(numTids == 1){
+						consoleLog->warn("There is one transcript {} for this gene, length: {}, name: {}",
+											tid, refInfo.transcripts[tid].RefLength,
+											refInfo.transcripts[tid].RefName);
+						}
+          			}
                 }
 
         if(localGeneProb.size() == 0){

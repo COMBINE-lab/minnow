@@ -599,6 +599,13 @@ void doPCRBulkDBG(
 
         auto segStartPos = uniqueMolecules[i].segmentStart ;
         auto segEndPos = uniqueMolecules[i].segmentEnd ;
+
+        if (fivePrime){
+            if (segStartPos > MAX_FRAGLENGTH) {
+                std::cerr << "10x 5 prime can not start after MAX_FRAGLEN\n";
+                std::exit(20);
+            }
+        }
         
         //auto oldSeLen = segEndPos - segStartPos + 1 ;
 
@@ -633,6 +640,9 @@ void doPCRBulkDBG(
         if(segStartPos < fragmentStartPos){
             segStartPos = fragmentStartPos ;
             max_frag_on = true ;
+        }
+        if (fivePrime && segEndPos > (MAX_FRAGLENGTH+READ_LEN)){
+            segEndPos = MAX_FRAGLENGTH+READ_LEN;
         }
         
         uint32_t slack_val{50} ; // mohsen number
@@ -670,6 +680,7 @@ void doPCRBulkDBG(
             startPos = generateSegmentRSPD(fragmentSeq, readSeq, rspdVec) ;
         }else if (fivePrime){
             auto segmentLength = segEndPos - segStartPos + 1 ;
+            // We should not go bryond MAX_FRAGLENGTH
             // scale segment start pos
             // segStartPos = segStartPos - fragmentStartPos ; 
             auto mu = std::round(segmentLength/2) ;
@@ -685,7 +696,7 @@ void doPCRBulkDBG(
             fragmentSeq = std::string{tr.Sequence() + segStartPos, segmentLength} ;
             // std::cerr << "mu: " << mu << "\t fraglen: " << fragLen << "\n";
             startPos = generateFragmentSeqFromSegment(fragmentSeq, mu, readSeq) ;
-            absStartPos = fragmentStartPos ;
+            absStartPos = segStartPos ;
         }else{
             auto segmentLength = segEndPos - segStartPos + 1 ;
             // scale segment start pos

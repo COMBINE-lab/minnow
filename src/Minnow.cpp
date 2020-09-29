@@ -163,7 +163,10 @@ int main(int argc, char* argv[]) {
     
     (option("--CBLength") & value("Cell barcode length", simulateOpt.CBLength)) % "Cell barcode length by default is 16",
     (option("--UMILength") & value("UMI length length", simulateOpt.UMILength)) % "Cell barcode length by default is 10",
-    (option("--ReadLength") & value("Read length", simulateOpt.UMILength)) % "read length by default is 100",
+    (option("--ReadLength") & value("Read length", simulateOpt.ReadLength)) % "read length by default is 100",
+    
+    // when protocol string is specified we no longer need
+    (option("--protocol") & value("specify protocol", simulateOpt.protocol)) % "provide one of these modes Chromiumv3|Chromium|DropSeq|CelSeq|CelSeq2",
 
     // (option("--alevin-mode").set(simulateOpt.alevinMode, true)) %
     // "The program would assume that the input matrix is obtained from Alevin",

@@ -318,6 +318,7 @@ void refValidate(
 
 	std::map<int, int> editDistanceMap ;
   std::map<int, int> distanceFromEnd ;
+  std::map<double, int> startPosMap ;
 
 	{
 		ScopedTimer st ;
@@ -394,6 +395,17 @@ void refValidate(
 				}else{
 					distanceFromEnd.insert({lfe, 1}) ;
 				}
+
+        // double positional_percent = std::ceil(
+        //   static_cast<double>(position) / static_cast<double>(transcripts[index].RefLength)
+        // ); 
+        double positional_percent = static_cast<double>(position);
+        auto it3 = startPosMap.find(positional_percent);
+        if(it3 != startPosMap.end()){
+          it3->second += 1;
+        }else{
+          startPosMap.insert({positional_percent,1});
+        }
 			}
 		}
     std::cout << "Done with " << rn << " reads \n" ;
@@ -401,11 +413,18 @@ void refValidate(
     parser.stop() ;
 	}
 	std::ofstream dictFile{outFile.c_str()} ;
+  dictFile << editDistanceMap.size() << "\n";
+  //dictFile << distanceFromEnd.size() << "\n";
+  dictFile << startPosMap.size() << "\n";
 	for(auto it: editDistanceMap){
 		dictFile << it.first << "\t" << it.second << "\n" ; 
 	}
-  dictFile << "--\n" ;
-	for(auto it: distanceFromEnd){
+  // dictFile << "--\n" ;
+	// for(auto it: distanceFromEnd){
+	// 	dictFile << it.first << "\t" << it.second << "\n" ; 
+	// }
+  // dictFile << "--\n" ;
+	for(auto it: startPosMap){
 		dictFile << it.first << "\t" << it.second << "\n" ; 
 	}
 	dictFile.close() ;

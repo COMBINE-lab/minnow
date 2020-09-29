@@ -360,7 +360,7 @@ void GFAReader::parseFile(
         auto tid = tinfo.first ;
         auto tidVec = tinfo.second ;
         for(auto info : tidVec){
-          if(info.sposInContig < MAX_FRAGLENGTH){
+          if(info.sposInContig <= MAX_FRAGLENGTH - READ_LEN){
             keepIt = true ;
             break ;
           }
