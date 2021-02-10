@@ -744,7 +744,7 @@ void doPCRBulkDBG(
                 uint32_t ind = i ;
                  numOfWritten++ ;
 
-                 std::string modifiedCellName = sequenceMap[ind].substr(0, CB_LENGTH) ;
+                 std::string modifiedCellName = sequenceMap[ind].substr(0, CB_LENGTH + UMI_LENGTH) ;
                 //bool ore = uniqueMolecules[ind].count ; 
 
                 //auto fragmentStr = sequenceMap[ind].substr(CB_LENGTH + UMI_LENGTH) ; 
@@ -825,8 +825,9 @@ void doPCRBulkDBG(
                 if(it != sequenceMap.end()){
                     auto parentSeq = it->second ;
 
-                    std::string modifiedCellName = sequenceMap[grandParentId].substr(0, CB_LENGTH) ;
-                    auto fragmentStr = sequenceMap[grandParentId].substr(CB_LENGTH + UMI_LENGTH) ; 
+                    std::string modifiedCellName = sequenceMap[grandParentId].substr(0, CB_LENGTH + UMI_LENGTH) ;
+                    // auto fragmentStr = sequenceMap[grandParentId].substr(CB_LENGTH + UMI_LENGTH) ; 
+                    auto fragmentStr = parentSeq.substr(CB_LENGTH + UMI_LENGTH) ; 
                     auto mu = muMap[grandParentId] ;
                     uint32_t startPos{0} ;
                     
@@ -1781,6 +1782,11 @@ bool spawnCellThreads(
     SpinLockT iomutex;
     consoleLog->info("Starting Minnow....") ;
     consoleLog->info("Number of cells to be processed {}", numOfCells) ;
+    if(useDBG){
+        consoleLog->info("Generating from the De-Bruijn graph provided");
+    }else{
+        consoleLog->error("Use --dbg mode follw the README");
+    }
 
     std::atomic<uint32_t> ccount{0} ;
     std::vector<std::thread> workerThreads ;
