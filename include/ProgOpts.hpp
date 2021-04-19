@@ -135,6 +135,7 @@ class EstimateOptions {
     std::string gene2txpFile{""} ;
     std::string eqClassFolder{""} ;
     std::string refFile ;
+    uint32_t ReadLength{100};
 
     std::string bfhFile{""} ;
     std::string outDir{""} ;
