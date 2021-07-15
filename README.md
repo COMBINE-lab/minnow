@@ -200,7 +200,7 @@ write.table(counts(sim), file= file.path(out_dir, "quants_mat.csv"), quote=FALSE
 ```
 
 2. Specify gene names for simulated data.
-As we want to simulate date with real gene names, while splatter only returns meaningless gene names (for instance, gene1, gene2, etc), we need to randomly select gene names from our reference files such that the selected genes have at least one isoform with length longer than read length. Fortunately, if you have run `minnow estimate`, you will have a fixed reference file `ref_k101_fixed.fa` which contains only transcripts that meet this criteria.
+As we want to simulate data with real gene names, while splatter only returns meaningless gene names (for instance, gene1, gene2, etc), we need to randomly select gene names from our reference files such that the selected genes have at least one isoform with length longer than read length. Fortunately, if you have run `minnow estimate`, you will have a fixed reference file `ref_k101_fixed.fa` which contains only transcripts that meet this criteria.
 
 ```
 grep ">" minnow_index/ref_k101_fixed.fa | awk -F "|" '{print $2}'|shuf -n 100 > data/test_splatter_data/quants_mat_rows.txt
