@@ -2,12 +2,12 @@ include_directories(
 ${TBB_INCLUDE_DIRS}
 )
 
-link_directories(
-		${GAT_SOURCE_DIR}/external/install/lib
-        DESTINATION  $(TBB_LIBRARY_DIRS)
-        FILES_MATCHING PATTERN "libtbb*.${SHARED_LIB_EXTENSION}*"
+# link_directories(
+# 		${GAT_SOURCE_DIR}/external/install/lib
+#         DESTINATION  $(TBB_LIBRARY_DIRS)
+#         FILES_MATCHING PATTERN "libtbb*.${SHARED_LIB_EXTENSION}*"
 
-)
+# )
 
 set(
     GRAPH_LIB_SRC

@@ -17,15 +17,17 @@ class Reference{
         Reference(
             std::string& fastaFileIn,
             std::string& gene2txpFileIn,
+            uint32_t readLengthIn,
             std::shared_ptr<spdlog::logger>& consoleLogIn
         ){
             consoleLog = consoleLogIn ;
             gene2txpFile = gene2txpFileIn ;
             fastaFile = fastaFileIn ;
             FASTAParser fastaParser(fastaFile) ;
+            readLength = readLengthIn;
 
             {
-                fastaParser.populateTargets(transcripts) ;
+                fastaParser.populateTargets(transcripts, readLength) ;
                 size_t trId{0} ;
                 for(auto& tr : transcripts){
                     transcriptNameMap[tr.RefName] = trId++ ;
@@ -43,7 +45,8 @@ class Reference{
                 fastaParser.populateIntronTargets(
                     transcripts, 
                     intronFastaFile,
-                    transcriptNameMap    
+                    transcriptNameMap,
+                    readLength 
                 ) ;
                 consoleLog->info("Intron file {} is read", intronFastaFile);
             }else{
@@ -210,6 +213,7 @@ class Reference{
         std::unordered_map<uint32_t, uint32_t> transcript2geneMap ;
         std::unordered_map<std::string, uint32_t> transcriptNameMap ;
         size_t numOfTranscripts ;
+        uint32_t readLength;
         std::shared_ptr<spdlog::logger> consoleLog;
 
 } ;

@@ -866,7 +866,7 @@ void DataMatrix<T>::loadAlevinData(
                                 auto tcInfoVec = dbgPtr->eqClassMap[seg][tid] ;
                                 for(auto tInfo : tcInfoVec){
                                     if(refInfo.transcripts[tid].RefLength - tInfo.eposInContig <= MAX_FRAGLENGTH){
-                                        if(tInfo.eposInContig - tInfo.sposInContig < READ_LEN){
+                                        if(tInfo.eposInContig - tInfo.sposInContig < refInfo.readLength){
                                             consoleLog->error("encountered a contig shorter than read length",
                                                               "this is not permitted currently"
                                             );

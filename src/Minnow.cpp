@@ -107,6 +107,9 @@ int main(int argc, char* argv[]) {
     value(ensure_file_exists,"reference", estimateOpt.refFile)) %
     "transcript fasta file",
 
+    (option("--ReadLength") & 
+    value("Read length", estimateOpt.ReadLength)) % "read length by default is 100",
+
     (required("--g2t") &
     value(ensure_file_exists,"gene_tr", estimateOpt.gene2txpFile)) %
     "tab separated list of Gene to Transcirpt mapping",
@@ -163,7 +166,7 @@ int main(int argc, char* argv[]) {
     
     (option("--CBLength") & value("Cell barcode length", simulateOpt.CBLength)) % "Cell barcode length by default is 16",
     (option("--UMILength") & value("UMI length length", simulateOpt.UMILength)) % "Cell barcode length by default is 10",
-    (option("--ReadLength") & value("Read length", simulateOpt.UMILength)) % "read length by default is 100",
+    (option("--ReadLength") & value("Read length", simulateOpt.ReadLength)) % "read length by default is 100",
 
     // (option("--alevin-mode").set(simulateOpt.alevinMode, true)) %
     // "The program would assume that the input matrix is obtained from Alevin",

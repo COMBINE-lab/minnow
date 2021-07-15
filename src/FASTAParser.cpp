@@ -145,7 +145,8 @@ void FASTAParser::updateTranscriptLevelIntron(
 
 
 void FASTAParser::populateTargets(
-  std::vector<Transcript>& refs
+  std::vector<Transcript>& refs,
+  uint32_t readLength
 ) {
   using single_parser = fastx_parser::FastxParser<fastx_parser::ReadSeq>;
 
@@ -192,7 +193,7 @@ void FASTAParser::populateTargets(
         // std::string& seq = j->data[i].seq;
         std::string& seq = read.seq;
         size_t readLen = seq.length();
-        if(readLen < READ_LEN)
+        if(readLen < readLength)
           continue ;
 
         // Replace non-ACGT bases
@@ -233,7 +234,8 @@ void FASTAParser::populateTargets(
 void FASTAParser::populateIntronTargets(
   std::vector<Transcript>& refs,
   std::string& intronFileName,
-  std::unordered_map<std::string, uint32_t>& transcriptNameMap
+  std::unordered_map<std::string, uint32_t>& transcriptNameMap,
+  uint32_t readLength
 ) {
   using single_parser = fastx_parser::FastxParser<fastx_parser::ReadSeq>;
 
@@ -279,7 +281,7 @@ void FASTAParser::populateIntronTargets(
         // std::string& seq = j->data[i].seq;
         std::string& seq = read.seq;
         size_t readLen = seq.length();
-        if(readLen < READ_LEN)
+        if(readLen < readLength)
           continue ;
 
         // Replace non-ACGT bases
