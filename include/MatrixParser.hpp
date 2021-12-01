@@ -160,6 +160,7 @@ public :
 	std::vector<std::vector<T>> data ; // Matrix containing the Cell x Transcriptome Matrix 
 	std::vector<std::vector<T>> geneCounts ; // Matrix containing the Cell x Gene Matrix 
 	std::vector<std::vector<int>> trueGeneCounts ; // True Matrix containing the Cell x Gene Matrix 
+	std::vector<size_t> geneIdMap;
 	
 	// cell specific
 	std::vector<std::string> cellNames ; // Vector of Cell Names 
@@ -174,6 +175,7 @@ public :
 	std::shared_ptr<spdlog::logger> consoleLog ; // Logger for outputting errors 
  
 	std::map<uint32_t, uint32_t> alevin2refMap ; // Map Col 0f Input Matrix -> Gene ID from t2g tsv
+	std::map<uint32_t, uint32_t> alevin2RevRefMap ; // Map Col 0f Input Matrix -> Gene ID from t2g tsv
 	std::map<uint32_t, uint32_t> alevin2refTranscriptMap ; // Col of cell x transcript matrix -> Tr id from t2g tsv 
 
 	uint32_t numCells{0} ;

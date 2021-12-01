@@ -82,12 +82,20 @@ class Transcript{
             polyASeq.push_back(seq) ;
         }
 
-        void setGeneId(uint32_t& geneIdIn){
+        void setGeneId(uint32_t geneIdIn){
             geneId = geneIdIn;
+        }
+
+        void setGeneName(std::string& geneIdIn){
+            geneName = geneIdIn;
         }
 
         uint32_t getGeneId(){
             return geneId;
+        }
+
+        std::string getGeneName(){
+            return geneName;
         }
 
         // load intron sequence
@@ -110,6 +118,7 @@ class Transcript{
         uint32_t CompleteLength;
         uint32_t id;
         uint32_t geneId{std::numeric_limits<uint32_t>::max()};
+        std::string geneName;
         bool hasIntron{false};
     private:
         std::unique_ptr<const char, void (*)(const char*)> Sequence_ =

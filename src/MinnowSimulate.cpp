@@ -540,6 +540,7 @@ void doPCRBulkDBG(
     std::string& cellName, 
     uint32_t dupCount,
     std::vector<int>& trueCellExpression,
+    std::map<uint32_t, uint32_t>& geneMapId,
     std::vector<util::CellBarcodeUMISegmentBlock>& uniqueMolecules,
     std::vector<uint32_t> rspdVec,
     std::vector<Transcript>& transcripts,
@@ -740,11 +741,13 @@ void doPCRBulkDBG(
     auto numMol = std::min(indexArray.size(), static_cast<size_t>(dupCount)) ;
     // Write down the normal stuff
     {
+      size_t countagene{0} ;
       for(uint32_t i = 0; i < uniqueMolecules.size(); ++i){
                 uint32_t ind = i ;
                  numOfWritten++ ;
 
                  std::string modifiedCellName = sequenceMap[ind].substr(0, CB_LENGTH + UMI_LENGTH) ;
+                std::string thisCell = sequenceMap[ind].substr(0, CB_LENGTH); 
                 //bool ore = uniqueMolecules[ind].count ; 
 
                 //auto fragmentStr = sequenceMap[ind].substr(CB_LENGTH + UMI_LENGTH) ; 
@@ -785,8 +788,17 @@ void doPCRBulkDBG(
                 uniqReadId++ ;              
 
                 auto geneId = transcripts[uniqueMolecules[ind].transcriptId].getGeneId();
+                auto geneName = transcripts[uniqueMolecules[ind].transcriptId].getGeneName();
+                // if(geneName == "ENSG00000058056.10"){
+                //     countagene++;
+                //     std::cout << thisCell
+                //               << "- this gene appears with id " 
+                //               << geneId << "\t" 
+                //               << countagene << "\n";
+                // }
+
                 if(geneId != std::numeric_limits<uint32_t>::max()){
-                    writtenExpressionVec[geneId]++ ;
+                    writtenExpressionVec[geneId]++ ; 
                 }else{
                     std::cerr << "tid " << uniqueMolecules[ind].transcriptId << "\n";
                     std::exit(2);
@@ -795,6 +807,49 @@ void doPCRBulkDBG(
                 if(numOfWritten >= numMol)
                     break ;
       }
+    }
+
+    int totalNumberOfMoleculesGeneratedBeforePCR = std::accumulate(writtenExpressionVec.begin(), writtenExpressionVec.end(), 0) ;
+    int totalNumberOfMolecules = std::accumulate(trueCellExpression.begin(), trueCellExpression.end(), 0) ;
+    // std::cout << "------------------------------\n"
+    //           << totalNumberOfMolecules << "\t"
+    //           << totalNumberOfMoleculesGeneratedBeforePCR << "\t" 
+    //           << uniqueMolecules.size() << "\n"
+    //           << "------------------------------\n";
+    // make copies and check 
+    // the sorted version of the vectors 
+    // agree or not 
+    // auto written_copy = writtenExpressionVec;
+    // auto true_copy = trueCellExpression;
+    // written_copy.erase(
+    //     std::remove(written_copy.begin(), written_copy.end(), 0),
+    //     written_copy.end() 
+    // );
+    // true_copy.erase(
+    //     std::remove(true_copy.begin(), true_copy.end(), 0),
+    //     true_copy.end() 
+    // );
+    // written_copy.shrink_to_fit();
+    // true_copy.shrink_to_fit();
+    // std::cout << "Size of written_copy " << written_copy.size()
+    //           << " Size of truth " << true_copy.size() << "\n";
+    // std::sort(written_copy.begin(), written_copy.end());
+    // std::sort(true_copy.begin(), true_copy.end());
+    bool doBreak{false};
+    for(size_t i = 0; i < std::min(writtenExpressionVec.size(), trueCellExpression.size()); ++i){
+        if(writtenExpressionVec[i] < trueCellExpression[i]){
+            std::cout << "The written count is less for gene with index " << i 
+                      << " Written: " << writtenExpressionVec[i]
+                      << " Actual: " << trueCellExpression[i] 
+                      << "\n";
+            doBreak = true;
+            break;
+        }
+    }
+    if(doBreak){
+        //std::cout << writtenExpressionVec << "\n";
+        //std::cout << trueCellExpression << "\n";
+        std::exit(3);
     }
 
     std::random_device rd;
@@ -876,7 +931,7 @@ void doPCRBulkDBG(
 
                     auto geneId = transcripts[uniqueMolecules[grandParentId].transcriptId].getGeneId();
                     if(geneId != std::numeric_limits<uint32_t>::max()){
-                        writtenExpressionVec[geneId]++ ;
+                        writtenExpressionVec[geneId]++ ;    
                     }else{
                         std::cerr << "tid " << uniqueMolecules[grandParentId].transcriptId << "\n";
                         std::exit(2);
@@ -903,10 +958,18 @@ void doPCRBulkDBG(
     }
 
     // make sure every entry of
-    if(writtenExpressionVec < trueCellExpression){
-        std::cerr << "Less number of reads are produced that the truth matrix\n";
-        std::exit(2);
-    }
+    // if(writtenExpressionVec < trueCellExpression){
+    //     int totalNumberOfMolecules = std::accumulate(trueCellExpression.begin(), trueCellExpression.end(), 0) ;
+    //     int totalNumberOfMoleculesGenerated = std::accumulate(writtenExpressionVec.begin(), writtenExpressionVec.end(), 0) ;
+    //     std::cerr << "Generated " << totalNumberOfMoleculesGenerated << "\t Truth " 
+    //               << totalNumberOfMolecules 
+    //               << "\t Before PCR "
+    //               << totalNumberOfMoleculesGeneratedBeforePCR
+    //               << "\n";
+    //     std::cerr << "Less number of reads are produced that the truth matrix\n";
+        
+    //     // std::exit(2);
+    // }
 
 
 
@@ -1306,6 +1369,7 @@ void generateSequencesForCellDBG(
 
        std::vector<util::CellBarcodeUMISegmentBlock> uniqueMolecules ;    
        std::vector<int> trueCellExpression = dataMatrixObj.fetchTrueCellExp(cellId) ;
+       auto geneMapId = dataMatrixObj.alevin2RevRefMap;
 
         int totalNumberOfMolecules = std::accumulate(trueCellExpression.begin(), trueCellExpression.end(), 0) ;
         std::vector<int> sampledList ;
@@ -1398,6 +1462,7 @@ void generateSequencesForCellDBG(
             cellName,
             dupCounts,
             trueCellExpression,
+            geneMapId,
             uniqueMolecules,
             dataMatrixObj.rspdVec,
             transcripts,

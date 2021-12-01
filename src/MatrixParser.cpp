@@ -1617,6 +1617,12 @@ void DataMatrix<T>::loadSplatterData(
         while(std::getline(geneNameStream, line)){
             // strip new line
             line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
+            // the gene names should not repeat check for that
+            if (std::find(splatterGeneNames.begin(), splatterGeneNames.end(), line) != splatterGeneNames.end())
+            {   
+                consoleLog->error("{} gene is repeated in the gene list, please provide unique gene list ", line);
+                std::exit(10);
+            }
             splatterGeneNames.push_back(line) ;
         }
     }
@@ -1957,11 +1963,19 @@ void DataMatrix<T>::loadSplatterData(
             std::exit(2) ;
         }
     }
+    // create reverse of alevin2refMap
+    for(auto it = alevin2refMap.begin(); it != alevin2refMap.end() ; ++it){
+        alevin2RevRefMap[it->second] = it->first;
+    }
+
 
     // Make a truncated geneCounts file
     //T skippedCount{0} ;
     geneCounts.resize(sampleCells, std::vector<T>(numOfGenes - numOfSkippedGenes)) ;
     trueGeneCounts.resize(sampleCells, std::vector<int>(numOfGenes - numOfSkippedGenes)) ;
+    geneIdMap.resize(numOfGenes);
+    std::iota(std::begin(geneIdMap),std::end(geneIdMap),0);
+    
     for(auto& v : geneCounts)
         std::memset(&v[0], 0, sizeof(v[0]) * v.size());
 
@@ -1975,6 +1989,17 @@ void DataMatrix<T>::loadSplatterData(
         }else{
         consoleLog->warn("Skipping {} genes, gene pool size of de-Bruijn graph {}",
                         numOfSkippedGenes, validGeneIds.size()) ;
+        }
+        {
+            size_t geneCountsGeneIdx{0} ;
+            for(size_t gene_id = 0 ; gene_id < numOfOriginalGenes ; ++ gene_id){
+                if(skippedGenes.find(gene_id) == skippedGenes.end()){
+                    // geneCounts[cell_id][geneCountsGeneIdx] = originalGeneCountMatrix[cell_id][gene_id] ;
+                    geneIdMap[gene_id] = geneCountsGeneIdx;
+                    geneCountsGeneIdx++ ;
+                }
+            }
+
         }
 
         for(size_t cell_id = 0 ; cell_id < originalGeneCountMatrix.size(); ++cell_id){
@@ -2000,7 +2025,7 @@ void DataMatrix<T>::loadSplatterData(
         geneCounts = originalGeneCountMatrix ;
     }
 
-
+    // change number of genes
     numOfGenes = geneCounts[geneCounts.size()-1].size() ;
 
     auto& gene2transcriptMap = refInfo.gene2transcriptMap ;
@@ -2015,12 +2040,15 @@ void DataMatrix<T>::loadSplatterData(
                 //std::cerr << "# of transcripts in this gene "<< gIt->first 
                 //	      <<  ":\t" << trVec.size() << "\n" ;	
                 for(auto tr : trVec){
+                    refInfo.transcripts[tr].setGeneId(it.first);
+                    refInfo.transcripts[tr].setGeneName(alevinGeneIndex2NameMap[it.first]);
                     alevin2refTranscriptMap[trId] = tr ;
                     alevinReverseMap[tr] = trId ;
                     trId += 1 ;
                 }
             }else{
                 consoleLog->error("This should not happen: gene {} not found",gIt->first) ;
+                std::exit(1);
             }
         }
     }
@@ -2129,7 +2157,8 @@ void DataMatrix<T>::loadSplatterData(
 
                 
                 for(auto tid : transcriptIds){
-                    refInfo.transcripts[tid].setGeneId(i);
+                    // TODO: remove this way of updating gene id
+                    // refInfo.transcripts[tid].setGeneId(i);
                     if(dbgPtr->trSegmentMap.find(tid) != dbgPtr->trSegmentMap.end()){
                         auto segVec = dbgPtr->trSegmentMap[tid] ;
                         bool everRC{false} ;
@@ -2249,6 +2278,10 @@ void DataMatrix<T>::loadSplatterData(
 
               size_t cellSumCheck{0} ;
             auto barcode = cellNames[cellId] ;
+            if(numOfGenes != cellGeneCounts.size()){
+                std::cerr << "Something wrong with gene ids\n";
+                std::exit(10);
+            }
             for(size_t i = 0 ; i < cellGeneCounts.size() ; ++i){
                 std::string geneName = alevinGeneIndex2NameMap[i] ;
 
