@@ -29,7 +29,8 @@
 
 #define _verbose(fmt, args...) fprintf(stderr, fmt, ##args)
 
-#define READ_LEN 100
+//#define READ_LEN 100
+uint32_t READ_LEN ;
 
 struct ValidateOpt{
   std::string gfaFile{""} ;
@@ -38,6 +39,7 @@ struct ValidateOpt{
   std::string outFile{""} ;
   int numThreads{0} ;
   int edit_max_lim{0} ; 
+  uint32_t read_length{100} ;
 
 } ;
 
@@ -45,6 +47,7 @@ struct DumpOpt{
   std::string fastqFile{""} ;
   std::string t2gFile{""} ;
   std::string outFile{""} ;
+  uint32_t read_length{100};
 
 } ;
 
@@ -53,6 +56,7 @@ struct ExtractOpt{
   std::string rightFastqFile{""} ;
   std::string queryFileName{""} ;
   std::string outFile{""} ;
+  uint32_t read_length{100};
 
 } ;
 
@@ -108,6 +112,7 @@ void queryCellName(
                    std::string& leftFastq,
                    std::string& rightFastq,
                    std::string& queryFileName,
+                   uint32_t read_length,
                    std::string& outFile
                    ){
 
@@ -116,6 +121,8 @@ void queryCellName(
 
   std::string right_out_file = outFile + "_2.fastq.gz" ;
   std::string left_out_file = outFile + "_1.fastq.gz" ;
+
+  READ_LEN = read_length;
 
   zstr::ofstream leftFileStream(left_out_file.c_str(), std::ios::out ) ; 
   zstr::ofstream rightFileStream(right_out_file.c_str(), std::ios::out ) ; 
@@ -300,12 +307,15 @@ void refValidate(
 	std::string& fastqFile,
 	std::string& referenceFile,
   int& edit_max_lim,
+  uint32_t read_length,
 	std::string& outFile
 ){
+  READ_LEN = read_length;
+
 	std::vector<Transcript> transcripts; 
 	std::cout << "Reading reference file\n" ; 	
 	FASTAParser fastaParser(referenceFile) ;
-    fastaParser.populateTargets(transcripts) ;
+    fastaParser.populateTargets(transcripts, READ_LEN) ;
 
 	std::unordered_map<std::string, size_t> trMap ;
 	trMap.reserve(transcripts.size()) ;
@@ -416,12 +426,14 @@ void gfaValidate(
   std::string& gfaFile, 
   std::string& fastqFile,
   int& edit_max_lim,
+  uint32_t read_length,
 	std::string& outFile,
   std::shared_ptr<spdlog::logger>& consoleLog
 
 ){
   GFAReader gfaObj(gfaFile, consoleLog) ;
 
+  READ_LEN = read_length;
   gfaObj.readUnitigs() ;
 
   std::map<int, int> editDistanceMap ;
@@ -517,6 +529,7 @@ void validate(ValidateOpt& valOpts){
                   valOpts.fastqFile,
                   valOpts.referenceFile,
                   valOpts.edit_max_lim,
+                  valOpts.read_length,
                   valOpts.outFile
                   ) ;
   }else{
@@ -524,6 +537,7 @@ void validate(ValidateOpt& valOpts){
       valOpts.gfaFile,
       valOpts.fastqFile,
       valOpts.edit_max_lim,
+      valOpts.read_length,
       valOpts.outFile,
       consoleLog
     ) ;
@@ -536,6 +550,7 @@ void extract(ExtractOpt& valOpts){
                 valOpts.leftFastqFile,
                 valOpts.rightFastqFile,
                 valOpts.queryFileName,
+                valOpts.read_length,
                 valOpts.outFile
                 ) ;
 
@@ -568,6 +583,10 @@ int main(int argc, char* argv[]) {
       value("cell-list", extOpt.queryFileName)) %
      "list of cell files",
 
+     (option("-l", "--read-length") &
+      value("read-length", extOpt.read_length)) %
+     "read length in bp",
+
      (option("-o", "--output") &
       value("output", extOpt.outFile)) %
      "output fastq file"
@@ -585,6 +604,10 @@ int main(int argc, char* argv[]) {
     (option("-t", "--reference") &
     value("transcript", dumpOpt.t2gFile)) %
     "tsv file with transcript to gene mapping",
+
+    (option("-l", "--read-length") &
+    value("read-length", extOpt.read_length)) %
+    "read length in bp",
     
     (option("-o", "--output") &
     value("output", dumpOpt.outFile)) %
@@ -614,6 +637,10 @@ int main(int argc, char* argv[]) {
     (option("-p", "--num-threads") &
     value("number-threads", valOpts.numThreads)) %
     "number of Threads needed for the parsing",
+
+    (option("-l", "--read-length") &
+    value("read-length", extOpt.read_length)) %
+    "read length in bp",
     
     (option("-o", "--output") &
     value("output", valOpts.outFile)) %

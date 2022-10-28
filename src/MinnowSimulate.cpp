@@ -43,7 +43,7 @@ using SpinLockT = std::mutex;
 
 #define MAX_FRAGLENGTH 1000
 #define MAX_QUEUE_SIZE 20
-#define READ_LEN 100
+// #define READ_LEN 100
 
 #define FRAGMENT_END_DIST 404 + READ_LEN // this is from the empirical e^6
 #define FRAGMENT_START_DIST 53 + READ_LEN // this is from the empirical limit e^4
@@ -52,6 +52,7 @@ using SpinLockT = std::mutex;
 uint32_t CB_LENGTH ;
 uint32_t UMI_LENGTH ;
 uint32_t POOL_SIZE ;
+uint32_t READ_LEN ;
 
 #define _verbose(fmt, args...) fprintf(stderr, fmt, ##args)
 
@@ -1978,6 +1979,8 @@ void minnowSimulate(SimulateOptions& simOpts){
     CB_LENGTH = expConfig.barcodeLength ;
     UMI_LENGTH = expConfig.umiLength ;
     POOL_SIZE = expConfig.maxValue ;
+    READ_LEN = simOpts.ReadLength ;
+    uint32_t readLength = simOpts.ReadLength;
 
 
     //auto& numOfSampleCells = simOpts.sampleCells ;
@@ -2004,6 +2007,7 @@ void minnowSimulate(SimulateOptions& simOpts){
     Reference refInfo(
         refFileName,
         gene2txpFile,
+        readLength,
         consoleLog
     ) ;
     consoleLog->info("Reference sequence is loaded ...") ;

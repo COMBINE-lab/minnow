@@ -54,7 +54,7 @@ if("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
       list(APPEND TGT_WARN_FLAGS "-Wno-int-in-bool-context")
     endif()
     
-    if(GCC_VERSION VERSION_GREATER_EQUAL "9.1")
+    if(GCC_VERSION VERSION_GREATER_EQUAL "9.2")
       list(APPEND TGT_WARN_FLAGS "-Wno-deprecated-copy")
     endif()
 

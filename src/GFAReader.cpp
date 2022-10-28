@@ -89,7 +89,7 @@ void GFAReader::updateEqClass(
           if(unitigMap.find(contigId) != unitigMap.end()){
             auto sizeOfUnitig = unitigMap[contigInfo.first].size() ;
 
-            if(sizeOfUnitig < READ_LEN){
+            if(sizeOfUnitig < refInfo.readLength){
               std::cerr << sizeOfUnitig <<  " --- possible twopaco bug !!!!\n" ;
               std::exit(1) ;
             }
@@ -166,7 +166,7 @@ void GFAReader::parseFile(
 
   bool foundOverlapSize{false};
   // size_t overlapsize = READ_LEN-1;
-  size_t overlapsize = READ_LEN + 1;
+  size_t overlapsize = refInfo.readLength + 1;
   consoleLog->info("Predicted overlap size: {}", overlapsize);
 
 	file.reset(new std::ifstream(gfaFileName_)) ;

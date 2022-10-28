@@ -27,12 +27,14 @@ int minnowEstimate(EstimateOptions& eopts){
     auto gene2txpFile = eopts.gene2txpFile;
     auto outDir = eopts.outDir;
     auto bfhFile = eopts.bfhFile;
+    auto readLength = eopts.ReadLength;
 
 
     consoleLog->info("Reading reference sequences ...") ;
     Reference refInfo(
         refFileName,
         gene2txpFile,
+        readLength,
         consoleLog
     ) ;
     refInfo.updateGene2TxpMap();
